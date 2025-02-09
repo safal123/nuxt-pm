@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  clerkId           String   @unique
+  email             String   @unique
+  name              String?
+  clerkObject       Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  activeWorkspaceId String?  @map("active_workspace_id")
+  activeProjectId   String?  @map("active_project_id")
+
+  // Relationships
+  memberships WorkspaceMember[]
+  projects    Project[]
+  workspaces  Workspace[]
+
+  @@index([clerkId], name: "clerkId")
+  @@index([email], name: "email")
+  @@map("users")
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  members  WorkspaceMember[]
+  projects Project[]
+  creator  User              @relation(fields: [createdBy], references: [id])
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  userId      String   @map("user_id")
+  workspaceId String   @map("workspace_id")
+  role        String   @default("MEMBER")
+  joinedAt    DateTime @default(now())
+
+  // Relationships
+  user      User      @relation(fields: [userId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@id([userId, workspaceId])
+  @@map("workspace_members")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  workspaceId String   @map("workspace_id")
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  creator   User      @relation(fields: [createdBy], references: [id])
+
+  @@map("projects")
+}
