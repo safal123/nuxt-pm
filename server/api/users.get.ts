@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma'
 export default defineEventHandler (async (event) => {
   try {
     const userId = event.context.auth?.sessionClaims?.sub
-    console.log ('userId', userId)
+
     if (!userId) {
       console.error ('Unauthorized: User ID not found in session claims.')
       throw createError ({
@@ -35,8 +35,6 @@ export default defineEventHandler (async (event) => {
         }
       }
     })
-
-    console.log ('existingWorkspace', existingWorkspace)
 
     if (!existingWorkspace) {
       console.log ('Creating workspace for user', user.name)
@@ -74,6 +72,11 @@ export default defineEventHandler (async (event) => {
 
     return {
       workspaces,
+      // remove clerk object from user
+      user: {
+        ...user,
+        clerkObject: undefined
+      }
     }
   } catch (error: any) {
     throw createError ({

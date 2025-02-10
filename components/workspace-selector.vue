@@ -1,20 +1,30 @@
 <script setup lang="ts">
-import { Check, ChevronsUpDown, GalleryVerticalEnd } from 'lucide-vue-next'
+import { Check, ChevronsUpDown, GalleryVerticalEnd, PlusIcon } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 const props = defineProps({
   workspaces: {
     type: Object,
     required: true
+  },
+  activeWorkspaceId: {
+    type: String,
+    required: true
   }
 })
 
-const selectedVersion = ref('')
+const selectedVersion = ref(props.activeWorkspaceId)
 const dropdownOpen = ref(false)
 
 // Remove manual toggle function
-const setSelectedVersion = (id) => {
+const setSelectedVersion = async (id) => {
   selectedVersion.value = id
+  if (selectedVersion.value === props.activeWorkspaceId) return
+  // update users active workspace
+  const {data} = await useFetch(`/api/users`, {
+    method: 'PUT',
+    body: JSON.stringify({ activeWorkspaceId: id })
+  })
 }
 
 const activeWorkspace = () => {
@@ -52,6 +62,9 @@ const activeWorkspace = () => {
       >
         <span>{{ workspace.name }}</span>
         <Check v-if="workspace.id === selectedVersion" class="ml-auto"/>
+      </DropdownMenuItem>
+      <DropdownMenuItem @select.prevent>
+        <CreateWorkspaceModal />
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

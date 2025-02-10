@@ -8,9 +8,9 @@ export default defineEventHandler(async (event) => {
     const workspace = await validateWorkspace(body.workspaceId, userId)
 
     const project = await createProject({
-      workspaceId: workspace.id,
       name: body.name,
       description: body.description,
+      workspaceId: body.workspaceId,
       // @ts-ignore
       createdBy: workspace.createdBy
     })

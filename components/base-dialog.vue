@@ -37,6 +37,12 @@ const sizeClasses = {
   '7xl': 'max-w-7xl',
   '8xl': 'max-w-8xl',
 }
+
+const handleClose = () => {
+  // emit close event
+  this.$emit('close')
+}
+
 </script>
 
 <template>

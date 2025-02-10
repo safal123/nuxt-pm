@@ -6,54 +6,48 @@ definePageMeta ({
 })
 
 const search = ref ('')
-const { data } = await useFetch ('/api/users')
-console.log (data.value)
+const { data, status } = await useAsyncData ('home', () => $fetch ('/api/users'))
+
 </script>
 
 <template>
   <SidebarProvider>
     <Sidebar>
-      <div>
-        <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <WorkspaceSelector :workspaces="data.workspaces"/>
-            </SidebarMenuItem>
-          </SidebarMenu>
-          <SearchInput/>
-          <div class="px-2">
-            <CreateProjectModal :workspace-id="data.workspaces[0].id"/>
-          </div>
-        </SidebarHeader>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <WorkspaceSelector
+              :workspaces="data.workspaces"
+              :active-workspace-id="data.user.activeWorkspaceId"
+            />
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <SearchInput/>
+        <div class="px-2 mt-2">
+          <CreateProjectModal :workspace-id="data.workspaces[0].id"/>
+        </div>
+      </SidebarHeader>
+      <SidebarContent>
         <SidebarProjects v-if="data && data?.workspaces" :projects="data?.workspaces[0]?.projects"/>
-        <SidebarRail/>
-      </div>
+      </SidebarContent>
+      <SidebarFooter>
+        <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg flex gap-2">
+          <UserButton/>
+          <p class="text-xs text-gray-700 dark:text-gray-300">
+            {{ data.user.email }} <br>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{ data.user.name }}</span>
+          </p>
+        </div>
+      </SidebarFooter>
     </Sidebar>
 
     <SidebarInset>
       <header class="flex h-16 shrink-0 items-center gap-2 border-b px-4">
         <SidebarTrigger class="-ml-1"/>
-        <Separator orientation="vertical" class="mr-2 h-4"/>
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem class="hidden md:block">
-              <BreadcrumbLink href="#">
-                Building Your Application
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator class="hidden md:block"/>
-            <BreadcrumbItem>
-              <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
         <div class="ml-auto">
           <UserButton/>
         </div>
       </header>
-      <pre>
-        {{ data }}
-      </pre>
       <ClerkLoading>
         <div class="flex flex-1 flex-col gap-4 p-4">
           <div class="grid auto-rows-min gap-4 md:grid-cols-3">

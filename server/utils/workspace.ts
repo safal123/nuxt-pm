@@ -1,13 +1,6 @@
 import prisma from '~/lib/prisma'
 import { getUserFromClerkId } from '@/server/utils/user'
 
-/**
- * Validate if the workspace exists and the user has access to it.
- * @param workspaceId - The ID of the workspace.
- * @param userId - The ID of the user.
- * @returns The workspace if valid.
- * @throws Error if the workspace is not found or the user does not have access.
- */
 export const validateWorkspace = async (workspaceId: string, userId: string) => {
   try {
     const user = await getUserFromClerkId (userId)
@@ -45,10 +38,17 @@ export const createProject = async (options: {
   createdBy: string;
 }) => {
   const { workspaceId, name, description, createdBy } = options
-  // @ts-ignore
-  return prisma.project.create ({
-    data: {
-      ...options,
-    }
-  })
+  try {
+    // @ts-ignore
+    return prisma.project.create ({
+      data: {
+        ...options,
+      }
+    })
+  } catch (error: any) {
+    throw createError ({
+      statusCode: 500,
+      statusMessage: error.message || 'Cannot create project.'
+    })
+  }
 }
