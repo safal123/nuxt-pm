@@ -1,9 +1,6 @@
-<script setup lang="ts">
-</script>
-
 <template>
   <header>
-    <div class="border-b mx-auto h-16 box-shadow bg-white dark:bg-gray-800">
+    <div class="border-b mx-auto h-16 box-shadow bg-background">
       <div class="container flex justify-between items-center h-full">
         <div class="flex items-center">
           <nuxt-link to="/" class="text-xl font-bold">Nuxt Auth</nuxt-link>

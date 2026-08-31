@@ -42,6 +42,6 @@ const size = computed(() => sizeMap[props.size || 'lg']);
       ></path>
     </svg>
 
-    <p class="text-gray-600">Loading...</p>
+    <p class="text-muted-foreground">Loading...</p>
   </div>
 </template>

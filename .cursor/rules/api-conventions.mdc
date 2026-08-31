@@ -1,0 +1,62 @@
+---
+description: Server API route and utils conventions (auth, error handling, response shape)
+globs: server/api/**/*.ts,server/utils/**/*.ts
+alwaysApply: false
+---
+
+# API Route Conventions
+
+## Auth
+
+Always resolve the current user via `validateAndGetUser(event)` from `~/server/utils/user`. Never read `event.context.auth` directly in a route handler. It throws a 401 `createError` when signed out, and transparently creates the local `User` row (+ default workspace) from Clerk if the webhook hasn't synced yet.
+
+```ts
+// BAD
+const userId = event.context.auth?.userId
+if (!userId) return new Response('Unauthorized', { status: 401 })
+
+// GOOD
+const user = await validateAndGetUser(event)
+```
+
+Webhook handlers (`server/api/webhooks/**`) are the only exception, since they authenticate via signature verification, not a Clerk session.
+
+## Imports
+
+- Use the `~/` alias for internal imports: `~/lib/prisma`, `~/server/utils/user`. Never `@/` in `server/**`.
+- Reusable, multi-step, or cross-cutting logic (e.g. workspace membership checks) belongs in `server/utils/*.ts`, not inlined in the handler.
+
+## Handler shape
+
+```ts
+export default defineEventHandler(async (event) => {
+  try {
+    const user = await validateAndGetUser(event)
+    const body = await readBody(event) // only for POST/PUT/PATCH
+
+    // ...business logic...
+
+    return { data, message: 'Workspace created successfully' }
+  } catch (error: any) {
+    console.error('Failed to create workspace:', error)
+    throw createError({
+      statusCode: error.statusCode || 500,
+      message: error.message || 'Internal server error',
+    })
+  }
+})
+```
+
+## Errors
+
+- Always `throw createError({ statusCode, message })`. Never `return new Response(...)` and never the `statusMessage` key.
+- Preserve an already-set `error.statusCode` from a lower-level throw (e.g. the 401 from `validateAndGetUser`, or a 404 from a `server/utils` helper) instead of collapsing everything to 500.
+
+## Responses
+
+- Success responses are always `{ data, message }`. `data` holds the resource(s), e.g. `{ workspace }`, `{ workspaces }`, `{ project }`. Don't duplicate the HTTP status code inside the JSON body.
+- For handlers that create a resource, call `setResponseStatus(event, 201)` before returning.
+
+## Cleanup
+
+No leftover `console.log` debugging left in committed handlers — only `console.error` inside `catch` blocks.

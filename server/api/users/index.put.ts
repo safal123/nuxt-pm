@@ -1,14 +1,13 @@
-import { defineEventHandler } from 'h3'
 import prisma from '~/lib/prisma'
 
 export default defineEventHandler(async (event) => {
   try {
-    const userId = event.context.auth?.sessionClaims?.sub
+    const authUser = await validateAndGetUser(event)
     const body = await readBody(event)
 
     const user = await prisma.user.update({
       where: {
-        clerkId: userId
+        id: authUser.id
       },
       data: {
         ...body
@@ -16,15 +15,12 @@ export default defineEventHandler(async (event) => {
     })
 
     return {
-      user,
-      status: 200,
+      data: { user },
       message: 'User updated successfully'
     }
-
-
   } catch (error: any) {
     throw createError({
-      statusCode: 500,
+      statusCode: error.statusCode || 500,
       message: error.message || 'Error updating user'
     })
   }

@@ -1,4 +1,3 @@
-import { defineEventHandler, readBody } from 'h3';
 import prisma from '~/lib/prisma';
 
 export default defineEventHandler(async (event) => {
@@ -6,7 +5,10 @@ export default defineEventHandler(async (event) => {
   const clerkWebhookSecret = process.env.NUXT_CLERK_WEBHOOK_SECRET;
 
   if (!clerkSignature || !clerkWebhookSecret) {
-    throw new Error('Missing Clerk webhook signature or secret.');
+    throw createError({
+      statusCode: 400,
+      message: 'Missing Clerk webhook signature or secret.'
+    });
   }
 
   const body = await readBody(event);
@@ -17,7 +19,7 @@ export default defineEventHandler(async (event) => {
     case 'user.updated':
       const userData = body.data;
 
-      await prisma.user.upsert({
+      const user = await prisma.user.upsert({
         where: { clerkId: userData.id }, // Unique identifier to find the user
         update: {
           email: userData.email_addresses[0].email_address,
@@ -34,6 +36,29 @@ export default defineEventHandler(async (event) => {
           updatedAt: new Date(),
         },
       });
+
+      // Create a default workspace for the user
+      const defaultWorkspace = await prisma.workspace.create({
+        data: {
+          name: `Workspace`,
+          creator: { connect: { id: user.id } },
+          members: {
+            create: {
+              userId: user.id,
+              role: 'OWNER',
+            },
+          },
+        },
+      });
+
+      // Set the default workspace as the user's active workspace
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          activeWorkspaceId: defaultWorkspace.id,
+        },
+      });
+
       break;
 
     default:
@@ -41,5 +66,8 @@ export default defineEventHandler(async (event) => {
       break;
   }
 
-  return { success: true };
+  return {
+    data: { success: true },
+    message: 'Webhook processed successfully'
+  };
 });

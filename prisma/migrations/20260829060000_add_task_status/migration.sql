@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `tasks` ADD COLUMN `status` VARCHAR(191) NOT NULL DEFAULT 'TODO',
+    ADD COLUMN `completed_at` DATETIME(3) NULL;

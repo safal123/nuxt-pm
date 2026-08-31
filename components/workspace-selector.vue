@@ -1,71 +1,83 @@
 <script setup lang="ts">
-import { Check, ChevronsUpDown, GalleryVerticalEnd, PlusIcon } from 'lucide-vue-next'
-import { ref } from 'vue'
-
+import { Check, ChevronsUpDown, GalleryVerticalEnd } from "lucide-vue-next";
+import type { Workspace } from "@/types";
+import type { PropType } from "vue";
+import { formatDistance } from "date-fns";
 const props = defineProps({
   workspaces: {
-    type: Object,
-    required: true
+    type: Array as PropType<Workspace[]>,
+    required: true,
   },
   activeWorkspaceId: {
     type: String,
-    required: true
-  }
-})
+    required: true,
+  },
+  activeWorkspace: {
+    type: Object as PropType<Workspace>,
+    required: false,
+    default: null,
+  },
+});
 
-const selectedVersion = ref(props.activeWorkspaceId)
-const dropdownOpen = ref(false)
+const workspaceStore = useWorkspaceStore();
+const userStore = useUserStore();
 
-// Remove manual toggle function
-const setSelectedVersion = async (id) => {
-  selectedVersion.value = id
-  if (selectedVersion.value === props.activeWorkspaceId) return
-  // update users active workspace
-  const {data} = await useFetch(`/api/users`, {
-    method: 'PUT',
-    body: JSON.stringify({ activeWorkspaceId: id })
-  })
-}
-
-const activeWorkspace = () => {
-  return props.workspaces.find(workspace => workspace.id === selectedVersion.value) || { name: 'Select Workspace' }
-}
+const handleWorkspaceSelect = async (workspace: Workspace) => {
+  await userStore.updateUser({
+    activeWorkspaceId: workspace.id,
+    activeProjectId: workspace?.projects?.[0]?.id || null,
+  });
+  await workspaceStore.setActiveWorkspace(workspace.id);
+  await userStore.me();
+};
 </script>
 
 <template>
-  <DropdownMenu v-model:open="dropdownOpen">
-    <DropdownMenuTrigger as-child>
-      <SidebarMenuButton
-        size="lg"
-        :class="{ 'data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground': dropdownOpen }"
-      >
-        <div
-          class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-          <GalleryVerticalEnd class="size-4"/>
-        </div>
-        <div class="flex flex-col gap-0.5 leading-none">
-          <span class="font-semibold">
-            {{ activeWorkspace().name }}
-          </span>
-        </div>
-        <ChevronsUpDown class="ml-auto"/>
-      </SidebarMenuButton>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent
-      class="w-[--radix-dropdown-menu-trigger-width]"
-      align="start"
-    >
-      <DropdownMenuItem
-        v-for="workspace in workspaces"
-        :key="workspace.id"
-        @select="setSelectedVersion(workspace.id)"
-      >
-        <span>{{ workspace.name }}</span>
-        <Check v-if="workspace.id === selectedVersion" class="ml-auto"/>
-      </DropdownMenuItem>
-      <DropdownMenuItem @select.prevent>
-        <CreateWorkspaceModal />
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-</template>ß
+  <SidebarMenu>
+    <SidebarMenuItem>
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <SidebarMenuButton
+            size="lg"
+            class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+          >
+            <div
+              class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
+            >
+              <GalleryVerticalEnd class="size-4" />
+            </div>
+            <div class="flex flex-col gap-0.5 leading-none">
+              <span>{{ activeWorkspace?.name || "Select Workspace" }}</span>
+              <span v-if="activeWorkspace?.createdAt" class="text-xs text-muted-foreground">
+                Joined
+                {{
+                  formatDistance(
+                    new Date(activeWorkspace.createdAt),
+                    new Date(),
+                  )
+                }}
+              </span>
+            </div>
+            <ChevronsUpDown class="ml-auto size-4" />
+          </SidebarMenuButton>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          class="w-[--reka-dropdown-menu-trigger-width] min-w-[240px]"
+          align="center"
+        >
+          <DropdownMenuItem
+            v-for="workspace in workspaces"
+            :key="workspace.id"
+            @select="handleWorkspaceSelect(workspace)"
+          >
+            {{ workspace.name }}
+            <Check v-if="workspace.id === activeWorkspaceId" class="ml-auto" />
+          </DropdownMenuItem>
+          <DropdownMenuItem @select.prevent>
+            <CreateWorkspaceModal />
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </SidebarMenuItem>
+  </SidebarMenu>
+</template>

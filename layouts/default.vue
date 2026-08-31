@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { Loader2 } from 'lucide-vue-next'
-import { Toaster } from '@/components/ui/toast'
+import { Loader2 } from "lucide-vue-next";
 </script>
 
 <template>
   <ClerkLoading>
-    <div class="h-screen flex justify-center items-center">
-      <Loader2 class="animate-spin h-16 w-16"/>
+    <div class="h-screen flex justify-center items-center bg-background">
+      <Loader2 class="animate-spin h-16 w-16 text-muted-foreground" />
     </div>
   </ClerkLoading>
   <ClerkLoaded>
-    <Toaster />
-    <slot/>
+    <slot />
   </ClerkLoaded>
 </template>
-
-<style scoped></style>

@@ -1,54 +1,45 @@
 import prisma from '~/lib/prisma'
-import { getUserFromClerkId } from '@/server/utils/user'
 
+/**
+ * Throws a 404 `createError` if `userId` (local User.id) does not have access to
+ * `workspaceId`, either as its creator or as a member.
+ */
 export const validateWorkspace = async (workspaceId: string, userId: string) => {
-  try {
-    const user = await getUserFromClerkId (userId)
-    const workspace = await prisma.workspace.findFirst ({
-      where: {
-        id: workspaceId,
-        members: {
-          some: {
-            userId: user?.id
-          }
-        }
-      },
-    })
-
-    if (!workspace) {
-      throw createError ({
-        statusCode: 404,
-        statusMessage: 'Workspace not found or you do not have access.'
-      })
+  const workspace = await prisma.workspace.findFirst({
+    where: {
+      id: workspaceId,
+      OR: [
+        { createdBy: userId },
+        { members: { some: { userId } } }
+      ]
     }
+  })
 
-    return workspace
-  } catch (error: any) {
-    throw createError ({
-      statusCode: 500,
-      statusMessage: error.message
+  if (!workspace) {
+    throw createError({
+      statusCode: 404,
+      message: 'Workspace not found or you do not have access.'
     })
   }
+
+  return workspace
 }
 
 export const createProject = async (options: {
-  workspaceId: string;
-  name: string;
-  description: string;
-  createdBy: string;
+  workspaceId: string
+  name: string
+  description: string
+  createdBy: string
 }) => {
-  const { workspaceId, name, description, createdBy } = options
-  try {
-    // @ts-ignore
-    return prisma.project.create ({
-      data: {
-        ...options,
+  return prisma.project.create({
+    data: {
+      ...options,
+      members: {
+        create: {
+          userId: options.createdBy,
+          role: 'OWNER'
+        }
       }
-    })
-  } catch (error: any) {
-    throw createError ({
-      statusCode: 500,
-      statusMessage: error.message || 'Cannot create project.'
-    })
-  }
+    }
+  })
 }

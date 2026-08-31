@@ -1,29 +1,33 @@
-import { defineEventHandler } from 'h3'
-import { createProject, validateWorkspace } from '@/server/utils/workspace'
+import prisma from '~/lib/prisma'
 
 export default defineEventHandler(async (event) => {
   try {
-    const userId = event.context.auth?.sessionClaims?.sub
+    const user = await validateAndGetUser(event)
     const body = await readBody(event)
-    const workspace = await validateWorkspace(body.workspaceId, userId)
 
-    const project = await createProject({
-      name: body.name,
-      description: body.description,
-      workspaceId: body.workspaceId,
-      // @ts-ignore
-      createdBy: workspace.createdBy
+    const workspace = await prisma.workspace.create({
+      data: {
+        name: body.name,
+        description: body.description || null,
+        createdBy: user.id,
+        members: {
+          create: {
+            userId: user.id,
+            role: 'OWNER'
+          }
+        }
+      }
     })
 
+    setResponseStatus(event, 201)
     return {
-      project,
-      status: 201,
-      message: 'Project created successfully'
+      data: { workspace },
+      message: 'Workspace created successfully'
     }
   } catch (error: any) {
-    console.error('Error creating project:', error)
+    console.error('Failed to create workspace:', error)
     throw createError({
-      statusCode: 500,
+      statusCode: error.statusCode || 500,
       message: error.message || 'Internal server error'
     })
   }
