@@ -23,7 +23,7 @@ const emit = defineEmits<{
   (e: "move", columnId: string, direction: "left" | "right"): void;
   (e: "set-color", columnId: string, color: string | null): void;
   (e: "archive", columnId: string): void;
-  (e: "delete-task", taskId: string): void;
+  (e: "archive-task", taskId: string): void;
   (e: "like-task", taskId: string): void;
   (e: "pointerdown", event: PointerEvent, task: Task): void;
 }>();
@@ -240,7 +240,6 @@ const saveName = () => {
       >
         <TaskCard
           :task="task"
-          @delete="emit('delete-task', $event)"
           @like="emit('like-task', $event)"
         />
       </div>

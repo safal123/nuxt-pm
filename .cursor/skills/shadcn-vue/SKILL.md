@@ -26,7 +26,7 @@ Use `@radix`, not `@latest`. This app is on radix-vue (`shadcn-nuxt` 0.11). The 
 
 ## Already installed
 
-button, dialog, dropdown-menu, form, input, label, select, separator, sheet, sidebar, skeleton, tooltip, breadcrumb, table, tabs, pagination
+button, dialog, dropdown-menu, form, input, label, select, separator, sheet, sidebar, skeleton, tooltip, breadcrumb, table, tabs, pagination, calendar, popover, badge
 
 ## Adding a control
 

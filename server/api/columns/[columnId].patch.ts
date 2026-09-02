@@ -1,3 +1,5 @@
+import prisma from '~/lib/prisma'
+
 export default defineEventHandler(async (event) => {
   try {
     const user = await validateAndGetUser(event)
@@ -35,6 +37,14 @@ export default defineEventHandler(async (event) => {
       return {
         data: { column },
         message: 'Column archived successfully'
+      }
+    }
+
+    if (body.archived === false) {
+      const column = await restoreProjectColumn(columnId)
+      return {
+        data: { column },
+        message: 'Column restored successfully'
       }
     }
 

@@ -1,141 +1,171 @@
 <script setup lang="ts">
-import { SignInButton } from "@clerk/clerk-vue";
-import { SignIn, SignInWithMetamaskButton } from "@clerk/nuxt/components";
+import { CheckIcon } from "lucide-vue-next";
 
-const pricingPlans = [
+const { isSignedIn } = useAuth();
+const interval = ref("yearly");
+const startHref = computed(() => (isSignedIn.value ? "/dashboard" : "/sign-up"));
+
+const plans = computed(() => {
+  const yearly = interval.value === "yearly";
+
+  return [
+    {
+      name: "Free",
+      description: "A single workspace to try the board, archive, and activity.",
+      price: 0,
+      suffix: "forever",
+      cta: isSignedIn.value ? "Open dashboard" : "Start free",
+      featured: false,
+      features: [
+        "1 workspace, 3 projects",
+        "Up to 5 members",
+        "Board and table views",
+        "Due dates, priority, and comments",
+        "Archive and restore",
+        "Activity on your own tasks",
+        "Tracked workspace invites",
+      ],
+    },
+    {
+      name: "Team",
+      description: "Unlimited projects and email you can actually track.",
+      price: yearly ? 12 : 16,
+      suffix: "per member / month",
+      billed: yearly ? "Billed yearly" : "Billed monthly",
+      cta: isSignedIn.value ? "Open dashboard" : "Start Team",
+      featured: true,
+      features: [
+        "Everything in Free",
+        "Unlimited projects and members",
+        "Full workspace activity, filterable by project and task",
+        "Custom branded emails and HTML preview",
+        "Email send log for mail you send",
+        "Default board or table, compact tables, notifications",
+        "Archive lists, cards, and projects",
+      ],
+    },
+    {
+      name: "Business",
+      description: "Several teams, one company — every workspace in Northstar.",
+      price: yearly ? 24 : 32,
+      suffix: "per member / month",
+      billed: yearly ? "Billed yearly" : "Billed monthly",
+      cta: isSignedIn.value ? "Open dashboard" : "Start Business",
+      featured: false,
+      features: [
+        "Everything in Team",
+        "Unlimited workspaces",
+        "Activity and archive across every workspace",
+        "Priority email sending",
+        "SSO-ready with Clerk organizations",
+        "Priority support",
+      ],
+    },
+  ];
+});
+
+const faqs = [
   {
-    name: "Starter",
-    price: "9",
-    description: "Perfect for individuals and small teams",
-    features: [
-      "Up to 5 team members",
-      "3 active projects",
-      "Basic task management",
-      "Simple analytics",
-      "Email support",
-    ],
+    q: "Can I stay on Free?",
+    a: "Yes. Free is enough for one workspace, three projects, and five members — including board, table, archive, and invite email.",
   },
   {
-    name: "Professional",
-    price: "29",
-    description: "Best for growing teams",
-    features: [
-      "Up to 20 team members",
-      "Unlimited projects",
-      "Advanced task management",
-      "Full analytics suite",
-      "Priority support",
-      "Custom workflows",
-      "Team collaboration tools",
-    ],
-    popular: true,
+    q: "What counts as a member?",
+    a: "Anyone invited into the workspace. You are billed per person with access, not per project or archived board.",
   },
   {
-    name: "Enterprise",
-    price: "99",
-    description: "For large organizations",
-    features: [
-      "Unlimited team members",
-      "Unlimited projects",
-      "Advanced security",
-      "Custom integrations",
-      "Dedicated support",
-      "SLA guarantee",
-      "Advanced permissions",
-      "Custom training",
-    ],
+    q: "What’s included for email?",
+    a: "Free includes tracked workspace invites. Team and Business add custom templates, the send log, and HTML preview of what went out.",
   },
 ];
 </script>
 
 <template>
-  <div
-    id="pricing"
-    class="relative isolate overflow-hidden bg-slate-950 py-24 sm:py-32 dark:bg-muted"
-  >
-    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+  <section id="pricing" class="scroll-mt-24 border-y border-border bg-muted/30 py-20 sm:py-28">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-2xl text-center">
-        <h2 class="text-base font-semibold leading-7 text-purple-400">
-          Pricing
+        <p class="text-sm font-medium text-primary">Pricing</p>
+        <h2 class="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          Start free. Scale when the team does.
         </h2>
-        <p
-          class="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl"
-        >
-          Choose your plan
-        </p>
-        <p class="mt-6 text-lg leading-8 text-gray-300">
-          Select the perfect plan for your team's needs. All plans include our
-          core features.
+        <p class="mt-4 text-base leading-7 text-muted-foreground">
+          Plans follow the product: workspaces, boards, archive, activity, and
+          email — not a generic feature list.
         </p>
       </div>
-      <div
-        class="mx-auto mt-16 grid max-w-lg grid-cols-1 items-center gap-y-6 sm:mt-20 sm:gap-y-0 lg:max-w-4xl lg:grid-cols-3"
-      >
-        <div
-          v-for="plan in pricingPlans"
-          :key="plan.name"
-          class="relative rounded-2xl bg-white/5 p-8 ring-1 ring-white/10 sm:p-10 dark:bg-background/40 dark:ring-border"
-          :class="{ 'z-10 scale-105 shadow-2xl': plan.popular }"
+
+      <div class="mt-10 flex flex-col items-center gap-3">
+        <Tabs
+          :model-value="interval"
+          @update:model-value="interval = $event"
         >
-          <div
-            v-if="plan.popular"
-            class="absolute -top-4 right-8 rounded-full bg-purple-500 px-4 py-1 text-xs font-semibold text-white"
-          >
-            Popular
+          <TabsList>
+            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+            <TabsTrigger value="yearly">Yearly</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <p class="h-5 text-xs text-muted-foreground">
+          <span v-if="interval === 'yearly'">Save 25% on Team and Business</span>
+        </p>
+      </div>
+
+      <div class="mx-auto mt-12 grid max-w-5xl items-stretch gap-6 lg:grid-cols-3">
+        <article
+          v-for="plan in plans"
+          :key="plan.name"
+          class="relative flex flex-col rounded-xl border bg-card p-6 shadow-sm"
+          :class="
+            plan.featured
+              ? 'border-primary shadow-md ring-1 ring-primary'
+              : 'border-border'
+          "
+        >
+          <div class="mb-4 flex h-6 items-center justify-center">
+            <Badge v-if="plan.featured">Most popular</Badge>
           </div>
-          <h3 class="text-lg font-semibold leading-8 text-purple-400">
-            {{ plan.name }}
-          </h3>
-          <p class="mt-4 text-sm leading-6 text-gray-300">
+
+          <h3 class="text-lg font-semibold text-foreground">{{ plan.name }}</h3>
+          <p class="mt-1 min-h-[40px] text-sm leading-6 text-muted-foreground">
             {{ plan.description }}
           </p>
-          <p class="mt-6 flex items-baseline gap-x-1">
-            <span class="text-4xl font-bold tracking-tight text-white"
-              >${{ plan.price }}</span
-            >
-            <span class="text-sm font-semibold leading-6 text-gray-300"
-              >/month</span
-            >
+
+          <p class="mt-6 flex items-baseline gap-1">
+            <span class="text-4xl font-semibold tracking-tight text-foreground">
+              ${{ plan.price }}
+            </span>
+            <span class="text-sm text-muted-foreground">{{ plan.suffix }}</span>
           </p>
-          <ul
-            role="list"
-            class="mt-8 space-y-3 text-sm leading-6 text-gray-300"
+          <p class="mt-1 h-5 text-xs text-muted-foreground">
+            {{ plan.billed || "No credit card" }}
+          </p>
+
+          <Button
+            as-child
+            class="mt-6 w-full"
+            :variant="plan.featured ? 'default' : 'outline'"
           >
+            <NuxtLink :to="startHref">{{ plan.cta }}</NuxtLink>
+          </Button>
+
+          <ul class="mt-8 space-y-3 text-sm leading-6 text-foreground">
             <li
               v-for="feature in plan.features"
               :key="feature"
-              class="flex gap-x-3"
+              class="flex gap-2.5"
             >
-              <svg
-                class="h-6 w-5 flex-none text-purple-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-              {{ feature }}
+              <CheckIcon class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <span>{{ feature }}</span>
             </li>
           </ul>
-          <!-- <SignInButtonButton
-            class="mt-8 block w-full rounded-md bg-purple-500 px-3.5 py-2 text-center text-sm font-semibold leading-6 text-white shadow-sm hover:bg-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500"
-          >
-            Get started today
-          </SignIn> -->
-        </div>
+        </article>
       </div>
+
+      <dl class="mx-auto mt-16 grid max-w-5xl gap-8 sm:grid-cols-3">
+        <div v-for="item in faqs" :key="item.q">
+          <dt class="text-sm font-semibold text-foreground">{{ item.q }}</dt>
+          <dd class="mt-2 text-sm leading-6 text-muted-foreground">{{ item.a }}</dd>
+        </div>
+      </dl>
     </div>
-    <div
-      class="absolute inset-x-0 -top-16 -z-10 flex transform-gpu justify-center overflow-hidden blur-3xl"
-      aria-hidden="true"
-    >
-      <div
-        class="aspect-[1318/752] w-[82.375rem] flex-none bg-gradient-to-r from-purple-800 to-purple-300 opacity-25"
-      />
-    </div>
-  </div>
+  </section>
 </template>

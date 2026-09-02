@@ -1,3 +1,5 @@
+import prisma from '~/lib/prisma'
+
 export default defineEventHandler(async (event) => {
   try {
     const user = await validateAndGetUser(event)
@@ -11,6 +13,37 @@ export default defineEventHandler(async (event) => {
     }
 
     const member = await addProjectMember(projectId, userId)
+
+    if (member.email && member.email !== user.email) {
+      try {
+        const project = await prisma.project.findUnique({
+          where: { id: projectId },
+          select: {
+            id: true,
+            name: true,
+            workspaceId: true,
+            workspace: { select: { name: true } }
+          }
+        })
+        if (project) {
+          const requestUrl = getRequestURL(event)
+          await sendProjectMemberAddedEmail({
+            to: member.email,
+            memberName: member.name || member.email,
+            addedByName: user.name || user.email,
+            projectId: project.id,
+            projectName: project.name,
+            workspaceId: project.workspaceId,
+            workspaceName: project.workspace.name,
+            dashboardUrl: `${requestUrl.protocol}//${requestUrl.host}/dashboard`,
+            createdBy: user.id
+          })
+        }
+      } catch (networkError) {
+        console.error(networkError)
+      }
+    }
+
     setResponseStatus(event, 201)
     return {
       data: { member },

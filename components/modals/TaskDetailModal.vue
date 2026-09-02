@@ -2,14 +2,15 @@
 import {
   AlignLeftIcon,
   CheckIcon,
+  ArchiveIcon,
   HistoryIcon,
   MessageSquareIcon,
   PaletteIcon,
   PlusIcon,
-  Trash2Icon,
   UserIcon,
 } from "lucide-vue-next";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
+import { toast } from "vue-sonner";
 import type { TaskAssignee, TaskLabel, TaskPriority, TaskStatus } from "@/types";
 import { statusChip, statusLabel } from "@/utils/task-status";
 
@@ -39,9 +40,7 @@ const activeTab = ref<TaskTab>("details");
 const titleDraft = ref("");
 const descriptionDraft = ref("");
 const commentDraft = ref("");
-const startDraft = ref("");
 const dueDraft = ref("");
-const endDraft = ref("");
 const savingComment = ref(false);
 const savingDates = ref(false);
 const newLabelName = ref("");
@@ -62,9 +61,7 @@ watch(
     if (!task.value) return;
     titleDraft.value = task.value.title;
     descriptionDraft.value = task.value.description ?? "";
-    startDraft.value = toInputDate(task.value.startDate);
     dueDraft.value = toInputDate(task.value.dueDate);
-    endDraft.value = toInputDate(task.value.endDate);
     activeTab.value = "details";
     commentDraft.value = "";
     labelError.value = "";
@@ -136,14 +133,12 @@ const saveDescription = async () => {
   await boardStore.patchTask(task.value.id, { description: next });
 };
 
-const saveDates = async () => {
+const saveDueDate = async () => {
   if (!task.value) return;
   savingDates.value = true;
   try {
     await boardStore.patchTask(task.value.id, {
-      startDate: startDraft.value ? new Date(`${startDraft.value}T12:00:00`).toISOString() : null,
       dueDate: dueDraft.value ? new Date(`${dueDraft.value}T12:00:00`).toISOString() : null,
-      endDate: endDraft.value ? new Date(`${endDraft.value}T12:00:00`).toISOString() : null,
     });
   } finally {
     savingDates.value = false;
@@ -219,17 +214,24 @@ const submitComment = async () => {
   }
 };
 
-const removeTask = async () => {
-  if (!task.value) return;
+const canArchive = computed(
+  () => !!task.value && task.value.createdBy === userStore.user?.id,
+);
+
+const archiveCard = async () => {
+  if (!task.value || !canArchive.value) return;
   const id = task.value.id;
-  boardStore.closeTask();
-  await boardStore.deleteTask(id);
+  try {
+    await boardStore.archiveTask(id);
+  } catch (error: any) {
+    toast.error("Could not archive card", {
+      description: error?.data?.message || "Please try again.",
+    });
+  }
 };
 
 const comments = computed(() => task.value?.comments ?? []);
-const activityFeed = computed(
-  () => (task.value?.activities ?? []).filter((activity) => activity.type !== "COMMENT"),
-);
+const activityFeed = computed(() => task.value?.activities ?? []);
 
 const ignoreSelectOutside = (event: Event) => {
   const target = event.target as HTMLElement | null;
@@ -356,42 +358,18 @@ const ignoreSelectOutside = (event: Event) => {
             </div>
           </div>
 
-          <div class="max-w-sm space-y-3">
-            <h3 class="text-sm font-semibold text-foreground">Dates</h3>
-            <p class="text-sm text-muted-foreground">All dates are optional. Leave a field empty to skip it.</p>
-            <label class="block text-sm font-medium text-foreground">
-              Start date
-              <span class="font-normal text-muted-foreground">(optional)</span>
-              <input
-                v-model="startDraft"
-                type="date"
-                class="mt-1.5 w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
-              />
-            </label>
-            <label class="block text-sm font-medium text-foreground">
-              Due date
-              <span class="font-normal text-muted-foreground">(optional)</span>
-              <input
-                v-model="dueDraft"
-                type="date"
-                class="mt-1.5 w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
-              />
-            </label>
-            <label class="block text-sm font-medium text-foreground">
-              End date
-              <span class="font-normal text-muted-foreground">(optional)</span>
-              <input
-                v-model="endDraft"
-                type="date"
-                class="mt-1.5 w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
-              />
-            </label>
+          <div class="space-y-3">
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">Due date</h3>
+              <p class="text-sm text-muted-foreground">Optional. Cards with a due date show it on the board.</p>
+            </div>
+            <DatePicker v-model="dueDraft" />
             <div class="flex items-center gap-2">
-              <Button size="sm" :disabled="savingDates" @click="saveDates">Save dates</Button>
+              <Button size="sm" :disabled="savingDates" @click="saveDueDate">Save</Button>
               <button
                 type="button"
                 class="text-sm text-muted-foreground hover:text-foreground"
-                @click="startDraft = ''; dueDraft = ''; endDraft = ''"
+                @click="dueDraft = ''"
               >
                 Clear
               </button>
@@ -410,12 +388,13 @@ const ignoreSelectOutside = (event: Event) => {
           </div>
 
           <button
+            v-if="canArchive"
             type="button"
-            class="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-            @click="removeTask"
+            class="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+            @click="archiveCard"
           >
-            <Trash2Icon class="h-4 w-4" />
-            Delete card
+            <ArchiveIcon class="h-4 w-4" />
+            Archive card
           </button>
         </section>
 
@@ -633,38 +612,12 @@ const ignoreSelectOutside = (event: Event) => {
           <p class="text-sm text-muted-foreground mb-4">
             A log of every change made on this card.
           </p>
-          <div class="space-y-3">
-            <div
+          <div class="space-y-4">
+            <TaskActivityItem
               v-for="activity in activityFeed"
               :key="activity.id"
-              class="flex gap-2"
-            >
-              <div
-                class="h-8 w-8 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 text-[11px] font-semibold shrink-0 flex items-center justify-center overflow-hidden"
-              >
-                <img
-                  v-if="activity.user.imageUrl"
-                  :src="activity.user.imageUrl"
-                  class="h-full w-full object-cover"
-                />
-                <span v-else>{{ initials(activity.user) }}</span>
-              </div>
-              <div class="min-w-0">
-                <p class="text-sm text-foreground">
-                  <span class="font-semibold text-foreground">
-                    {{ activity.user.name || activity.user.email }}
-                  </span>
-                  {{ activity.message }}
-                  <span class="ml-1 text-xs text-muted-foreground">
-                    {{
-                      formatDistanceToNow(new Date(activity.createdAt), {
-                        addSuffix: true,
-                      })
-                    }}
-                  </span>
-                </p>
-              </div>
-            </div>
+              :activity="activity"
+            />
             <p v-if="!activityFeed.length" class="text-sm text-muted-foreground">
               No activity yet.
             </p>

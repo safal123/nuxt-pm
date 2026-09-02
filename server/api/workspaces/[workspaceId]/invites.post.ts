@@ -20,10 +20,12 @@ export default defineEventHandler(async (event) => {
         const { data } = await sendWorkspaceInviteEmail({
           inviteId: invite.id,
           to: invite.email,
+          workspaceId,
           workspaceName: invite.workspaceName,
           inviterName: user.name || user.email,
           inviteUrl: invite.url,
-          expiresAt: invite.expiresAt
+          expiresAt: invite.expiresAt,
+          createdBy: user.id
         })
         emailed = Boolean(data?.id)
       } catch (networkError) {

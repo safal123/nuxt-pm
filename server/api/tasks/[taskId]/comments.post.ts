@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
       taskId,
       userId: user.id,
       type: 'COMMENT',
-      message: 'commented',
+      message: 'commented on this card',
       metadata: { content: content.trim() }
     })
 

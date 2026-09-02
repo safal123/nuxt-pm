@@ -18,8 +18,10 @@ export default defineEventHandler(async (event) => {
           inviteId: result.inviteId,
           to: result.memberEmail,
           memberName: result.memberName,
+          workspaceId: result.workspaceId,
           workspaceName: result.workspaceName,
-          dashboardUrl
+          dashboardUrl,
+          createdBy: user.id
         })
 
         if (result.inviterId !== user.id && result.inviterEmail !== result.memberEmail) {
@@ -29,8 +31,10 @@ export default defineEventHandler(async (event) => {
             inviterName: result.inviterName,
             memberName: result.memberName,
             memberEmail: result.memberEmail,
+            workspaceId: result.workspaceId,
             workspaceName: result.workspaceName,
-            dashboardUrl
+            dashboardUrl,
+            createdBy: user.id
           })
         }
       } catch (networkError) {

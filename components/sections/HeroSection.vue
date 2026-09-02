@@ -1,109 +1,82 @@
 <script setup lang="ts">
-import { ArrowRight } from "lucide-vue-next";
+import { ArrowRightIcon, CheckIcon } from "lucide-vue-next";
 
 const { isSignedIn } = useAuth();
+
+const highlights = [
+  "Kanban and table on every project",
+  "Archive and restore instead of losing work",
+  "Activity and sent email in one workspace",
+];
 </script>
 
 <template>
-  <div class="relative isolate md:pt-20 pt-8">
+  <section class="relative isolate overflow-hidden pt-24 sm:pt-28">
     <div
-      class="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80"
-      aria-hidden="true"
-    >
-      <div
-        class="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-purple-600 to-purple-400 opacity-20 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
-      ></div>
-    </div>
-
-    <!-- Dotted pattern -->
-    <div class="absolute inset-0 -z-10 opacity-10">
-      <div
-        class="absolute inset-0"
-        style="
-          background-image: radial-gradient(
-            circle at 1px 1px,
-            purple 1px,
-            transparent 0
-          );
-          background-size: 40px 40px;
-        "
-      ></div>
-    </div>
-
+      class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.12),transparent_55%)]"
+    />
     <div
-      class="mx-auto max-w-7xl px-6 py-24 sm:py-12 lg:flex lg:items-center lg:gap-x-10 lg:px-8 lg:py-20"
-    >
-      <div class="mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
-        <div class="flex">
-          <div
-            class="relative flex items-center gap-x-4 rounded-full px-4 py-1 text-sm leading-6 text-muted-foreground ring-1 ring-border hover:ring-foreground/20"
-          >
-            <span class="font-semibold text-purple-600">What's new</span>
-            <span
-              class="h-4 w-px bg-border"
-              aria-hidden="true"
-            />
-            <a href="#" class="flex items-center gap-x-1">
-              Just shipped v1.0
-              <span aria-hidden="true">&rarr;</span>
-            </a>
-          </div>
-        </div>
-        <h1
-          class="mt-10 max-w-lg text-4xl font-bold tracking-tight text-foreground sm:text-6xl"
+      class="pointer-events-none absolute inset-0 -z-10 opacity-[0.35] [background-image:radial-gradient(hsl(var(--foreground)/0.12)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent)]"
+    />
+
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <p
+          class="inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm"
         >
-          Project management made simple
-        </h1>
-        <p class="mt-6 text-lg leading-8 text-muted-foreground">
-          Streamline your workflow, boost productivity, and deliver projects on
-          time with our intuitive project management solution.
+          <span class="h-1.5 w-1.5 rounded-full bg-primary" />
+          Workspaces for product teams
         </p>
-        <div class="mt-10 flex items-center gap-x-6">
-          <SignInButton
-            v-if="!isSignedIn"
-            class="rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
-          >
-            Get started
-          </SignInButton>
-          <NuxtLink
-            v-else
-            href="/dashboard"
-            class="flex items-center gap-x-2 rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
-          >
-            Dashboard
-            <span aria-hidden="true">
-              <ArrowRight class="w-4 h-4" />
-            </span>
-          </NuxtLink>
-          <NuxtLink
-            href="#features"
-            class="text-sm font-semibold leading-6 text-foreground"
-          >
-            Learn more <span aria-hidden="true">→</span>
-          </NuxtLink>
+        <h1
+          class="mt-6 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]"
+        >
+          Every board, update, and email —
+          <span class="text-primary">in one workspace.</span>
+        </h1>
+        <p
+          class="mx-auto mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8"
+        >
+          Northstar is the place your team runs projects: drag-and-drop boards,
+          a table view, archive instead of delete, a full activity feed, and
+          branded email you can actually track.
+        </p>
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Button v-if="isSignedIn" as-child size="lg">
+            <NuxtLink to="/dashboard">
+              Open dashboard
+              <ArrowRightIcon class="h-4 w-4" />
+            </NuxtLink>
+          </Button>
+          <Button v-else as-child size="lg">
+            <NuxtLink to="/sign-up">
+              Get started
+              <ArrowRightIcon class="h-4 w-4" />
+            </NuxtLink>
+          </Button>
+          <Button as-child variant="outline" size="lg">
+            <a href="#product">See the product</a>
+          </Button>
         </div>
+        <ul
+          class="mt-8 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground sm:flex-row sm:gap-6"
+        >
+          <li
+            v-for="item in highlights"
+            :key="item"
+            class="flex items-center gap-2"
+          >
+            <CheckIcon class="h-4 w-4 text-primary" />
+            {{ item }}
+          </li>
+        </ul>
       </div>
-      <div class="mt-16 sm:mt-24 lg:mt-0 lg:flex-shrink-0 lg:flex-grow">
-        <div class="relative mx-auto max-w-2xl">
-          <div class="relative">
-            <img
-              src="/public/images/dashboard.png"
-              alt="Project management dashboard"
-              class="w-full h-[500px] object-cover rounded-xl shadow-xl ring-1 ring-border sm:w-[35rem] md:w-[38rem] lg:w-[40rem]"
-              width="2000"
-              height="800"
-            />
-          </div>
-        </div>
+
+      <div class="relative mx-auto mt-14 max-w-5xl pb-8">
+        <div
+          class="pointer-events-none absolute -inset-x-10 -bottom-8 -top-4 -z-10 rounded-[2rem] bg-gradient-to-b from-violet-500/15 via-transparent to-transparent blur-2xl"
+        />
+        <LandingBoardPreview />
       </div>
     </div>
-    <div
-      class="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]"
-      aria-hidden="true"
-    >
-      <div
-        class="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-purple-600 to-purple-400 opacity-20 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem]"
-      />
-    </div>
-  </div>
+  </section>
 </template>

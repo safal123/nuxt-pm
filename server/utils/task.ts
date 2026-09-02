@@ -1,3 +1,4 @@
+import { format } from 'date-fns'
 import prisma from '~/lib/prisma'
 
 export const LABEL_COLORS = [
@@ -91,9 +92,8 @@ export const serializeTask = (task: any) => ({
   status: task.status ?? 'TODO',
   completedAt: task.completedAt ?? null,
   dueDate: task.dueDate,
-  startDate: task.startDate ?? null,
-  endDate: task.endDate ?? null,
   coverColor: task.coverColor ?? null,
+  archivedAt: task.archivedAt ?? null,
   labels: serializeLabels(task),
   columnId: task.columnId,
   projectId: task.projectId,
@@ -154,8 +154,21 @@ const toDateKey = (value: Date | string | null | undefined) => {
 export const formatDateLabel = (value: Date | string | null | undefined) => {
   const key = toDateKey(value)
   if (!key) return null
-  const [year, month, day] = key.split('-')
-  return `${month}/${day}/${year}`
+  return format(new Date(`${key}T12:00:00`), 'd MMM yyyy')
+}
+
+export const dateChangeEntry = (
+  field: 'start date' | 'due date' | 'end date',
+  previous: Date | string | null | undefined,
+  next: Date | string | null | undefined
+) => {
+  const from = formatDateLabel(previous)
+  const to = formatDateLabel(next)
+  if (from === to) return null
+  let message = `changed the ${field} from ${from} to ${to}`
+  if (!from && to) message = `set the ${field} to ${to}`
+  if (from && !to) message = `cleared the ${field}`
+  return { field, from, to, message }
 }
 
 /**

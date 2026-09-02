@@ -90,8 +90,8 @@ export const useBoardStore = defineStore('board', () => {
     projectId.value = id
     try {
       const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
-      const { data } = await useFetch<BoardResponse>(`/api/projects/${id}/board`, { headers })
-      columns.value = data.value?.data.columns ?? []
+      const result = await $fetch<BoardResponse>(`/api/projects/${id}/board`, { headers })
+      columns.value = result?.data.columns ?? []
       await Promise.all([fetchLabels(id), fetchProjectMembers(id)])
     } catch (error) {
       console.error('Failed to fetch board:', error)
@@ -158,6 +158,19 @@ export const useBoardStore = defineStore('board', () => {
   const workspaceMembers = ref<Task['members']>([])
   const projectMembers = ref<Task['members']>([])
   const projectLabels = ref<Task['labels']>([])
+
+  const removeTaskFromBoard = (taskId: string) => {
+    if (selectedTask.value?.id === taskId) {
+      selectedTask.value = null
+    }
+    for (const column of columns.value) {
+      const index = column.tasks.findIndex((t) => t.id === taskId)
+      if (index !== -1) {
+        column.tasks.splice(index, 1)
+        break
+      }
+    }
+  }
 
   const patchTask = async (taskId: string, body: Record<string, unknown>) => {
     const task = findTask(taskId)
@@ -280,23 +293,22 @@ export const useBoardStore = defineStore('board', () => {
     return updated
   }
 
-  const deleteTask = async (taskId: string) => {
-    if (selectedTask.value?.id === taskId) {
-      selectedTask.value = null
-    }
-    for (const column of columns.value) {
-      const index = column.tasks.findIndex((t) => t.id === taskId)
-      if (index !== -1) {
-        column.tasks.splice(index, 1)
-        break
-      }
-    }
+  const archiveTask = async (taskId: string) => {
+    await $fetch<TaskResponse>(`/api/tasks/${taskId}`, {
+      method: 'PATCH',
+      body: { archived: true }
+    })
+    removeTaskFromBoard(taskId)
+  }
 
-    try {
-      await useFetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
-    } catch (error) {
-      console.error('Failed to delete task:', error)
-    }
+  const restoreTask = async (taskId: string) => {
+    const result = await $fetch<TaskResponse>(`/api/tasks/${taskId}`, {
+      method: 'PATCH',
+      body: { archived: false }
+    })
+    const updated = result?.data?.task
+    if (updated && projectId.value) await fetchBoard(projectId.value)
+    return updated
   }
 
   const toggleLike = async (taskId: string) => {
@@ -409,7 +421,7 @@ export const useBoardStore = defineStore('board', () => {
       })
     } catch (error) {
       columns.value.splice(index, 0, removed)
-      console.error('Failed to archive column:', error)
+      throw error
     }
   }
 
@@ -431,7 +443,8 @@ export const useBoardStore = defineStore('board', () => {
     moveColumn,
     setColumnColor,
     archiveColumn,
-    deleteTask,
+    archiveTask,
+    restoreTask,
     toggleLike,
     startDrag,
     moveDraggingTo,

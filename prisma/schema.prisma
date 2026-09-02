@@ -32,6 +32,7 @@ model User {
   taskMemberships   TaskMember[]
   taskActivities    TaskActivity[]
   createdLabels     Label[]
+  sentEmails         EmailLog[]        @relation("CreatedEmails")
 
   activeWorkspace Workspace? @relation("ActiveWorkspace", fields: [activeWorkspaceId], references: [id])
   activeProject   Project?   @relation("ActiveProject", fields: [activeProjectId], references: [id])
@@ -50,6 +51,7 @@ model Workspace {
   // Relationships
   members     WorkspaceMember[]
   invites     WorkspaceInvite[]
+  emailLogs   EmailLog[]
   projects    Project[]         @relation("Projects")
   creator     User              @relation("CreatedWorkspaces", fields: [createdBy], references: [id], onDelete: Cascade)
   activeUsers User[]            @relation("ActiveWorkspace") // inverse of User.activeWorkspace
@@ -103,13 +105,14 @@ model ProjectMember {
 }
 
 model Project {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
   description String?
-  workspaceId String   @map("workspace_id")
-  createdBy   String   @map("created_by")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  archivedAt  DateTime? @map("archived_at")
+  workspaceId String    @map("workspace_id")
+  createdBy   String    @map("created_by")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relationships
   creator     User            @relation("CreatedProjects", fields: [createdBy], references: [id], onDelete: Cascade)
@@ -119,6 +122,7 @@ model Project {
   columns     TaskColumn[]
   tasks       Task[]
   labels      Label[]
+  emailLogs   EmailLog[]
 
   @@map("projects")
 }
@@ -152,6 +156,7 @@ model Task {
   startDate    DateTime? @map("start_date")
   endDate      DateTime? @map("end_date")
   coverColor   String?   @map("cover_color")
+  archivedAt   DateTime? @map("archived_at")
   columnId     String    @map("column_id")
   projectId    String    @map("project_id")
   createdBy    String    @map("created_by")
@@ -268,4 +273,29 @@ model TaskActivity {
 
   @@index([taskId, createdAt])
   @@map("task_activities")
+}
+
+model EmailLog {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  projectId   String?  @map("project_id")
+  template    String
+  subject     String
+  toEmail     String   @map("to_email")
+  fromEmail   String   @map("from_email")
+  html        String   @db.LongText
+  text        String?  @db.Text
+  status      String
+  error       String?  @db.Text
+  resendId    String?  @map("resend_id")
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  creator   User?     @relation("CreatedEmails", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@index([projectId])
+  @@map("email_logs")
 }

@@ -1009,8 +1009,8 @@ async function seedProject(
             ? daysFromNow(task.end ?? -2)
             : null,
           dueDate: task.due !== undefined ? daysFromNow(task.due) : null,
-          startDate: task.start !== undefined ? daysFromNow(task.start) : null,
-          endDate: task.end !== undefined ? daysFromNow(task.end) : null,
+          startDate: null,
+          endDate: null,
           coverColor: task.cover ?? null,
           columnId: createdColumn.id,
           projectId,

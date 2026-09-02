@@ -26,6 +26,61 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: 'Task not found.' })
     }
 
+    if (body.archived === true || body.archived === false) {
+      assertCreator(existing.createdBy, user.id, 'card')
+      const currentlyArchived = !!existing.archivedAt
+
+      if (body.archived && !currentlyArchived) {
+        await prisma.task.update({
+          where: { id: taskId },
+          data: { archivedAt: new Date() }
+        })
+        await logTaskActivity({
+          taskId,
+          userId: user.id,
+          type: 'ARCHIVED',
+          message: 'archived this card'
+        })
+      } else if (!body.archived && currentlyArchived) {
+        const column = await prisma.taskColumn.findUnique({
+          where: { id: existing.columnId },
+          select: { id: true, archivedAt: true, projectId: true }
+        })
+        let columnId = existing.columnId
+        if (column?.archivedAt) {
+          const fallback = await prisma.taskColumn.findFirst({
+            where: { projectId: existing.projectId, archivedAt: null },
+            orderBy: { order: 'asc' },
+            select: { id: true }
+          })
+          if (fallback) columnId = fallback.id
+        }
+        await prisma.task.update({
+          where: { id: taskId },
+          data: { archivedAt: null, columnId }
+        })
+        await logTaskActivity({
+          taskId,
+          userId: user.id,
+          type: 'RESTORED',
+          message: 'restored this card'
+        })
+      }
+
+      const task = await getTaskWithDetails(taskId, user.id)
+      return {
+        data: { task: serializeTask(task) },
+        message: body.archived ? 'Task archived successfully' : 'Task restored successfully'
+      }
+    }
+
+    if (existing.archivedAt) {
+      throw createError({
+        statusCode: 400,
+        message: 'Restore this card before editing.'
+      })
+    }
+
     if (typeof body.order === 'number' || body.columnId) {
       const nextColumnId = body.columnId ?? existing.columnId
       const nextColumn =
@@ -81,8 +136,6 @@ export default defineEventHandler(async (event) => {
         data.completedAt = body.status === 'DONE' ? (existing.completedAt ?? new Date()) : null
       }
       if (body.dueDate !== undefined) data.dueDate = parseOptionalDate(body.dueDate)
-      if (body.startDate !== undefined) data.startDate = parseOptionalDate(body.startDate)
-      if (body.endDate !== undefined) data.endDate = parseOptionalDate(body.endDate)
       if (body.coverColor !== undefined) data.coverColor = body.coverColor
 
       if (Object.keys(data).length) {
@@ -115,26 +168,21 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      const dateMessages: string[] = []
-      if (body.startDate !== undefined) {
-        const message = dateChangeMessage('start date', existing.startDate, data.startDate as Date | null)
-        if (message) dateMessages.push(message)
-      }
+      const dateChanges = []
       if (body.dueDate !== undefined) {
-        const message = dateChangeMessage('due date', existing.dueDate, data.dueDate as Date | null)
-        if (message) dateMessages.push(message)
-      }
-      if (body.endDate !== undefined) {
-        const message = dateChangeMessage('end date', existing.endDate, data.endDate as Date | null)
-        if (message) dateMessages.push(message)
+        const change = dateChangeEntry('due date', existing.dueDate, data.dueDate as Date | null)
+        if (change) dateChanges.push(change)
       }
 
-      if (dateMessages.length) {
+      if (dateChanges.length) {
         await logTaskActivity({
           taskId,
           userId: user.id,
           type: 'DATES_UPDATED',
-          message: dateMessages.join(', ')
+          message: 'updated the due date',
+          metadata: {
+            changes: dateChanges.map(({ field, from, to }) => ({ field, from, to }))
+          }
         })
       }
 

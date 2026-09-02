@@ -115,8 +115,59 @@ export const setColumnColor = async (columnId: string, color: string | null) => 
 }
 
 export const archiveProjectColumn = async (columnId: string) => {
-  return prisma.taskColumn.update({
-    where: { id: columnId },
-    data: { archivedAt: new Date() }
+  const now = new Date()
+  return prisma.$transaction(async (tx) => {
+    const column = await tx.taskColumn.update({
+      where: { id: columnId },
+      data: { archivedAt: now }
+    })
+    await tx.task.updateMany({
+      where: { columnId },
+      data: { archivedAt: now }
+    })
+    return column
   })
+}
+
+export const restoreProjectColumn = async (columnId: string) => {
+  const column = await prisma.taskColumn.findUnique({ where: { id: columnId } })
+  if (!column) {
+    throw createError({ statusCode: 404, message: 'Column not found.' })
+  }
+  if (!column.archivedAt) {
+    throw createError({ statusCode: 400, message: 'This list is not archived.' })
+  }
+
+  const last = await prisma.taskColumn.findFirst({
+    where: { projectId: column.projectId, archivedAt: null },
+    orderBy: { order: 'desc' }
+  })
+
+  return prisma.$transaction(async (tx) => {
+    const restored = await tx.taskColumn.update({
+      where: { id: columnId },
+      data: {
+        archivedAt: null,
+        order: (last?.order ?? -1) + 1
+      }
+    })
+    await tx.task.updateMany({
+      where: { columnId },
+      data: { archivedAt: null }
+    })
+    return restored
+  })
+}
+
+export const deleteArchivedColumn = async (columnId: string) => {
+  const column = await prisma.taskColumn.findUnique({ where: { id: columnId } })
+  if (!column) {
+    throw createError({ statusCode: 404, message: 'Column not found.' })
+  }
+  if (!column.archivedAt) {
+    throw createError({ statusCode: 400, message: 'Only archived lists can be deleted.' })
+  }
+
+  await prisma.taskColumn.delete({ where: { id: columnId } })
+  return column
 }

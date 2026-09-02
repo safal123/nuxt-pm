@@ -1,87 +1,86 @@
 <script setup lang="ts">
+import {
+  ArchiveIcon,
+  Columns3Icon,
+  HistoryIcon,
+  MailIcon,
+  Table2Icon,
+  UsersIcon,
+} from "lucide-vue-next";
+
 const features = [
   {
-    title: "Task Management",
+    title: "Board and table",
     description:
-      "Organize and track tasks with ease. Set priorities, deadlines, and assign team members.",
-    icon: "📋",
+      "Run each project as a kanban board or a table. Drag cards between lists, then switch views without losing order, due dates, or assignees.",
+    icon: Columns3Icon,
   },
   {
-    title: "Team Collaboration",
+    title: "Tasks that stay current",
     description:
-      "Work together seamlessly with real-time updates and communication tools.",
-    icon: "👥",
+      "Due dates, priority, status, comments, and members live on every card. Open a task for the full thread — or scan the table for what’s overdue.",
+    icon: Table2Icon,
   },
   {
-    title: "Project Timeline",
+    title: "Workspaces and invites",
     description:
-      "Visualize project progress with interactive Gantt charts and timelines.",
-    icon: "📅",
+      "Group projects in a workspace, add members, and send a secure invite. People join the right board instead of hunting for a shared link.",
+    icon: UsersIcon,
   },
   {
-    title: "Resource Planning",
-    description: "Allocate resources efficiently and track team availability.",
-    icon: "📊",
+    title: "Archive, then restore",
+    description:
+      "Lists, cards, and projects are archived — not deleted. Restore when you need them back, or permanently remove from the archive when you’re sure.",
+    icon: ArchiveIcon,
   },
   {
-    title: "Custom Workflows",
+    title: "Activity you can filter",
     description:
-      "Create and customize workflows that match your team's processes.",
-    icon: "⚡",
+      "Every move, comment, archive, and email is logged. Filter by project or task, then open a row for the full detail.",
+    icon: HistoryIcon,
   },
   {
-    title: "Analytics & Reports",
+    title: "Email you can track",
     description:
-      "Get insights with detailed project analytics and custom reports.",
-    icon: "📈",
+      "Invites, member notices, and custom templates go out through Resend. See what you sent, preview the HTML, and retry from the same sidebar.",
+    icon: MailIcon,
   },
 ];
 </script>
 
 <template>
-  <div id="features" class="py-24 sm:py-32">
-    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+  <section id="features" class="scroll-mt-24 py-20 sm:py-28">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-2xl text-center">
-        <h2 class="text-base font-semibold leading-7 text-purple-600">
-          Everything you need
+        <p class="text-sm font-medium text-primary">Built for how you already work</p>
+        <h2 class="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          The same tools as the dashboard — not a marketing wishlist.
         </h2>
-        <p
-          class="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
-        >
-          Powerful features for powerful teams
-        </p>
-        <p class="mt-6 text-lg leading-8 text-muted-foreground">
-          All the tools you need to manage projects effectively, collaborate
-          with your team, and deliver results.
+        <p class="mt-4 text-base leading-7 text-muted-foreground">
+          Northstar is a workspace: projects, boards, archive, activity, and
+          email. What you see here is what you get after you sign in.
         </p>
       </div>
-      <div class="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
-        <dl
-          class="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3"
+
+      <div class="mx-auto mt-14 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <article
+          v-for="feature in features"
+          :key="feature.title"
+          class="rounded-xl border border-border bg-card p-6 shadow-sm"
         >
           <div
-            v-for="feature in features"
-            :key="feature.title"
-            class="relative pl-16"
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
           >
-            <dt
-              class="text-base font-semibold leading-7 text-foreground"
-            >
-              <div
-                class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600"
-              >
-                <span class="text-2xl">{{ feature.icon }}</span>
-              </div>
-              {{ feature.title }}
-            </dt>
-            <dd
-              class="mt-2 text-base leading-7 text-muted-foreground"
-            >
-              {{ feature.description }}
-            </dd>
+            <component :is="feature.icon" class="h-5 w-5" />
           </div>
-        </dl>
+          <h3 class="mt-4 text-base font-semibold text-foreground">
+            {{ feature.title }}
+          </h3>
+          <p class="mt-2 text-sm leading-6 text-muted-foreground">
+            {{ feature.description }}
+          </p>
+        </article>
       </div>
     </div>
-  </div>
+  </section>
 </template>

@@ -41,3 +41,12 @@ export const validateProjectAccess = async (projectId: string, userId: string) =
 
   return project
 }
+
+export const assertCreator = (createdBy: string, userId: string, noun: string) => {
+  if (createdBy !== userId) {
+    throw createError({
+      statusCode: 403,
+      message: `Only the creator can archive or restore this ${noun}.`
+    })
+  }
+}

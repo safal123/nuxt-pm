@@ -21,9 +21,13 @@ export const useTheme = () => {
     watch(isDark, apply, { immediate: true })
   }
 
+  const setPreference = (next: 'light' | 'dark' | 'auto') => {
+    preference.value = next
+  }
+
   const toggleTheme = () => {
     preference.value = isDark.value ? 'light' : 'dark'
   }
 
-  return { preference, isDark, toggleTheme }
+  return { preference, isDark, toggleTheme, setPreference }
 }

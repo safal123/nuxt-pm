@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
       orderBy: { order: 'asc' },
       include: {
         tasks: {
+          where: { archivedAt: null },
           orderBy: { order: 'asc' },
           include: taskBoardInclude(user.id)
         }

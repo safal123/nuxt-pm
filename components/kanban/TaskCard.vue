@@ -4,15 +4,12 @@ import {
   MessageSquareIcon,
   PaperclipIcon,
   HeartIcon,
-  Trash2Icon,
   GripVerticalIcon,
 } from "lucide-vue-next";
 import { format, isPast, isToday, isTomorrow, parseISO } from "date-fns";
 import type { Task, TaskPriority } from "@/types";
 import { priorityChip } from "@/utils/task-priority";
 import { statusChip, statusLabel } from "@/utils/task-status";
-
-const CARD_HEIGHT = 148;
 
 const props = withDefaults(
   defineProps<{
@@ -23,7 +20,6 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (e: "delete", taskId: string): void;
   (e: "like", taskId: string): void;
   (e: "pointerdown", event: PointerEvent): void;
 }>();
@@ -69,20 +65,9 @@ const due = computed(() => {
   };
 });
 
-const dateRange = computed(() => {
-  const start = parseDate(props.task.startDate);
-  const end = parseDate(props.task.endDate);
-  if (!start && !end) return null;
-  const parts = [
-    start ? format(start, "MMM d") : null,
-    end ? format(end, "MMM d") : null,
-  ].filter(Boolean);
-  return parts.join(" – ");
-});
-
 const visibleLabels = computed(() => (props.task.labels || []).slice(0, 3));
-const extraLabelCount = computed(
-  () => Math.max(0, (props.task.labels?.length || 0) - 3),
+const extraLabelCount = computed(() =>
+  Math.max(0, (props.task.labels?.length || 0) - 3),
 );
 
 const onPointerDown = (event: PointerEvent) => {
@@ -95,18 +80,18 @@ const onPointerDown = (event: PointerEvent) => {
   <div
     v-if="isPlaceholder"
     class="rounded-xl border-2 border-dashed border-violet-300 bg-violet-100/70 dark:border-violet-700 dark:bg-violet-950/40"
-    :style="{ height: `${boardStore.dragSize.height || CARD_HEIGHT}px` }"
+    :style="{ height: `${boardStore.dragSize.height}px` }"
   />
   <div
     v-else
-    class="group relative flex flex-col bg-card rounded-xl border border-border overflow-hidden"
+    class="relative flex flex-col bg-card rounded-xl border border-border overflow-hidden"
     :class="[
       preview
         ? 'shadow-[0_18px_40px_rgba(15,23,42,0.18)] dark:shadow-[0_18px_40px_rgba(0,0,0,0.45)] ring-1 ring-black/5 dark:ring-white/10'
         : 'shadow-sm cursor-grab hover:border-muted-foreground/30 hover:shadow-md',
       task.status === 'DONE' ? 'opacity-80' : '',
     ]"
-    :style="{ height: `${CARD_HEIGHT}px`, touchAction: 'none' }"
+    :style="{ touchAction: 'none' }"
     @pointerdown="onPointerDown"
     @dragstart.prevent
   >
@@ -121,34 +106,25 @@ const onPointerDown = (event: PointerEvent) => {
       :class="priorityBar[task.priority] || priorityBar.MEDIUM"
     />
 
-    <div class="flex-1 min-h-0 pl-3.5 pr-3 pt-3 pb-1.5 flex flex-col">
+    <div class="pl-3.5 pr-3 pt-3 pb-1.5 flex flex-col gap-1.5">
       <div class="flex items-start gap-2 min-h-0">
         <GripVerticalIcon
           v-if="!preview"
-          class="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition"
+          class="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
         />
-        <div class="min-w-0 flex-1">
-          <div class="flex items-start justify-between gap-2">
-            <p
-              class="text-[13px] font-medium text-foreground leading-snug line-clamp-2 break-words"
-              :class="task.status === 'DONE' ? 'line-through text-muted-foreground' : ''"
-            >
-              {{ task.title }}
-            </p>
-            <button
-              v-if="!preview"
-              type="button"
-              class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition shrink-0 -mt-0.5"
-              @click.stop="emit('delete', task.id)"
-              @pointerdown.stop
-            >
-              <Trash2Icon class="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
+        <p
+          class="min-w-0 flex-1 text-[13px] font-medium text-foreground leading-snug line-clamp-2 break-words"
+          :class="
+            task.status === 'DONE'
+              ? 'line-through text-muted-foreground'
+              : ''
+          "
+        >
+          {{ task.title }}
+        </p>
       </div>
 
-      <div class="mt-auto pt-1.5 flex items-center gap-1.5 min-h-[20px] overflow-hidden">
+      <div class="flex items-center gap-1.5 overflow-hidden">
         <span
           v-for="label in visibleLabels"
           :key="label.id"
@@ -168,7 +144,7 @@ const onPointerDown = (event: PointerEvent) => {
           class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tracking-wide ring-1 ring-inset shrink-0"
           :class="statusChip(task.status || 'TODO')"
         >
-          {{ statusLabel(task.status || 'TODO') }}
+          {{ statusLabel(task.status || "TODO") }}
         </span>
         <span
           class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase ring-1 ring-inset shrink-0"
@@ -189,13 +165,6 @@ const onPointerDown = (event: PointerEvent) => {
         >
           <CalendarIcon class="h-3 w-3" />
           {{ due.label }}
-        </span>
-        <span
-          v-else-if="dateRange"
-          class="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground shrink-0"
-        >
-          <CalendarIcon class="h-3 w-3" />
-          {{ dateRange }}
         </span>
       </div>
     </div>

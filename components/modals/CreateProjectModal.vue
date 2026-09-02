@@ -1,126 +1,156 @@
 <script setup lang="ts">
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useModalsStore } from "@/stores/modals";
+import { FolderPlusIcon } from "lucide-vue-next";
+import { toast } from "vue-sonner";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
-import { toast } from "vue-sonner";
-import { useWorkspaceStore } from "@/stores/workspace";
-import { useUserStore } from "@/stores/user";
 
 const store = useModalsStore();
 const workspaceStore = useWorkspaceStore();
 const userStore = useUserStore();
 
-const isCreateProjectModalOpen = computed(
+const creating = ref(false);
+const formKey = ref(0);
+
+const open = computed(
   () => store.isOpen && store.modalName === "createProject",
 );
+
+watch(open, (value) => {
+  if (!value) return;
+  creating.value = false;
+  formKey.value += 1;
+});
+
 const formSchema = toTypedSchema(
   z.object({
-    name: z.string().refine((value) => value.trim().length > 0, {
-      message: "Project name is required",
-    }),
+    name: z.string().trim().min(1, "Project name is required"),
+    description: z.string().optional(),
   }),
 );
 
-async function onSubmit(values: any) {
-  const { data, error } = await useFetch("/api/projects", {
-    method: "POST",
-    body: JSON.stringify({
-      name: values.name,
-      workspaceId: store.modalProps.workspaceId,
-      description: "This is a project description",
-    }),
-  });
-
-  if (error.value) {
-    toast.error("Uh oh!", {
-      description: "Something went wrong. Please try again.",
-    });
-    return;
-  }
-
-  await workspaceStore.fetchWorkspaces();
-
-  const project = (data.value as any)?.data?.project;
-  if (project) {
-    // Activate the new project immediately so its kanban board shows up.
-    await userStore.updateUser({ activeProjectId: project.id });
-  }
-
+const close = () => {
+  if (creating.value) return;
   store.closeModal();
-  toast.success("Success!", {
-    description: "Project created successfully.",
-  });
+};
+
+async function onSubmit(values: any) {
+  if (creating.value) return;
+  creating.value = true;
+
+  try {
+    const result = await $fetch<{ data: { project: { id: string } } }>(
+      "/api/projects",
+      {
+        method: "POST",
+        body: {
+          name: values.name.trim(),
+          workspaceId: store.modalProps.workspaceId,
+          description: values.description?.trim() || undefined,
+        },
+      },
+    );
+
+    await workspaceStore.fetchWorkspaces();
+
+    const project = result?.data?.project;
+    if (project) {
+      await userStore.updateUser({ activeProjectId: project.id });
+    }
+
+    store.closeModal();
+    toast.success("Project created", {
+      description: `${values.name.trim()} is ready to use.`,
+    });
+  } catch (error: any) {
+    toast.error("Could not create project", {
+      description: error?.data?.message || "Please try again.",
+    });
+  } finally {
+    creating.value = false;
+  }
 }
 </script>
 
 <template>
-  <Form
-    v-slot="{ handleSubmit }"
-    as=""
-    keep-values
-    :validation-schema="formSchema"
-  >
-    <Dialog
-      :open="isCreateProjectModalOpen"
-      @interactOutside="store.closeModal"
-      @update:open="store.closeModal"
-    >
-      <DialogContent class="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle> Create Project </DialogTitle>
-        </DialogHeader>
-        <div class="py-4">
+  <Dialog :open="open" @update:open="(value) => { if (!value) close() }">
+    <DialogContent class="max-w-md">
+      <DialogHeader>
+        <div class="flex items-start gap-3">
           <div
-            class="bg-amber-50/90 dark:bg-amber-950/30 px-4 py-6 rounded-md text-sm text-amber-800 dark:text-amber-200 mb-4"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted"
           >
-            <p class="text-sm text-amber-700 dark:text-amber-300">
-              Projects are a great way to organize your work. You can create
-              multiple projects within a workspace.
-            </p>
+            <FolderPlusIcon class="h-5 w-5 text-foreground" />
           </div>
-          {{ store.modalProps }}
-          <form id="createProjectForm" @submit="handleSubmit($event, onSubmit)">
-            <FormField v-slot="{ componentField }" name="name">
-              <FormItem>
-                <FormLabel> Project Name </FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    placeholder="Eg: Marketing Campaign"
-                    v-bind="componentField"
-                  />
-                </FormControl>
-                <FormDescription>
-                  The name of your project. This will be visible to your team
-                  members.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-          </form>
+          <div class="space-y-1.5 text-left">
+            <DialogTitle>Create project</DialogTitle>
+            <DialogDescription>
+              Add a project to this workspace. You can invite people and start a
+              board after it is created.
+            </DialogDescription>
+          </div>
         </div>
-        <DialogFooter class="sm:justify-start">
-          <div class="flex gap-4">
-            <Button
-              @click="store.closeModal()"
-              type="button"
-              variant="destructive"
-            >
-              Cancel
-            </Button>
-            <Button form="createProjectForm" type="submit">
-              Create Project
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  </Form>
+      </DialogHeader>
+
+      <Form
+        :key="formKey"
+        v-slot="{ handleSubmit }"
+        as=""
+        :validation-schema="formSchema"
+      >
+        <form
+          id="createProjectForm"
+          class="space-y-4"
+          @submit="handleSubmit($event, onSubmit)"
+        >
+          <FormField v-slot="{ componentField }" name="name">
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  placeholder="Marketing campaign"
+                  v-bind="componentField"
+                  :disabled="creating"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+
+          <FormField v-slot="{ componentField }" name="description">
+            <FormItem>
+              <FormLabel>
+                Description
+                <span class="font-normal text-muted-foreground">(optional)</span>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  placeholder="What is this project for?"
+                  v-bind="componentField"
+                  :disabled="creating"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+        </form>
+      </Form>
+
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          :disabled="creating"
+          @click="close"
+        >
+          Cancel
+        </Button>
+        <Button type="submit" form="createProjectForm" :disabled="creating">
+          <FolderPlusIcon class="h-4 w-4" />
+          {{ creating ? "Creating…" : "Create project" }}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

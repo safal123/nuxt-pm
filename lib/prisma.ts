@@ -10,7 +10,7 @@ declare const globalThis: {
 } & typeof global
 
 // Bump when models are added so a stale HMR client is not reused.
-const PRISMA_CLIENT_VERSION = 7
+const PRISMA_CLIENT_VERSION = 9
 
 const prisma =
   globalThis.prismaClientVersion === PRISMA_CLIENT_VERSION && globalThis.prismaGlobal

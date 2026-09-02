@@ -26,6 +26,7 @@ export interface Project {
   description: string | null
   workspaceId: string
   createdBy: string
+  archivedAt?: Date | string | null
   createdAt: Date | string
   updatedAt: Date | string
 }
@@ -74,6 +75,10 @@ export type TaskActivityType =
   | 'COMMENT'
   | 'LIKED'
   | 'UNLIKED'
+  | 'ARCHIVED'
+  | 'RESTORED'
+  | 'EMAIL_SENT'
+  | 'EMAIL_FAILED'
 
 export interface TaskActivity {
   id: string
@@ -82,6 +87,20 @@ export interface TaskActivity {
   metadata: Record<string, unknown> | null
   createdAt: Date | string
   user: TaskAssignee
+}
+
+export interface WorkspaceActivity extends TaskActivity {
+  task: { id: string; title: string } | null
+  project: { id: string; name: string } | null
+  email?: {
+    toEmail: string
+    subject: string
+    template: string
+    templateLabel: string
+    status: string
+    html: string | null
+    error: string | null
+  } | null
 }
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED'
@@ -95,9 +114,8 @@ export interface Task {
   status: TaskStatus
   completedAt: Date | string | null
   dueDate: Date | string | null
-  startDate: Date | string | null
-  endDate: Date | string | null
   coverColor: string | null
+  archivedAt?: Date | string | null
   labels: TaskLabel[]
   columnId: string
   projectId: string
@@ -124,4 +142,30 @@ export interface TaskColumn {
   archivedAt?: string | null
   projectId: string
   tasks: Task[]
+}
+
+export interface ArchivedList {
+  id: string
+  name: string
+  projectId: string
+  projectName: string
+  projectCreatedBy: string
+  archivedAt: Date | string | null
+  taskCount: number
+}
+
+export interface EmailLogItem {
+  id: string
+  template: string
+  templateLabel: string
+  subject: string
+  toEmail: string
+  fromEmail: string
+  html: string
+  text: string | null
+  status: 'sent' | 'failed' | string
+  error: string | null
+  projectId: string | null
+  projectName: string | null
+  createdAt: Date | string
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Task } from "@/types";
 import AddKanbanColumn from "~/components/kanban/AddKanbanColumn.vue";
+import { toast } from "vue-sonner";
 
 const props = defineProps<{
   projectId: string;
@@ -8,6 +9,29 @@ const props = defineProps<{
 
 const boardStore = useBoardStore();
 const overlayEl = ref<HTMLElement | null>(null);
+
+const archiveTask = async (taskId: string) => {
+  try {
+    await boardStore.archiveTask(taskId);
+    await useWorkspaceStore().fetchArchive({ silent: true });
+  } catch (error: any) {
+    toast.error("Could not archive card", {
+      description: error?.data?.message || "Please try again.",
+    });
+  }
+};
+
+const archiveList = async (columnId: string) => {
+  try {
+    await boardStore.archiveColumn(columnId);
+    await useWorkspaceStore().fetchArchive({ silent: true });
+    toast.success("List archived");
+  } catch (error: any) {
+    toast.error("Could not archive list", {
+      description: error?.data?.message || "Please try again.",
+    });
+  }
+};
 
 watch(
   () => props.projectId,
@@ -216,12 +240,11 @@ const { view } = useProjectView();
           <div
             v-for="card in column.cards"
             :key="card"
-            class="flex flex-col h-[148px] rounded-xl border border-border bg-card overflow-hidden"
+            class="flex flex-col rounded-xl border border-border bg-card overflow-hidden"
           >
-            <div class="flex-1 px-3.5 pt-3 pb-1.5 flex flex-col gap-2">
+            <div class="px-3.5 pt-3 pb-1.5 flex flex-col gap-1.5">
               <Skeleton class="h-3.5 w-4/5" />
-              <Skeleton class="h-3.5 w-3/5" />
-              <div class="mt-auto flex items-center gap-1.5">
+              <div class="flex items-center gap-1.5">
                 <Skeleton class="h-5 w-12 rounded-md" />
                 <Skeleton class="h-5 w-14 rounded-md" />
                 <Skeleton class="h-5 w-16 rounded-md" />
@@ -261,8 +284,8 @@ const { view } = useProjectView();
         @rename="boardStore.renameColumn"
         @move="boardStore.moveColumn"
         @set-color="boardStore.setColumnColor"
-        @archive="boardStore.archiveColumn"
-        @delete-task="boardStore.deleteTask"
+        @archive="archiveList"
+        @archive-task="archiveTask"
         @like-task="boardStore.toggleLike"
         @pointerdown="onCardPointerDown"
       />
