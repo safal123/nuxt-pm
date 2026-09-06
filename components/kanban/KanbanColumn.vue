@@ -10,6 +10,7 @@ import {
 } from "lucide-vue-next";
 import type { Task, TaskColumn } from "@/types";
 import { TASK_COLORS, colorValue } from "@/utils/task-colors";
+import { Button } from "@/components/ui/button";
 
 const props = defineProps<{
   column: TaskColumn;
@@ -47,6 +48,25 @@ watch(
 const isDropTarget = computed(
   () => boardStore.draggingTask?.columnId === props.column.id,
 );
+
+const hiddenCompleted = computed(() =>
+  Math.max(
+    0,
+    (props.column.completedCount ?? 0) -
+      props.column.tasks.filter((task) => task.status === "DONE").length,
+  ),
+);
+const loadingMore = ref(false);
+
+const loadMoreCompleted = async () => {
+  if (loadingMore.value || hiddenCompleted.value <= 0) return;
+  loadingMore.value = true;
+  try {
+    await boardStore.loadMoreCompleted(props.column.id);
+  } finally {
+    loadingMore.value = false;
+  }
+};
 
 const columnTint = computed(() => {
   if (!props.column.color) return undefined;
@@ -243,6 +263,21 @@ const saveName = () => {
           @like="emit('like-task', $event)"
         />
       </div>
+      <Button
+        v-if="hiddenCompleted > 0"
+        type="button"
+        variant="ghost"
+        size="sm"
+        class="w-full justify-center text-[12px] text-muted-foreground"
+        :disabled="loadingMore"
+        @click="loadMoreCompleted"
+      >
+        {{
+          loadingMore
+            ? "Loading…"
+            : `Show ${hiddenCompleted} more completed`
+        }}
+      </Button>
     </div>
 
     <div class="p-2">

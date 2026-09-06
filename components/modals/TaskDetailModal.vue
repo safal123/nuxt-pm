@@ -6,6 +6,7 @@ import {
   HistoryIcon,
   MessageSquareIcon,
   PaletteIcon,
+  PaperclipIcon,
   PlusIcon,
   UserIcon,
 } from "lucide-vue-next";
@@ -14,12 +15,13 @@ import { toast } from "vue-sonner";
 import type { TaskAssignee, TaskLabel, TaskPriority, TaskStatus } from "@/types";
 import { statusChip, statusLabel } from "@/utils/task-status";
 
-type TaskTab = "details" | "style" | "members" | "comments" | "activity";
+type TaskTab = "details" | "style" | "members" | "files" | "comments" | "activity";
 
 const TABS: { id: TaskTab; label: string; icon: typeof UserIcon }[] = [
   { id: "details", label: "Details", icon: AlignLeftIcon },
   { id: "style", label: "Style", icon: PaletteIcon },
   { id: "members", label: "Members", icon: UserIcon },
+  { id: "files", label: "Files", icon: PaperclipIcon },
   { id: "comments", label: "Comments", icon: MessageSquareIcon },
   { id: "activity", label: "Activity", icon: HistoryIcon },
 ];
@@ -204,11 +206,16 @@ const toggleComplete = async () => {
 const isComplete = computed(() => task.value?.status === "DONE");
 
 const submitComment = async () => {
-  if (!task.value || !commentDraft.value.trim()) return;
+  const content = commentDraft.value.trim();
+  if (!task.value || !content || savingComment.value) return;
   savingComment.value = true;
   try {
-    await boardStore.addComment(task.value.id, commentDraft.value.trim());
+    await boardStore.addComment(task.value.id, content);
     commentDraft.value = "";
+  } catch (error: any) {
+    toast.error("Could not add comment", {
+      description: error?.data?.message || "Please try again.",
+    });
   } finally {
     savingComment.value = false;
   }
@@ -230,8 +237,20 @@ const archiveCard = async () => {
   }
 };
 
-const comments = computed(() => task.value?.comments ?? []);
+const comments = computed(() =>
+  [...(task.value?.comments ?? [])].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  ),
+);
 const activityFeed = computed(() => task.value?.activities ?? []);
+
+const commentWhen = (value: Date | string) => {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return {
+    relative: formatDistanceToNow(date, { addSuffix: true }),
+    exact: format(date, "MMM d, yyyy · h:mm a"),
+  };
+};
 
 const ignoreSelectOutside = (event: Event) => {
   const target = event.target as HTMLElement | null;
@@ -386,16 +405,6 @@ const ignoreSelectOutside = (event: Event) => {
               @blur="saveDescription"
             />
           </div>
-
-          <button
-            v-if="canArchive"
-            type="button"
-            class="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-            @click="archiveCard"
-          >
-            <ArchiveIcon class="h-4 w-4" />
-            Archive card
-          </button>
         </section>
 
         <section v-else-if="activeTab === 'style'" class="space-y-6">
@@ -533,78 +542,92 @@ const ignoreSelectOutside = (event: Event) => {
           </p>
         </section>
 
-        <section v-else-if="activeTab === 'comments'">
-          <div class="flex gap-2 mb-5">
-            <div
-              class="h-8 w-8 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 text-[11px] font-semibold shrink-0 flex items-center justify-center overflow-hidden"
-            >
-              <img
-                v-if="userStore.user?.clerkObject?.imageUrl"
-                :src="userStore.user.clerkObject.imageUrl"
-                class="h-full w-full object-cover"
-              />
-              <span v-else>
-                {{ (userStore.user?.name || userStore.user?.email || "?").slice(0, 1) }}
-              </span>
-            </div>
-            <div class="flex-1">
-              <textarea
-                v-model="commentDraft"
-                rows="2"
-                placeholder="Write a comment…"
-                class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
-                @keyup.meta.enter="submitComment"
-              />
-              <Button
-                size="sm"
-                class="mt-2"
-                :disabled="!commentDraft.trim() || savingComment"
-                @click="submitComment"
-              >
-                Save
-              </Button>
-            </div>
-          </div>
+        <section v-else-if="activeTab === 'files'">
+          <ClientOnly>
+            <TaskAttachments />
+            <template #fallback>
+              <p class="text-sm text-muted-foreground">Loading files…</p>
+            </template>
+          </ClientOnly>
+        </section>
 
-          <div class="space-y-3">
-            <div
-              v-for="comment in comments"
+        <section v-else-if="activeTab === 'comments'" class="flex min-h-full flex-col">
+          <p class="text-sm text-muted-foreground">
+            {{ comments.length }}
+            {{ comments.length === 1 ? "comment" : "comments" }}
+          </p>
+
+          <div v-if="comments.length" class="mt-4">
+            <article
+              v-for="(comment, index) in comments"
               :key="comment.id"
-              class="flex gap-2"
+              class="flex gap-3 py-4"
+              :class="index ? 'border-t border-border' : ''"
             >
               <div
-                class="h-8 w-8 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 text-[11px] font-semibold shrink-0 flex items-center justify-center overflow-hidden"
+                class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-violet-100 text-[11px] font-semibold text-violet-700 flex items-center justify-center dark:bg-violet-500/20 dark:text-violet-300"
               >
                 <img
                   v-if="comment.user.imageUrl"
                   :src="comment.user.imageUrl"
+                  :alt="comment.user.name || comment.user.email"
                   class="h-full w-full object-cover"
                 />
                 <span v-else>{{ initials(comment.user) }}</span>
               </div>
-              <div class="min-w-0">
-                <p class="text-sm">
-                  <span class="font-semibold text-foreground">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-baseline justify-between gap-3">
+                  <p class="truncate text-sm font-medium text-foreground">
                     {{ comment.user.name || comment.user.email }}
-                  </span>
-                  <span class="ml-2 text-xs text-muted-foreground">
-                    {{
-                      formatDistanceToNow(new Date(comment.createdAt), {
-                        addSuffix: true,
-                      })
-                    }}
-                  </span>
-                </p>
+                  </p>
+                  <time
+                    class="shrink-0 text-xs text-muted-foreground"
+                    :title="commentWhen(comment.createdAt).exact"
+                  >
+                    {{ commentWhen(comment.createdAt).relative }}
+                  </time>
+                </div>
                 <p
-                  class="mt-1 rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground whitespace-pre-wrap"
+                  class="mt-1.5 text-sm leading-6 text-foreground/90 whitespace-pre-wrap break-words"
                 >
                   {{ comment.content }}
                 </p>
               </div>
+            </article>
+          </div>
+          <div
+            v-else
+            class="mt-8 flex flex-1 flex-col items-center justify-center py-8 text-center"
+          >
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
+            >
+              <MessageSquareIcon class="h-4 w-4" />
             </div>
-            <p v-if="!comments.length" class="text-sm text-muted-foreground px-10">
-              No comments yet.
+            <p class="mt-3 text-sm font-medium text-foreground">No comments yet</p>
+            <p class="mt-1 max-w-xs text-sm text-muted-foreground">
+              Leave a note for the team. Comments stay on this card.
             </p>
+          </div>
+
+          <div class="mt-auto pt-4">
+            <textarea
+              v-model="commentDraft"
+              placeholder="Write a comment…"
+              rows="3"
+              class="min-h-[88px] w-full resize-none rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none border-0 focus:outline-none focus:ring-0"
+              @keydown.enter.exact.prevent="submitComment"
+            />
+            <div class="mt-2 flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                :disabled="savingComment"
+                @click="submitComment"
+              >
+                Comment
+              </Button>
+            </div>
           </div>
         </section>
 
@@ -624,6 +647,21 @@ const ignoreSelectOutside = (event: Event) => {
           </div>
         </section>
       </div>
+
+      <DialogFooter
+        v-if="canArchive"
+        class="shrink-0 border-t border-border px-6 py-3 sm:justify-end"
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+          @click="archiveCard"
+        >
+          <ArchiveIcon class="h-4 w-4" />
+          Archive card
+        </Button>
+      </DialogFooter>
     </DialogContent>
   </Dialog>
 </template>

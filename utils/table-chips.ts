@@ -40,6 +40,8 @@ const ACTIVITY_TONES: Record<string, Tone> = {
   COMPLETED: 'emerald',
   REOPENED: 'sky',
   COMMENT: 'sky',
+  ATTACHMENT_ADDED: 'teal',
+  ATTACHMENT_REMOVED: 'orange',
   LIKED: 'rose',
   UNLIKED: 'slate',
   ARCHIVED: 'orange',

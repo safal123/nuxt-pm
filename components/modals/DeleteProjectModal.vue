@@ -62,6 +62,18 @@ async function onSubmit() {
     toast.success("Project archived", {
       description: `${title} can be restored from Archived in the sidebar.`,
     });
+
+    const route = useRoute();
+    if (String(route.params.projectId || "") === id) {
+      const workspaceId =
+        workspaceStore.activeWorkspaceId || userStore.user?.activeWorkspaceId;
+      if (workspaceId) {
+        await navigateTo({
+          name: "workspace-projects",
+          params: { workspaceId },
+        });
+      }
+    }
   } catch (error: any) {
     toast.error("Could not archive project", {
       description: error?.data?.message || "Please try again.",

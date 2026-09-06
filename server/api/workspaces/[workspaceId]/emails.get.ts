@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
       typeof query.template === 'string' && query.template !== 'all'
         ? query.template
         : undefined
+    const box = query.box === 'inbox' ? 'inbox' : 'sent'
 
     await validateWorkspace(workspaceId, user.id)
 
@@ -26,14 +27,17 @@ export default defineEventHandler(async (event) => {
       prisma.emailLog.findMany({
         where: {
           workspaceId,
-          createdBy: user.id,
+          ...(box === 'inbox'
+            ? { toEmail: user.email }
+            : { createdBy: user.id }),
           ...(projectId ? { projectId } : {}),
           ...(template ? { template } : {})
         },
         orderBy: { createdAt: 'desc' },
         take: 200,
         include: {
-          project: { select: { id: true, name: true } }
+          project: { select: { id: true, name: true } },
+          creator: { select: { name: true, email: true } }
         }
       })
     ])
@@ -42,6 +46,7 @@ export default defineEventHandler(async (event) => {
       data: {
         templates: EMAIL_TEMPLATES,
         projects,
+        box,
         emails: emails.map((email) => ({
           id: email.id,
           template: email.template,
@@ -49,6 +54,7 @@ export default defineEventHandler(async (event) => {
           subject: email.subject,
           toEmail: email.toEmail,
           fromEmail: email.fromEmail,
+          fromName: email.creator?.name || email.creator?.email || null,
           html: email.html,
           text: email.text,
           status: email.status,

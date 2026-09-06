@@ -1,84 +1,80 @@
 import prisma from '~/lib/prisma'
 import { H3Event } from 'h3'
 import { clerkClient } from '@clerk/nuxt/server'
-import type { EmailAddress } from '@clerk/backend'
+import type { EmailAddress, User as ClerkUser } from '@clerk/backend'
 
 export const getUserFromClerkId = async (clerkId: string) => {
-  return prisma.user.findFirst({
-    where: {
-      clerkId,
-    },
-  });
+  return prisma.user.findUnique({
+    where: { clerkId },
+  })
 }
 
-/**
- * Fallback for when the Clerk `user.created` webhook hasn't synced this user
- * to our database yet (e.g. webhook not configured/reachable in local dev).
- * Fetches the user directly from Clerk and creates a local record + default
- * workspace, mirroring what the webhook normally does.
- */
-const createUserFromClerk = async (event: H3Event, clerkId: string) => {
-  const clerkUser = await clerkClient(event).users.getUser(clerkId)
-
+const fieldsFromClerk = (clerkUser: ClerkUser) => {
   const email =
-    clerkUser.emailAddresses.find((e: EmailAddress) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress ??
-    clerkUser.emailAddresses[0]?.emailAddress ??
-    `${clerkId}@example.com`
-  const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null
+    clerkUser.emailAddresses.find(
+      (item: EmailAddress) => item.id === clerkUser.primaryEmailAddressId,
+    )?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress
 
-  const user = await prisma.user.upsert({
-    where: { clerkId },
-    update: {},
-    create: {
+  if (!email) {
+    throw createError({
+      statusCode: 400,
+      message: 'Clerk user does not have an email address',
+    })
+  }
+
+  const name =
+    [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null
+
+  return {
+    email,
+    name,
+    clerkObject: JSON.parse(JSON.stringify(clerkUser)),
+  }
+}
+
+/** Returns the local user for this Clerk account, creating one if needed. */
+export const ensureLocalUserFromClerk = async (
+  event: H3Event,
+  clerkId: string,
+) => {
+  const existing = await getUserFromClerkId(clerkId)
+  if (existing) return existing
+
+  const clerkUser = await clerkClient(event).users.getUser(clerkId)
+  const { email, name, clerkObject } = fieldsFromClerk(clerkUser)
+
+  const byEmail = await prisma.user.findUnique({ where: { email } })
+  if (byEmail) {
+    return prisma.user.update({
+      where: { id: byEmail.id },
+      data: {
+        clerkId,
+        name: name ?? byEmail.name,
+        clerkObject,
+      },
+    })
+  }
+
+  return prisma.user.create({
+    data: {
       clerkId,
       email,
       name,
-      clerkObject: JSON.parse(JSON.stringify(clerkUser)),
+      clerkObject,
     },
-  })
-
-  const existingWorkspace = await prisma.workspace.findFirst({
-    where: { members: { some: { userId: user.id } } },
-  })
-
-  if (existingWorkspace) {
-    return user
-  }
-
-  const workspace = await prisma.workspace.create({
-    data: {
-      name: name ? `${name}'s Workspace` : 'My Workspace',
-      description: 'My first workspace',
-      createdBy: user.id,
-      members: {
-        create: {
-          userId: user.id,
-          role: 'OWNER',
-        },
-      },
-    },
-  })
-
-  return prisma.user.update({
-    where: { id: user.id },
-    data: { activeWorkspaceId: workspace.id },
   })
 }
 
 export const validateAndGetUser = async (event: H3Event) => {
-  const userId = event.context.auth?.userId
-  if (!userId) {
+  const clerkId = event.context.auth?.userId
+  if (!clerkId) {
     throw createError({
       statusCode: 401,
-      message: 'Unauthorized'
+      message: 'Unauthorized',
     })
   }
 
-  let user = await getUserFromClerkId(userId)
-
-  if (!user) {
-    user = await createUserFromClerk(event, userId)
-  }
-
-  return user
+  const user = await ensureLocalUserFromClerk(event, clerkId)
+  const { user: withWorkspace } = await ensureDefaultWorkspace(user)
+  return withWorkspace
 }

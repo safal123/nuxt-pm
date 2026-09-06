@@ -11,12 +11,13 @@ import {
   ClipboardIcon,
   CodeIcon,
   CreditCardIcon,
+  FolderKanbanIcon,
   HomeIcon,
+  LayoutDashboardIcon,
   MoreHorizontal,
   Edit2,
   PlusIcon,
 } from "lucide-vue-next";
-import { toast } from "vue-sonner";
 
 const props = defineProps({
   projects: {
@@ -30,7 +31,16 @@ const props = defineProps({
 });
 
 const userStore = useUserStore();
+const workspaceStore = useWorkspaceStore();
 const route = useRoute();
+const workspaceId = computed(() =>
+  String(
+    route.params.workspaceId ||
+      workspaceStore.activeWorkspaceId ||
+      userStore.user?.activeWorkspaceId ||
+      "",
+  ),
+);
 
 const PROJECT_ICONS = [
   HomeIcon,
@@ -52,25 +62,15 @@ const projectIcon = (project: Project) => {
 
 const handleSelectProject = async (projectId: string) => {
   if (projectId !== props.activeProjectId) {
-    await useFetch(`/api/users`, {
-      method: "PUT",
-      body: JSON.stringify({ activeProjectId: projectId as string }),
-    });
-    await userStore.me();
-    toast.success("Success!", {
-      description: "Project changed successfully.",
-    });
+    await userStore.updateUser({ activeProjectId: projectId });
   }
-  if (route.path !== "/dashboard" && !route.path.startsWith("/dashboard/")) {
-    await navigateTo("/dashboard");
-  } else if (
-    route.path.startsWith("/dashboard/archived") ||
-    route.path.startsWith("/dashboard/activities") ||
-    route.path.startsWith("/dashboard/emails") ||
-    route.path.startsWith("/dashboard/settings")
-  ) {
-    await navigateTo("/dashboard");
-  }
+  await navigateTo({
+    name: "workspace-project",
+    params: {
+      workspaceId: workspaceId.value,
+      projectId,
+    },
+  });
 };
 
 const { requestRename } = useProjectRename();
@@ -94,13 +94,52 @@ const editProject = async (project: Project) => {
 <template>
   <div class="contents">
   <SidebarGroup>
+    <SidebarMenu class="px-2 mt-1">
+      <SidebarMenuItem
+        class="flex items-center hover:bg-sidebar-accent rounded-md"
+        :class="{
+          'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
+            route.path.endsWith('/dashboard'),
+        }"
+      >
+        <SidebarMenuButton v-if="workspaceId" as-child>
+          <NuxtLink
+            :to="{ name: 'workspace-dashboard', params: { workspaceId } }"
+            class="w-full cursor-pointer flex items-center gap-2 p-2"
+          >
+            <LayoutDashboardIcon class="h-4 w-4 text-sidebar-foreground" />
+            <span>Dashboard</span>
+          </NuxtLink>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+      <SidebarMenuItem
+        class="flex items-center hover:bg-sidebar-accent rounded-md"
+        :class="{
+          'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
+            route.path.endsWith('/projects') && !route.params.projectId,
+        }"
+      >
+        <SidebarMenuButton v-if="workspaceId" as-child>
+          <NuxtLink
+            :to="{ name: 'workspace-projects', params: { workspaceId } }"
+            class="w-full cursor-pointer flex items-center gap-2 p-2"
+          >
+            <FolderKanbanIcon class="h-4 w-4 text-sidebar-foreground" />
+            <span>Projects</span>
+          </NuxtLink>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  </SidebarGroup>
+
+  <SidebarGroup>
     <SidebarGroupLabel>
       <div class="flex items-center justify-between w-full mb-2">
         <span class="text-sidebar-foreground font-semibold text-[14px]"> Projects </span>
         <PlusIcon
           @click="
             modalsStore.openModal('createProject', {
-              workspaceId: userStore.user?.activeWorkspaceId,
+              workspaceId: workspaceId,
             })
           "
           class="w-6 h-6 text-sidebar-foreground ml-auto bg-sidebar-accent rounded-full p-1 cursor-pointer"
@@ -114,7 +153,8 @@ const editProject = async (project: Project) => {
         class="flex items-center hover:bg-sidebar-accent rounded-md"
         :class="{
           'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
-            item.id === activeProjectId && route.path === '/dashboard',
+            item.id === activeProjectId &&
+            String(route.params.projectId || '') === item.id,
         }"
       >
         <SidebarMenuButton @click.prevent="handleSelectProject(item.id)">
@@ -180,11 +220,14 @@ const editProject = async (project: Project) => {
         class="flex items-center hover:bg-sidebar-accent rounded-md"
         :class="{
           'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
-            route.path.startsWith('/dashboard/activities'),
+            route.path.includes('/activities'),
         }"
       >
-        <SidebarMenuButton as-child>
-          <NuxtLink to="/dashboard/activities" class="w-full cursor-pointer flex items-center gap-2 p-2">
+        <SidebarMenuButton v-if="workspaceId" as-child>
+          <NuxtLink
+            :to="{ name: 'workspace-activities', params: { workspaceId } }"
+            class="w-full cursor-pointer flex items-center gap-2 p-2"
+          >
             <HistoryIcon class="h-4 w-4 text-sidebar-foreground" />
             <span>Activities</span>
           </NuxtLink>
@@ -194,11 +237,14 @@ const editProject = async (project: Project) => {
         class="flex items-center hover:bg-sidebar-accent rounded-md"
         :class="{
           'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
-            route.path.startsWith('/dashboard/emails'),
+            route.path.includes('/emails'),
         }"
       >
-        <SidebarMenuButton as-child>
-          <NuxtLink to="/dashboard/emails" class="w-full cursor-pointer flex items-center gap-2 p-2">
+        <SidebarMenuButton v-if="workspaceId" as-child>
+          <NuxtLink
+            :to="{ name: 'workspace-emails', params: { workspaceId } }"
+            class="w-full cursor-pointer flex items-center gap-2 p-2"
+          >
             <MailIcon class="h-4 w-4 text-sidebar-foreground" />
             <span>Emails</span>
           </NuxtLink>
@@ -208,11 +254,14 @@ const editProject = async (project: Project) => {
         class="flex items-center hover:bg-sidebar-accent rounded-md"
         :class="{
           'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
-            route.path.startsWith('/dashboard/archived'),
+            route.path.includes('/archived'),
         }"
       >
-        <SidebarMenuButton as-child>
-          <NuxtLink to="/dashboard/archived" class="w-full cursor-pointer flex items-center gap-2 p-2">
+        <SidebarMenuButton v-if="workspaceId" as-child>
+          <NuxtLink
+            :to="{ name: 'workspace-archived', params: { workspaceId } }"
+            class="w-full cursor-pointer flex items-center gap-2 p-2"
+          >
             <ArchiveIcon class="h-4 w-4 text-sidebar-foreground" />
             <span>Archive</span>
           </NuxtLink>
@@ -222,11 +271,14 @@ const editProject = async (project: Project) => {
         class="flex items-center hover:bg-sidebar-accent rounded-md"
         :class="{
           'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
-            route.path.startsWith('/dashboard/settings'),
+            route.path.includes('/settings'),
         }"
       >
-        <SidebarMenuButton as-child>
-          <NuxtLink to="/dashboard/settings" class="w-full cursor-pointer flex items-center gap-2 p-2">
+        <SidebarMenuButton v-if="workspaceId" as-child>
+          <NuxtLink
+            :to="{ name: 'workspace-settings', params: { workspaceId } }"
+            class="w-full cursor-pointer flex items-center gap-2 p-2"
+          >
             <SettingsIcon class="h-4 w-4 text-sidebar-foreground" />
             <span>Settings</span>
           </NuxtLink>

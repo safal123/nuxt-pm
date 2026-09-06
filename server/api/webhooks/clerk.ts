@@ -18,18 +18,25 @@ export default defineEventHandler(async (event) => {
     case 'user.created':
     case 'user.updated':
       const userData = body.data;
+      const email = userData.email_addresses?.[0]?.email_address;
+      if (!email) {
+        throw createError({
+          statusCode: 400,
+          message: 'Clerk user does not have an email address',
+        });
+      }
 
       const user = await prisma.user.upsert({
         where: { clerkId: userData.id }, // Unique identifier to find the user
         update: {
-          email: userData.email_addresses[0].email_address,
+          email,
           name: `${userData.first_name} ${userData.last_name}`,
           clerkObject: userData,
           updatedAt: new Date(),
         },
         create: {
           clerkId: userData.id,
-          email: userData.email_addresses[0].email_address,
+          email,
           name: `${userData.first_name} ${userData.last_name}`,
           clerkObject: userData,
           createdAt: new Date(),
@@ -37,27 +44,7 @@ export default defineEventHandler(async (event) => {
         },
       });
 
-      // Create a default workspace for the user
-      const defaultWorkspace = await prisma.workspace.create({
-        data: {
-          name: `Workspace`,
-          creator: { connect: { id: user.id } },
-          members: {
-            create: {
-              userId: user.id,
-              role: 'OWNER',
-            },
-          },
-        },
-      });
-
-      // Set the default workspace as the user's active workspace
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          activeWorkspaceId: defaultWorkspace.id,
-        },
-      });
+      await ensureDefaultWorkspace(user);
 
       break;
 

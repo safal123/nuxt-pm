@@ -1,3 +1,10 @@
+export interface WorkspaceSetting {
+  emailOnInvite: boolean
+  emailOnProjectAdd: boolean
+  weekStartsOnMonday: boolean
+  backgroundColor: string | null
+}
+
 export interface Workspace {
   id: string
   name: string
@@ -6,6 +13,12 @@ export interface Workspace {
   createdAt: Date | string
   updatedAt: Date | string
   projects?: Project[]
+  settings?: WorkspaceSetting | null
+  creator?: {
+    id: string
+    name: string | null
+    email: string
+  }
 }
 
 export interface User {
@@ -51,6 +64,21 @@ export interface TaskComment {
   user: TaskAssignee
 }
 
+export interface Attachment {
+  id: string
+  name: string
+  url: string
+  size: number | null
+  mimeType: string | null
+  attachableType: string
+  attachableId: string
+  createdAt: Date | string
+  uploadedBy: string
+  uploader: TaskAssignee | null
+}
+
+export type TaskAttachment = Attachment
+
 export interface TaskLabel {
   id: string
   name: string
@@ -73,6 +101,8 @@ export type TaskActivityType =
   | 'COMPLETED'
   | 'REOPENED'
   | 'COMMENT'
+  | 'ATTACHMENT_ADDED'
+  | 'ATTACHMENT_REMOVED'
   | 'LIKED'
   | 'UNLIKED'
   | 'ARCHIVED'
@@ -127,6 +157,7 @@ export interface Task {
   assignee: TaskAssignee | null
   members: TaskAssignee[]
   comments?: TaskComment[]
+  attachments?: Attachment[]
   activities?: TaskActivity[]
   commentCount: number
   attachmentCount: number
@@ -142,6 +173,7 @@ export interface TaskColumn {
   archivedAt?: string | null
   projectId: string
   tasks: Task[]
+  completedCount: number
 }
 
 export interface ArchivedList {
@@ -161,6 +193,7 @@ export interface EmailLogItem {
   subject: string
   toEmail: string
   fromEmail: string
+  fromName?: string | null
   html: string
   text: string | null
   status: 'sent' | 'failed' | string

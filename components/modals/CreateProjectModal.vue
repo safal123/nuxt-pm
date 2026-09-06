@@ -55,6 +55,13 @@ async function onSubmit(values: any) {
     const project = result?.data?.project;
     if (project) {
       await userStore.updateUser({ activeProjectId: project.id });
+      const workspaceId = String(store.modalProps.workspaceId || "");
+      if (workspaceId) {
+        await navigateTo({
+          name: "workspace-project",
+          params: { workspaceId, projectId: project.id },
+        });
+      }
     }
 
     store.closeModal();

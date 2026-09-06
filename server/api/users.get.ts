@@ -2,8 +2,6 @@ import prisma from '~/lib/prisma'
 
 export default defineEventHandler(async (event) => {
   try {
-    // `validateAndGetUser` guarantees the user exists locally, creating it
-    // (and a default workspace) from Clerk data if the webhook hasn't synced yet.
     const user = await validateAndGetUser(event)
 
     const workspaces = await prisma.workspace.findMany({

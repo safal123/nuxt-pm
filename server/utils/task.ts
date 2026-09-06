@@ -41,7 +41,6 @@ export const taskBoardInclude = (userId: string) => ({
   _count: {
     select: {
       comments: true,
-      attachments: true,
       likes: true
     }
   }
@@ -74,6 +73,19 @@ const serializeLabels = (task: any) => {
     }))
 }
 
+export const serializeAttachment = (attachment: any) => ({
+  id: attachment.id,
+  name: attachment.name,
+  url: attachment.url,
+  size: attachment.size ?? null,
+  mimeType: attachment.mimeType ?? null,
+  attachableType: attachment.attachableType,
+  attachableId: attachment.attachableId,
+  createdAt: attachment.createdAt,
+  uploadedBy: attachment.uploadedBy,
+  uploader: attachment.uploader ? serializePerson(attachment.uploader) : null
+})
+
 export const serializeActivity = (activity: any) => ({
   id: activity.id,
   type: activity.type,
@@ -83,45 +95,57 @@ export const serializeActivity = (activity: any) => ({
   user: serializePerson(activity.user)
 })
 
-export const serializeTask = (task: any) => ({
-  id: task.id,
-  title: task.title,
-  description: task.description,
-  order: task.order,
-  priority: task.priority ?? 'MEDIUM',
-  status: task.status ?? 'TODO',
-  completedAt: task.completedAt ?? null,
-  dueDate: task.dueDate,
-  coverColor: task.coverColor ?? null,
-  archivedAt: task.archivedAt ?? null,
-  labels: serializeLabels(task),
-  columnId: task.columnId,
-  projectId: task.projectId,
-  createdBy: task.createdBy,
-  createdAt: task.createdAt,
-  updatedAt: task.updatedAt,
-  columnName: task.column?.name ?? null,
-  creator: task.creator ? serializePerson(task.creator) : null,
-  assignee: task.assignee ? serializePerson(task.assignee) : null,
-  members: Array.isArray(task.members)
-    ? task.members.map((member: any) => serializePerson(member.user))
-    : [],
-  comments: Array.isArray(task.comments)
-    ? task.comments.map((comment: any) => ({
-        id: comment.id,
-        content: comment.content,
-        createdAt: comment.createdAt,
-        user: serializePerson(comment.user)
-      }))
-    : [],
-  activities: Array.isArray(task.activities)
-    ? task.activities.map(serializeActivity)
-    : undefined,
-  commentCount: task._count?.comments ?? task.comments?.length ?? 0,
-  attachmentCount: task._count?.attachments ?? 0,
-  likeCount: task._count?.likes ?? 0,
-  likedByMe: Array.isArray(task.likes) && task.likes.length > 0
-})
+export const serializeTask = (task: any, options?: { compact?: boolean }) => {
+  const compact = options?.compact === true
+  return {
+    id: task.id,
+    title: task.title,
+    description: compact ? null : (task.description ?? null),
+    order: task.order,
+    priority: task.priority ?? 'MEDIUM',
+    status: task.status ?? 'TODO',
+    completedAt: task.completedAt ?? null,
+    dueDate: task.dueDate,
+    coverColor: task.coverColor ?? null,
+    archivedAt: task.archivedAt ?? null,
+    labels: serializeLabels(task),
+    columnId: task.columnId,
+    projectId: task.projectId,
+    createdBy: task.createdBy,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+    columnName: task.column?.name ?? null,
+    creator: task.creator ? serializePerson(task.creator) : null,
+    assignee: task.assignee ? serializePerson(task.assignee) : null,
+    members: Array.isArray(task.members)
+      ? task.members.map((member: any) => serializePerson(member.user))
+      : [],
+    comments: compact
+      ? undefined
+      : Array.isArray(task.comments)
+        ? task.comments.map((comment: any) => ({
+            id: comment.id,
+            content: comment.content,
+            createdAt: comment.createdAt,
+            user: serializePerson(comment.user)
+          }))
+        : [],
+    attachments: compact
+      ? undefined
+      : Array.isArray(task.attachments)
+        ? task.attachments.map(serializeAttachment)
+        : [],
+    activities: compact
+      ? undefined
+      : Array.isArray(task.activities)
+        ? task.activities.map(serializeActivity)
+        : undefined,
+    commentCount: task._count?.comments ?? task.comments?.length ?? 0,
+    attachmentCount: task._count?.attachments ?? task.attachments?.length ?? 0,
+    likeCount: task._count?.likes ?? 0,
+    likedByMe: Array.isArray(task.likes) && task.likes.length > 0
+  }
+}
 
 export const personName = (user: { name?: string | null; email?: string | null }) =>
   user.name || user.email || 'Someone'
@@ -201,25 +225,43 @@ export const validateTaskAccess = async (taskId: string, userId: string) => {
 }
 
 export const getTaskWithDetails = async (taskId: string, userId: string) => {
-  return prisma.task.findUniqueOrThrow({
-    where: { id: taskId },
-    include: {
-      ...taskBoardInclude(userId),
-      column: { select: { id: true, name: true } },
-      comments: {
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: { select: assigneeSelect }
-        }
-      },
-      activities: {
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: { select: assigneeSelect }
+  const [task, attachments] = await Promise.all([
+    prisma.task.findUniqueOrThrow({
+      where: { id: taskId },
+      include: {
+        ...taskBoardInclude(userId),
+        column: { select: { id: true, name: true } },
+        comments: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            user: { select: assigneeSelect }
+          }
+        },
+        activities: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            user: { select: assigneeSelect }
+          }
         }
       }
+    }),
+    prisma.attachment.findMany({
+      where: { attachableType: 'Task', attachableId: taskId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        uploader: { select: assigneeSelect }
+      }
+    })
+  ])
+
+  return {
+    ...task,
+    attachments,
+    _count: {
+      ...task._count,
+      attachments: attachments.length
     }
-  })
+  }
 }
 
 export const syncTaskMembers = async (taskId: string, memberIds: string[]) => {

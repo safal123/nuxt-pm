@@ -40,6 +40,8 @@ export default defineEventHandler(async (event) => {
       })
     ])
 
+    await mergeTaskAttachmentCounts(cards)
+
     return {
       data: {
         lists: lists.map((list) => ({

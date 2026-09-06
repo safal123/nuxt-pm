@@ -16,20 +16,23 @@ export default defineEventHandler(async (event) => {
 
     let emailed = false
     if (invite.email) {
-      try {
-        const { data } = await sendWorkspaceInviteEmail({
-          inviteId: invite.id,
-          to: invite.email,
-          workspaceId,
-          workspaceName: invite.workspaceName,
-          inviterName: user.name || user.email,
-          inviteUrl: invite.url,
-          expiresAt: invite.expiresAt,
-          createdBy: user.id
-        })
-        emailed = Boolean(data?.id)
-      } catch (networkError) {
-        console.error(networkError)
+      const settings = await ensureWorkspaceSettings(workspaceId)
+      if (settings.emailOnInvite) {
+        try {
+          const { data } = await sendWorkspaceInviteEmail({
+            inviteId: invite.id,
+            to: invite.email,
+            workspaceId,
+            workspaceName: invite.workspaceName,
+            inviterName: user.name || user.email,
+            inviteUrl: invite.url,
+            expiresAt: invite.expiresAt,
+            createdBy: user.id
+          })
+          emailed = Boolean(data?.id)
+        } catch (networkError) {
+          console.error(networkError)
+        }
       }
     }
 

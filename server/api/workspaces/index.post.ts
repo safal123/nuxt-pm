@@ -15,6 +15,9 @@ export default defineEventHandler(async (event) => {
             userId: user.id,
             role: 'OWNER'
           }
+        },
+        settings: {
+          create: {}
         }
       }
     })

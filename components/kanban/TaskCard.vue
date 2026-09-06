@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   CalendarIcon,
+  CheckIcon,
   MessageSquareIcon,
   PaperclipIcon,
   HeartIcon,
@@ -10,6 +11,7 @@ import { format, isPast, isToday, isTomorrow, parseISO } from "date-fns";
 import type { Task, TaskPriority } from "@/types";
 import { priorityChip } from "@/utils/task-priority";
 import { statusChip, statusLabel } from "@/utils/task-status";
+import { workspaceCardColor } from "@/utils/task-colors";
 
 const props = withDefaults(
   defineProps<{
@@ -25,6 +27,18 @@ const emit = defineEmits<{
 }>();
 
 const boardStore = useBoardStore();
+const workspaceStore = useWorkspaceStore();
+
+const cardStyle = computed(() => {
+  const fill = workspaceCardColor(
+    workspaceStore.activeWorkspace?.settings?.backgroundColor,
+  );
+  return {
+    touchAction: "none" as const,
+    ...(fill ? { backgroundColor: fill } : {}),
+  };
+});
+
 const isPlaceholder = computed(
   () => !props.preview && boardStore.draggingTask?.id === props.task.id,
 );
@@ -70,6 +84,15 @@ const extraLabelCount = computed(() =>
   Math.max(0, (props.task.labels?.length || 0) - 3),
 );
 
+const isComplete = computed(() => props.task.status === "DONE");
+
+const toggleComplete = async () => {
+  if (props.preview) return;
+  await boardStore.patchTask(props.task.id, {
+    completed: props.task.status !== "DONE",
+  });
+};
+
 const onPointerDown = (event: PointerEvent) => {
   if (props.preview) return;
   emit("pointerdown", event);
@@ -84,14 +107,14 @@ const onPointerDown = (event: PointerEvent) => {
   />
   <div
     v-else
-    class="relative flex flex-col bg-card rounded-xl border border-border overflow-hidden"
+    class="group relative flex flex-col bg-card rounded-xl border border-border overflow-hidden"
     :class="[
       preview
         ? 'shadow-[0_18px_40px_rgba(15,23,42,0.18)] dark:shadow-[0_18px_40px_rgba(0,0,0,0.45)] ring-1 ring-black/5 dark:ring-white/10'
         : 'shadow-sm cursor-grab hover:border-muted-foreground/30 hover:shadow-md',
-      task.status === 'DONE' ? 'opacity-80' : '',
+      isComplete ? 'opacity-80' : '',
     ]"
-    :style="{ touchAction: 'none' }"
+    :style="cardStyle"
     @pointerdown="onPointerDown"
     @dragstart.prevent
   >
@@ -108,17 +131,31 @@ const onPointerDown = (event: PointerEvent) => {
 
     <div class="pl-3.5 pr-3 pt-3 pb-1.5 flex flex-col gap-1.5">
       <div class="flex items-start gap-2 min-h-0">
-        <GripVerticalIcon
-          v-if="!preview"
-          class="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
-        />
+        <div v-if="!preview" class="relative mt-0.5 h-4 w-4 shrink-0">
+          <GripVerticalIcon
+            v-if="!isComplete"
+            class="h-4 w-4 text-muted-foreground transition-opacity group-hover:opacity-0"
+          />
+          <button
+            type="button"
+            data-card-action
+            class="absolute inset-0 z-10 inline-flex items-center justify-center rounded-full border transition"
+            :class="
+              isComplete
+                ? 'border-emerald-500 bg-emerald-500 text-white'
+                : 'border-muted-foreground/50 bg-card text-transparent opacity-0 group-hover:opacity-100 hover:border-emerald-500 hover:text-emerald-500'
+            "
+            :aria-label="isComplete ? 'Reopen card' : 'Mark as complete'"
+            :title="isComplete ? 'Reopen' : 'Mark as complete'"
+            @click.stop="toggleComplete"
+            @pointerdown.stop.prevent
+          >
+            <CheckIcon class="h-2.5 w-2.5" />
+          </button>
+        </div>
         <p
           class="min-w-0 flex-1 text-[13px] font-medium text-foreground leading-snug line-clamp-2 break-words"
-          :class="
-            task.status === 'DONE'
-              ? 'line-through text-muted-foreground'
-              : ''
-          "
+          :class="isComplete ? 'line-through text-muted-foreground' : ''"
         >
           {{ task.title }}
         </p>
@@ -189,6 +226,7 @@ const onPointerDown = (event: PointerEvent) => {
         </span>
         <button
           type="button"
+          data-card-action
           class="inline-flex items-center gap-1 text-[11px] transition"
           :class="
             task.likedByMe
@@ -199,7 +237,7 @@ const onPointerDown = (event: PointerEvent) => {
           "
           :disabled="preview"
           @click.stop="emit('like', task.id)"
-          @pointerdown.stop
+          @pointerdown.stop.prevent
         >
           <HeartIcon
             class="h-3.5 w-3.5"

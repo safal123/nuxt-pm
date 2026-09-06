@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -27,7 +27,7 @@ model User {
   createdTasks      Task[]            @relation("CreatedTasks")
   assignedTasks     Task[]            @relation("AssignedTasks")
   taskComments      TaskComment[]
-  taskAttachments   TaskAttachment[]
+  attachments       Attachment[]
   taskLikes         TaskLike[]
   taskMemberships   TaskMember[]
   taskActivities    TaskActivity[]
@@ -53,10 +53,26 @@ model Workspace {
   invites     WorkspaceInvite[]
   emailLogs   EmailLog[]
   projects    Project[]         @relation("Projects")
+  settings    WorkspaceSetting?
   creator     User              @relation("CreatedWorkspaces", fields: [createdBy], references: [id], onDelete: Cascade)
   activeUsers User[]            @relation("ActiveWorkspace") // inverse of User.activeWorkspace
 
   @@map("workspaces")
+}
+
+model WorkspaceSetting {
+  id                 String   @id @default(cuid())
+  workspaceId        String   @unique @map("workspace_id")
+  emailOnInvite      Boolean  @default(true) @map("email_on_invite")
+  emailOnProjectAdd  Boolean  @default(true) @map("email_on_project_add")
+  weekStartsOnMonday Boolean  @default(true) @map("week_starts_on_monday")
+  backgroundColor    String?  @map("background_color")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_settings")
 }
 
 model WorkspaceMember {
@@ -170,12 +186,14 @@ model Task {
   creator     User             @relation("CreatedTasks", fields: [createdBy], references: [id], onDelete: Cascade)
   assignee    User?            @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
   comments    TaskComment[]
-  attachments TaskAttachment[]
   likes       TaskLike[]
   members     TaskMember[]
   taskLabels  TaskLabel[]
   activities  TaskActivity[]
 
+  @@index([columnId, archivedAt, order], map: "tasks_column_id_archived_at_order_idx")
+  @@index([columnId, archivedAt, status, completedAt], map: "tasks_column_id_archived_at_status_completed_at_idx")
+  @@index([projectId, archivedAt, createdAt], map: "tasks_project_id_archived_at_createdAt_idx")
   @@map("tasks")
 }
 
@@ -192,20 +210,22 @@ model TaskComment {
   @@map("task_comments")
 }
 
-model TaskAttachment {
-  id         String   @id @default(cuid())
-  name       String
-  url        String
-  size       Int?
-  mimeType   String?  @map("mime_type")
-  taskId     String   @map("task_id")
-  uploadedBy String   @map("uploaded_by")
-  createdAt  DateTime @default(now())
+model Attachment {
+  id             String   @id @default(cuid())
+  name           String
+  url            String   @db.Text
+  fileKey        String?  @map("file_key")
+  size           Int?
+  mimeType       String?  @map("mime_type")
+  attachableType String   @map("attachable_type")
+  attachableId   String   @map("attachable_id")
+  uploadedBy     String   @map("uploaded_by")
+  createdAt      DateTime @default(now())
 
-  task     Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   uploader User @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
 
-  @@map("task_attachments")
+  @@index([attachableType, attachableId])
+  @@map("attachments")
 }
 
 model TaskLike {
@@ -283,7 +303,7 @@ model EmailLog {
   subject     String
   toEmail     String   @map("to_email")
   fromEmail   String   @map("from_email")
-  html        String   @db.LongText
+  html        String   @db.Text
   text        String?  @db.Text
   status      String
   error       String?  @db.Text

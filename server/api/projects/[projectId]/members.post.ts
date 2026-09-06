@@ -26,18 +26,21 @@ export default defineEventHandler(async (event) => {
           }
         })
         if (project) {
-          const requestUrl = getRequestURL(event)
-          await sendProjectMemberAddedEmail({
-            to: member.email,
-            memberName: member.name || member.email,
-            addedByName: user.name || user.email,
-            projectId: project.id,
-            projectName: project.name,
-            workspaceId: project.workspaceId,
-            workspaceName: project.workspace.name,
-            dashboardUrl: `${requestUrl.protocol}//${requestUrl.host}/dashboard`,
-            createdBy: user.id
-          })
+          const settings = await ensureWorkspaceSettings(project.workspaceId)
+          if (settings.emailOnProjectAdd) {
+            const requestUrl = getRequestURL(event)
+            await sendProjectMemberAddedEmail({
+              to: member.email,
+              memberName: member.name || member.email,
+              addedByName: user.name || user.email,
+              projectId: project.id,
+              projectName: project.name,
+              workspaceId: project.workspaceId,
+              workspaceName: project.workspace.name,
+              dashboardUrl: `${requestUrl.protocol}//${requestUrl.host}/w/${project.workspaceId}/dashboard`,
+              createdBy: user.id
+            })
+          }
         }
       } catch (networkError) {
         console.error(networkError)

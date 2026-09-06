@@ -44,7 +44,7 @@ const cancel = () => {
     <button
       v-else
       type="button"
-      class="w-full min-h-[2.75rem] flex items-center justify-center gap-1.5 rounded-xl bg-muted/80 border border-dashed border-border text-[13px] font-medium text-muted-foreground hover:border-violet-400 hover:bg-violet-50 hover:text-violet-800 dark:hover:bg-violet-950/40 dark:hover:text-violet-200 px-3 py-2 transition"
+      class="w-full min-h-[2.75rem] flex items-center justify-center gap-1.5 rounded-xl bg-muted/80 border border-dashed border-border text-[13px] font-medium text-muted-foreground hover:border-foreground/20 hover:bg-accent hover:text-accent-foreground px-3 py-2 transition"
       @click="startAdding"
     >
       <PlusIcon class="h-4 w-4" />

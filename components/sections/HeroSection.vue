@@ -42,7 +42,7 @@ const highlights = [
         </p>
         <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Button v-if="isSignedIn" as-child size="lg">
-            <NuxtLink to="/dashboard">
+            <NuxtLink to="/w">
               Open dashboard
               <ArrowRightIcon class="h-4 w-4" />
             </NuxtLink>

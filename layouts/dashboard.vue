@@ -1,30 +1,15 @@
 <script setup lang="ts">
-import {
-  LinkIcon,
-  MoreHorizontalIcon,
-  PlusIcon,
-  UsersIcon,
-} from "lucide-vue-next";
-
 const workspaceStore = useWorkspaceStore();
 const userStore = useUserStore();
-const modalsStore = useModalsStore();
-// @ts-ignore
-await userStore.me();
-// @ts-ignore
-await workspaceStore.fetchWorkspaces();
+const { workspaceBackground, sidebarBackground, pageTitle, initialize } =
+  useWorkspaceLayout();
 
-const openMembers = () => modalsStore.openModal("workspaceMembers");
-const openInvite = () => modalsStore.openModal("workspaceInvite");
-const openCreateProject = () =>
-  modalsStore.openModal("createProject", {
-    workspaceId: userStore.user?.activeWorkspaceId,
-  });
+await initialize();
 </script>
 
 <template>
   <SidebarProvider>
-    <Sidebar>
+    <Sidebar :style="sidebarBackground">
       <SidebarHeader class="border-b px-4 py-2">
         <WorkspaceSelector
           :workspaces="workspaceStore.workspaces"
@@ -46,9 +31,14 @@ const openCreateProject = () =>
       </SidebarFooter>
     </Sidebar>
 
-    <SidebarInset class="min-w-0 overflow-hidden">
+    <SidebarInset class="min-w-0 overflow-hidden" :style="workspaceBackground">
       <header
-        class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-6"
+        class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b px-3 backdrop-blur md:px-6"
+        :class="
+          workspaceBackground
+            ? 'bg-background/55 supports-[backdrop-filter]:bg-background/40'
+            : 'bg-background/95 supports-[backdrop-filter]:bg-background/80'
+        "
       >
         <SidebarTrigger class="-ml-1 shrink-0" />
         <Separator orientation="vertical" class="hidden h-4 sm:block" />
@@ -63,87 +53,16 @@ const openCreateProject = () =>
             <BreadcrumbSeparator class="hidden sm:block" />
             <BreadcrumbItem class="min-w-0">
               <BreadcrumbPage class="block truncate font-medium">
-                {{
-                  $route.path.startsWith("/dashboard/archived")
-                    ? "Archive"
-                    : $route.path.startsWith("/dashboard/activities")
-                      ? "Activities"
-                      : $route.path.startsWith("/dashboard/emails")
-                        ? "Emails"
-                        : $route.path.startsWith("/dashboard/settings")
-                          ? "Settings"
-                          : "Dashboard"
-                }}
+                {{ pageTitle }}
               </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
 
-        <div class="flex shrink-0 items-center gap-1.5">
-          <ThemeToggle />
-
-          <div class="hidden items-center gap-1.5 md:flex">
-            <Button variant="outline" size="sm" @click="openMembers">
-              <UsersIcon />
-              Members
-            </Button>
-            <Button variant="outline" size="sm" @click="openInvite">
-              <LinkIcon />
-              Invite
-            </Button>
-            <Button size="sm" @click="openCreateProject">
-              <PlusIcon />
-              Create Project
-            </Button>
-          </div>
-
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                size="icon"
-                class="md:hidden"
-                aria-label="Create project"
-                @click="openCreateProject"
-              >
-                <PlusIcon />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Create project</TooltipContent>
-          </Tooltip>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger as-child>
-              <Button
-                variant="outline"
-                size="icon"
-                class="md:hidden"
-                aria-label="More actions"
-              >
-                <MoreHorizontalIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="w-48">
-              <DropdownMenuItem @click="openMembers">
-                <UsersIcon />
-                Members
-              </DropdownMenuItem>
-              <DropdownMenuItem @click="openInvite">
-                <LinkIcon />
-                Invite
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div class="md:hidden">
-            <AppUserButton />
-          </div>
-        </div>
+        <WorkspaceHeaderActions />
       </header>
 
-      <CreateProjectModal />
-      <DeleteProjectModal />
-      <WorkspaceMembersModal />
-      <WorkspaceInviteModal />
+      <WorkspaceModals />
 
       <ClerkLoading>
         <div class="flex flex-1 flex-col gap-4 p-4 md:p-6">

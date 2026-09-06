@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { Task, TaskColumn } from '~/types'
+import { BOARD_COMPLETED_LIMIT } from '~/utils/board'
 
 interface BoardResponse {
   data: { columns: TaskColumn[] }
@@ -13,6 +14,17 @@ interface TaskResponse {
 
 interface LikeResponse {
   data: { liked: boolean; likeCount: number }
+  message?: string
+}
+
+interface TasksPageResponse {
+  data: {
+    tasks: Task[]
+    total: number
+    page: number
+    limit: number
+    hasMore: boolean
+  }
   message?: string
 }
 
@@ -46,6 +58,36 @@ export const useBoardStore = defineStore('board', () => {
     })
   }
 
+  const insertTaskByOrder = (column: TaskColumn, task: Task) => {
+    const index = column.tasks.findIndex((item) => item.order > task.order)
+    if (index === -1) column.tasks.push(task)
+    else column.tasks.splice(index, 0, task)
+  }
+
+  const syncBoardTask = (updated: Task) => {
+    const boardTask = findTask(updated.id)
+    const wasDone = boardTask?.status === 'DONE'
+    if (boardTask) Object.assign(boardTask, updated)
+    const location = findTaskLocation(updated.id)
+    if (!location) {
+      const column = columns.value.find((item) => item.id === updated.columnId)
+      if (!column || updated.status === 'DONE' || updated.archivedAt) return
+      insertTaskByOrder(column, updated)
+      column.completedCount = Math.max(0, (column.completedCount ?? 0) - 1)
+      return
+    }
+    const isDone = updated.status === 'DONE'
+    if (!wasDone && isDone) {
+      location.column.completedCount = (location.column.completedCount ?? 0) + 1
+    }
+    if (wasDone && !isDone) {
+      location.column.completedCount = Math.max(
+        0,
+        (location.column.completedCount ?? 0) - 1
+      )
+    }
+  }
+
   /**
    * Moves the dragged task to `columnId` at `index` in the live board.
    * `index` is the position in that column's current array (including the
@@ -71,6 +113,10 @@ export const useBoardStore = defineStore('board', () => {
 
     const [moved] = from.column.tasks.splice(from.index, 1)
     moved.columnId = columnId
+    if (moved.status === 'DONE') {
+      from.column.completedCount = Math.max(0, (from.column.completedCount ?? 0) - 1)
+      toColumn.completedCount = (toColumn.completedCount ?? 0) + 1
+    }
     const clamped = Math.max(0, Math.min(index, toColumn.tasks.length))
     toColumn.tasks.splice(clamped, 0, moved)
     reindex(from.column)
@@ -91,7 +137,11 @@ export const useBoardStore = defineStore('board', () => {
     try {
       const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
       const result = await $fetch<BoardResponse>(`/api/projects/${id}/board`, { headers })
-      columns.value = result?.data.columns ?? []
+      columns.value = (result?.data.columns ?? []).map((column) => ({
+        ...column,
+        completedCount: column.completedCount ?? 0,
+        tasks: column.tasks ?? []
+      }))
       await Promise.all([fetchLabels(id), fetchProjectMembers(id)])
     } catch (error) {
       console.error('Failed to fetch board:', error)
@@ -158,6 +208,7 @@ export const useBoardStore = defineStore('board', () => {
   const workspaceMembers = ref<Task['members']>([])
   const projectMembers = ref<Task['members']>([])
   const projectLabels = ref<Task['labels']>([])
+  const listVersion = ref(0)
 
   const removeTaskFromBoard = (taskId: string) => {
     if (selectedTask.value?.id === taskId) {
@@ -166,26 +217,64 @@ export const useBoardStore = defineStore('board', () => {
     for (const column of columns.value) {
       const index = column.tasks.findIndex((t) => t.id === taskId)
       if (index !== -1) {
+        if (column.tasks[index].status === 'DONE') {
+          column.completedCount = Math.max(0, (column.completedCount ?? 0) - 1)
+        }
         column.tasks.splice(index, 1)
         break
       }
     }
+    listVersion.value += 1
   }
 
   const patchTask = async (taskId: string, body: Record<string, unknown>) => {
-    const task = findTask(taskId)
     const result = await $fetch<TaskResponse>(`/api/tasks/${taskId}`, {
       method: 'PATCH',
       body
     })
     const updated = result?.data?.task
-    if (updated && task) {
-      Object.assign(task, updated)
-    }
-    if (updated && selectedTask.value?.id === taskId) {
-      selectedTask.value = { ...selectedTask.value, ...updated }
+    if (updated) {
+      syncBoardTask(updated)
+      if (selectedTask.value?.id === taskId) {
+        selectedTask.value = { ...selectedTask.value, ...updated }
+      }
     }
     return updated
+  }
+
+  const loadMoreCompleted = async (columnId: string) => {
+    if (!projectId.value) return
+    const column = columns.value.find((item) => item.id === columnId)
+    if (!column) return
+    const done = column.tasks.filter((task) => task.status === 'DONE')
+    if (done.length >= (column.completedCount ?? 0)) return
+
+    const oldestDone = done.reduce((oldest, task) => {
+      const taskTime = task.completedAt ? new Date(task.completedAt).getTime() : 0
+      const oldestTime = oldest.completedAt
+        ? new Date(oldest.completedAt).getTime()
+        : 0
+      return taskTime < oldestTime ? task : oldest
+    }, done[0])
+    const cursor = oldestDone
+      ? `${oldestDone.completedAt ? new Date(oldestDone.completedAt).toISOString() : ''}::${oldestDone.id}`
+      : undefined
+
+    const result = await $fetch<TasksPageResponse>(
+      `/api/projects/${projectId.value}/tasks`,
+      {
+        query: {
+          columnId,
+          status: 'DONE',
+          limit: BOARD_COMPLETED_LIMIT,
+          ...(cursor ? { cursor } : {})
+        }
+      }
+    )
+    const incoming = (result?.data?.tasks ?? []).filter(
+      (task) => !column.tasks.some((item) => item.id === task.id)
+    )
+    for (const task of incoming) insertTaskByOrder(column, task)
   }
 
   const openTask = async (task: Task) => {
@@ -279,17 +368,26 @@ export const useBoardStore = defineStore('board', () => {
     return label
   }
 
+  const applyUpdatedTask = (updated: Task) => {
+    selectedTask.value = updated
+    const boardTask = findTask(updated.id)
+    if (boardTask) Object.assign(boardTask, updated)
+  }
+
+  const refreshTask = async (taskId: string) => {
+    const result = await $fetch<TaskResponse>(`/api/tasks/${taskId}`)
+    const updated = result?.data?.task
+    if (updated) applyUpdatedTask(updated)
+    return updated
+  }
+
   const addComment = async (taskId: string, content: string) => {
     const result = await $fetch<TaskResponse>(`/api/tasks/${taskId}/comments`, {
       method: 'POST',
       body: { content }
     })
     const updated = result?.data?.task
-    if (updated) {
-      selectedTask.value = updated
-      const boardTask = findTask(taskId)
-      if (boardTask) Object.assign(boardTask, updated)
-    }
+    if (updated) applyUpdatedTask(updated)
     return updated
   }
 
@@ -345,7 +443,11 @@ export const useBoardStore = defineStore('board', () => {
       )
       const column = result?.data?.column
       if (column) {
-        columns.value.push({ ...column, tasks: column.tasks || [] })
+        columns.value.push({
+          ...column,
+          tasks: column.tasks || [],
+          completedCount: column.completedCount ?? 0
+        })
       }
     } catch (error) {
       console.error('Failed to create column:', error)
@@ -428,6 +530,7 @@ export const useBoardStore = defineStore('board', () => {
   return {
     projectId,
     columns,
+    listVersion,
     loading,
     draggingTask,
     dragSize,
@@ -454,7 +557,9 @@ export const useBoardStore = defineStore('board', () => {
     openTask,
     closeTask,
     patchTask,
+    loadMoreCompleted,
     addComment,
+    refreshTask,
     fetchWorkspaceMembers,
     fetchProjectMembers,
     fetchLabels,

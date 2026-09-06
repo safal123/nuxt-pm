@@ -57,7 +57,12 @@ const join = async () => {
     await $fetch(`/api/invites/${token.value}/accept`, { method: 'POST' })
     await userStore.me()
     await workspaceStore.fetchWorkspaces()
-    await navigateTo('/dashboard')
+    const workspaceId = userStore.user?.activeWorkspaceId
+    await navigateTo(
+      workspaceId
+        ? { name: "workspace-dashboard", params: { workspaceId } }
+        : "/",
+    )
   } catch (error: any) {
     errorMessage.value = error?.data?.message || 'Could not join this workspace.'
   } finally {

@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
 
     setResponseStatus(event, 201)
     return {
-      data: { column: { ...column, tasks: [] } },
+      data: { column: { ...column, tasks: [], completedCount: 0 } },
       message: 'Column created successfully'
     }
   } catch (error: any) {

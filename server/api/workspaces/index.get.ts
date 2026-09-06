@@ -19,12 +19,26 @@ export default defineEventHandler(async (event) => {
       },
       include: {
         projects: true,
-        members: true
+        members: true,
+        settings: true,
+        creator: {
+          select: { id: true, name: true, email: true }
+        }
       }
     })
 
+    const withSettings = await Promise.all(
+      workspaces.map(async (workspace) => {
+        const settings = workspace.settings ?? await ensureWorkspaceSettings(workspace.id)
+        return {
+          ...workspace,
+          settings: serializeWorkspaceSettings(settings)
+        }
+      })
+    )
+
     return {
-      data: { workspaces },
+      data: { workspaces: withSettings },
       message: 'Workspaces fetched successfully'
     }
   } catch (error: any) {

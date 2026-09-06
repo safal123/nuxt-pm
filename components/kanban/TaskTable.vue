@@ -29,6 +29,9 @@ const PAGE_SIZE = 10;
 
 const boardStore = useBoardStore();
 const page = ref(1);
+const total = ref(0);
+const tasks = ref<Task[]>([]);
+const loading = ref(false);
 
 const parseDate = (value: Date | string | null | undefined) => {
   if (!value) return null;
@@ -54,39 +57,72 @@ const dueFor = (task: Task) => {
   };
 };
 
-const tasks = computed(() =>
-  boardStore.columns.flatMap((column) =>
-    column.tasks.map((task) => ({
-      ...task,
-      columnName: task.columnName || column.name,
-      due: dueFor(task),
-    })),
-  ),
+const rows = computed(() =>
+  tasks.value.map((task) => ({
+    ...task,
+    due: dueFor(task),
+  })),
 );
 
-const pagedTasks = computed(() => {
-  const start = (page.value - 1) * PAGE_SIZE;
-  return tasks.value.slice(start, start + PAGE_SIZE);
+const rangeLabel = computed(() => {
+  if (!total.value) return "0 tasks";
+  const start = (page.value - 1) * PAGE_SIZE + 1;
+  const end = Math.min(page.value * PAGE_SIZE, total.value);
+  return `${start}–${end} of ${total.value}`;
 });
 
-const rangeLabel = computed(() => {
-  if (!tasks.value.length) return "0 tasks";
-  const start = (page.value - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page.value * PAGE_SIZE, tasks.value.length);
-  return `${start}–${end} of ${tasks.value.length}`;
-});
+const fetchTasks = async (options?: { silent?: boolean }) => {
+  const projectId = boardStore.projectId;
+  if (!projectId) {
+    tasks.value = [];
+    total.value = 0;
+    return;
+  }
+  if (!options?.silent) loading.value = true;
+  try {
+    const result = await $fetch<{
+      data: { tasks: Task[]; total: number };
+    }>(`/api/projects/${projectId}/tasks`, {
+      query: { page: page.value, limit: PAGE_SIZE },
+    });
+    tasks.value = result?.data?.tasks ?? [];
+    total.value = result?.data?.total ?? 0;
+    const maxPage = Math.max(1, Math.ceil(total.value / PAGE_SIZE) || 1);
+    if (page.value > maxPage) {
+      page.value = maxPage;
+      await fetchTasks({ silent: true });
+    }
+  } catch (error) {
+    console.error("Failed to load tasks:", error);
+    tasks.value = [];
+    total.value = 0;
+  } finally {
+    if (!options?.silent) loading.value = false;
+  }
+};
 
 watch(
   () => boardStore.projectId,
   () => {
     page.value = 1;
+    fetchTasks();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => boardStore.listVersion,
+  () => {
+    if (!boardStore.projectId) return;
+    fetchTasks({ silent: true });
   },
 );
 
-watch(tasks, (list) => {
-  const lastPage = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
-  if (page.value > lastPage) page.value = lastPage;
-});
+const onPage = (next: number) => {
+  if (next === page.value) return;
+  page.value = next;
+  fetchTasks();
+};
 
 const createdLabel = (task: Task) => {
   const date = parseDate(task.createdAt);
@@ -120,12 +156,15 @@ const initials = (person: TaskAssignee | null) => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableEmpty v-if="!tasks.length" :colspan="7">
+        <TableEmpty v-if="loading" :colspan="7">
+          <span class="text-muted-foreground">Loading tasks…</span>
+        </TableEmpty>
+        <TableEmpty v-else-if="!rows.length" :colspan="7">
           <span class="text-muted-foreground">No tasks in this project yet.</span>
         </TableEmpty>
         <template v-else>
         <TableRow
-          v-for="task in pagedTasks"
+          v-for="task in rows"
           :key="task.id"
           class="cursor-pointer"
           @click="boardStore.openTask(task)"
@@ -226,21 +265,21 @@ const initials = (person: TaskAssignee | null) => {
     </Table>
 
     <div
-      v-if="tasks.length"
+      v-if="total"
       class="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <p class="text-sm text-muted-foreground">
         {{ rangeLabel }}
       </p>
       <Pagination
-        v-if="tasks.length > PAGE_SIZE"
+        v-if="total > PAGE_SIZE"
         v-slot="{ page: currentPage }"
         :page="page"
-        :total="tasks.length"
+        :total="total"
         :items-per-page="PAGE_SIZE"
         :sibling-count="1"
         show-edges
-        @update:page="page = $event"
+        @update:page="onPage"
       >
         <PaginationList v-slot="{ items }" class="flex items-center gap-1">
           <PaginationFirst />

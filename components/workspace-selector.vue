@@ -28,7 +28,10 @@ const handleWorkspaceSelect = async (workspace: Workspace) => {
     activeProjectId: workspace?.projects?.[0]?.id || null,
   });
   await workspaceStore.setActiveWorkspace(workspace.id);
-  await userStore.me();
+  await navigateTo({
+    name: "workspace-dashboard",
+    params: { workspaceId: workspace.id },
+  });
 };
 </script>
 

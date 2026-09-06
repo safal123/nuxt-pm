@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
 
     if (!result.alreadyMember) {
       const requestUrl = getRequestURL(event)
-      const dashboardUrl = `${requestUrl.protocol}//${requestUrl.host}/dashboard`
+      const dashboardUrl = `${requestUrl.protocol}//${requestUrl.host}/w/${result.workspaceId}/dashboard`
 
       try {
         await sendWorkspaceWelcomeEmail({

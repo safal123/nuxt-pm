@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { ArchivedList, Member, Project, Task, Workspace } from '~/types'
+import type { ArchivedList, Member, Project, Task, Workspace, WorkspaceSetting } from '~/types'
 
 interface WorkspacesResponse {
   data: { workspaces: Workspace[] }
@@ -44,7 +44,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       const result = await $fetch<WorkspacesResponse>('/api/workspaces', { headers })
       const user = useUserStore().user
       workspaces.value = result?.data.workspaces ?? []
-      activeWorkspaceId.value = user?.activeWorkspaceId ?? null
+      activeWorkspaceId.value =
+        user?.activeWorkspaceId ?? workspaces.value[0]?.id ?? null
       activeWorkspace.value = workspaces.value.find(w => w.id === activeWorkspaceId.value) || null
       if (activeWorkspaceId.value) await fetchMembers(activeWorkspaceId.value)
       return workspaces.value
@@ -196,6 +197,39 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
   }
 
+  const applySettings = (workspaceId: string, settings: WorkspaceSetting) => {
+    workspaces.value = workspaces.value.map((workspace) =>
+      workspace.id === workspaceId ? { ...workspace, settings } : workspace
+    )
+    if (activeWorkspace.value?.id === workspaceId) {
+      activeWorkspace.value = { ...activeWorkspace.value, settings }
+    }
+  }
+
+  const updateSettings = async (patch: Partial<WorkspaceSetting>) => {
+    if (!activeWorkspaceId.value) return
+    const workspaceId = activeWorkspaceId.value
+    const previous = activeWorkspace.value?.settings
+    applySettings(workspaceId, {
+      emailOnInvite: true,
+      emailOnProjectAdd: true,
+      weekStartsOnMonday: true,
+      backgroundColor: null,
+      ...previous,
+      ...patch,
+    })
+    try {
+      const result = await $fetch<{ data: { settings: WorkspaceSetting } }>(
+        `/api/workspaces/${workspaceId}/settings`,
+        { method: 'PATCH', body: patch }
+      )
+      if (result?.data?.settings) applySettings(workspaceId, result.data.settings)
+    } catch (error) {
+      if (previous) applySettings(workspaceId, previous)
+      throw error
+    }
+  }
+
   return {
     workspaces,
     activeWorkspaceId,
@@ -213,6 +247,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     createInvite,
     removeMember,
     updateProject,
+    updateSettings,
     fetchArchive,
     restoreList,
     deleteArchivedList,

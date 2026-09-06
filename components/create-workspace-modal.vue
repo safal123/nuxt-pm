@@ -24,8 +24,7 @@ const createWorkspace = async () => {
     <template #trigger>
       <Button
         size="sm"
-        variant="ghost"
-        class="p-0 w-full border border-dashed bg-purple-700 text-purple-100 hover:bg-purple-800 hover:text-purple-50"
+        class="w-full justify-start border border-dashed"
       >
         <PlusIcon class="h-4 w-4" />
         Add Workspace

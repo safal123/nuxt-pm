@@ -9,7 +9,11 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     '@prisma/nuxt',
     '@pinia/nuxt',
+    '@uploadthing/nuxt',
   ],
+  uploadthing: {
+    routerPath: '~/server/uploadthing.ts',
+  },
   app: {
     head: {
       script: [
@@ -20,6 +24,7 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
+    databaseUrl: process.env.DATABASE_URL,
     resendApiKey: process.env.RESEND_API_KEY,
     resendFrom: process.env.RESEND_FROM,
   },

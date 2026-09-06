@@ -28,6 +28,12 @@ const emit = defineEmits<{
 }>();
 
 const open = ref(false);
+const workspaceStore = useWorkspaceStore();
+const calendarLocale = computed(() =>
+  workspaceStore.activeWorkspace?.settings?.weekStartsOnMonday === false
+    ? "en-US"
+    : "en-AU",
+);
 
 const df = new DateFormatter("en-AU", {
   day: "2-digit",
@@ -75,6 +81,7 @@ const onSelect = (value: DateValue | undefined) => {
     <PopoverContent class="w-auto p-0 z-[100]" align="start">
       <Calendar
         :model-value="date"
+        :locale="calendarLocale"
         initial-focus
         weekday-format="short"
         @update:model-value="onSelect"

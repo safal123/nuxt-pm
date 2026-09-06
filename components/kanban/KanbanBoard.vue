@@ -166,6 +166,9 @@ const onPointerUp = async () => {
 
 const onCardPointerDown = (event: PointerEvent, task: Task) => {
   if (event.button !== 0) return;
+  if ((event.target as HTMLElement | null)?.closest("[data-card-action]")) {
+    return;
+  }
   const slot = (event.currentTarget as HTMLElement | null)?.closest(
     "[data-task-slot]",
   ) as HTMLElement | null;
@@ -200,28 +203,7 @@ const { view } = useProjectView();
 
 <template>
   <div class="w-full min-w-0">
-    <div
-      v-if="view === 'table' && boardStore.loading && !boardStore.columns.length"
-      class="rounded-xl border border-border bg-card overflow-hidden"
-    >
-      <div class="grid grid-cols-7 gap-4 border-b border-border bg-muted/70 px-4 py-3">
-        <Skeleton v-for="cell in 7" :key="cell" class="h-4 w-full" />
-      </div>
-      <div
-        v-for="row in 8"
-        :key="row"
-        class="grid grid-cols-7 gap-4 border-b border-border px-4 py-3"
-      >
-        <Skeleton class="h-4 w-4/5" />
-        <Skeleton class="h-5 w-16 rounded-md" />
-        <Skeleton class="h-5 w-14 rounded-md" />
-        <Skeleton class="h-4 w-20" />
-        <Skeleton class="h-4 w-24" />
-        <Skeleton class="h-5 w-16 rounded-md" />
-        <Skeleton class="h-4 w-20" />
-      </div>
-    </div>
-    <TaskTable v-else-if="view === 'table'" />
+    <TaskTable v-if="view === 'table'" />
     <div
       v-else-if="boardStore.loading && !boardStore.columns.length"
       class="flex gap-4 overflow-x-auto items-start pb-2 w-full min-w-0"

@@ -51,7 +51,7 @@ const closeMenu = () => {
         <ThemeToggle />
         <template v-if="isSignedIn">
           <Button as-child>
-            <NuxtLink to="/dashboard">Open dashboard</NuxtLink>
+            <NuxtLink to="/w">Open dashboard</NuxtLink>
           </Button>
           <UserButton :appearance="clerkAppearance" />
         </template>
@@ -101,7 +101,7 @@ const closeMenu = () => {
             <div class="mt-auto flex flex-col gap-2">
               <template v-if="isSignedIn">
                 <Button as-child class="w-full">
-                  <NuxtLink to="/dashboard" @click="closeMenu">Open dashboard</NuxtLink>
+                  <NuxtLink to="/w" @click="closeMenu">Open dashboard</NuxtLink>
                 </Button>
               </template>
               <template v-else>

@@ -16,17 +16,17 @@ module.exports = {
     },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
+        border: "var(--border-color, hsl(var(--border)))",
+        input: "var(--input-color, hsl(var(--input)))",
+        ring: "var(--ring-color, hsl(var(--ring)))",
+        background: "var(--background-color, hsl(var(--background)))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "var(--primary-color, hsl(var(--primary)))",
+          foreground: "var(--primary-foreground-color, hsl(var(--primary-foreground)))",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
+          DEFAULT: "var(--secondary-color, hsl(var(--secondary)))",
           foreground: "hsl(var(--secondary-foreground))",
         },
         destructive: {
@@ -34,29 +34,29 @@ module.exports = {
           foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
+          DEFAULT: "var(--muted-color, hsl(var(--muted)))",
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
+          DEFAULT: "var(--accent-color, hsl(var(--accent)))",
           foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
+          DEFAULT: "var(--popover-color, hsl(var(--popover)))",
           foreground: "hsl(var(--popover-foreground))",
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
+          DEFAULT: "var(--card-color, hsl(var(--card)))",
           foreground: "hsl(var(--card-foreground))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
+          primary: "var(--sidebar-primary-color, hsl(var(--sidebar-primary)))",
+          "primary-foreground": "var(--sidebar-primary-foreground-color, hsl(var(--sidebar-primary-foreground)))",
+          accent: "var(--sidebar-accent-color, hsl(var(--sidebar-accent)))",
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
+          border: "var(--sidebar-border-color, hsl(var(--sidebar-border)))",
           ring: "hsl(var(--sidebar-ring))",
         },
       },

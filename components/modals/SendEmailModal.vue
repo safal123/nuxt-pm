@@ -42,9 +42,11 @@ const sending = ref(false);
 const formKey = ref(0);
 const starterId = ref<StarterId>("custom");
 
-const dashboardUrl = computed(() =>
-  import.meta.client ? `${window.location.origin}/dashboard` : "/dashboard",
-);
+const dashboardUrl = computed(() => {
+  const workspaceId = workspaceStore.activeWorkspaceId;
+  const path = workspaceId ? `/w/${workspaceId}/dashboard` : "/w";
+  return import.meta.client ? `${window.location.origin}${path}` : path;
+});
 
 const starters = computed(() =>
   customEmailStarters({

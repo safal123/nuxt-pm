@@ -56,7 +56,9 @@ const when = computed(() => {
           </div>
           <div class="grid grid-cols-[100px_1fr] gap-3 border-b border-border px-3 py-2.5">
             <dt class="text-xs font-medium text-muted-foreground">From</dt>
-            <dd class="truncate text-sm text-foreground">{{ email.fromEmail || "—" }}</dd>
+            <dd class="truncate text-sm text-foreground">
+              {{ email.fromName ? `${email.fromName} · ${email.fromEmail}` : email.fromEmail || "—" }}
+            </dd>
           </div>
           <div class="grid grid-cols-[100px_1fr] gap-3 border-b border-border px-3 py-2.5">
             <dt class="text-xs font-medium text-muted-foreground">Template</dt>

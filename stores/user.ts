@@ -15,15 +15,17 @@ export const useUserStore = defineStore('user', () => {
     loading.value = true
     error.value = null
     try {
-      const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
-      const { data } = await useFetch<UserResponse>('/api/users', { headers })
-      if (data.value?.data.user) {
-        user.value = data.value.data.user
+      const headers = import.meta.server
+        ? useRequestHeaders(["cookie"])
+        : undefined
+      const result = await $fetch<UserResponse>("/api/users", { headers })
+      if (result?.data.user) {
+        user.value = result.data.user
       }
-      return data.value?.data.user
+      return result?.data.user ?? null
     } catch (err: any) {
-      error.value = err.message || 'Failed to fetch user data'
-      console.error('Error fetching user:', err)
+      error.value = err.message || "Failed to fetch user data"
+      console.error("Error fetching user:", err)
       return null
     } finally {
       loading.value = false

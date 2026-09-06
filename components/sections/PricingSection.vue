@@ -3,7 +3,7 @@ import { CheckIcon } from "lucide-vue-next";
 
 const { isSignedIn } = useAuth();
 const interval = ref("yearly");
-const startHref = computed(() => (isSignedIn.value ? "/dashboard" : "/sign-up"));
+const startHref = computed(() => (isSignedIn.value ? "/w" : "/sign-up"));
 
 const plans = computed(() => {
   const yearly = interval.value === "yearly";

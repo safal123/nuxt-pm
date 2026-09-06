@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const redirectUrl = computed(() =>
-  typeof route.query.redirect_url === 'string' ? route.query.redirect_url : '/dashboard',
+  typeof route.query.redirect_url === 'string' ? route.query.redirect_url : '/w',
 )
 const clerkAppearance = useClerkAppearance()
 </script>

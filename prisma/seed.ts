@@ -1029,17 +1029,22 @@ async function seedProject(
           likes: {
             create: (task.likes ?? []).map((key) => ({ userId: people[key].id })),
           },
-          attachments: {
-            create: (task.files ?? []).map((file) => ({
-              name: file.name,
-              url: `https://picsum.photos/seed/${encodeURIComponent(file.name)}/1200/800`,
-              size: file.size,
-              mimeType: file.mime,
-              uploadedBy: people[creatorKey].id,
-            })),
-          },
         },
       })
+
+      if (task.files?.length) {
+        await prisma.attachment.createMany({
+          data: task.files.map((file) => ({
+            name: file.name,
+            url: `https://picsum.photos/seed/${encodeURIComponent(file.name)}/1200/800`,
+            size: file.size,
+            mimeType: file.mime,
+            attachableType: 'Task',
+            attachableId: created.id,
+            uploadedBy: people[creatorKey].id,
+          })),
+        })
+      }
 
       const comments = task.comments?.length
         ? task.comments
@@ -1162,6 +1167,9 @@ async function main() {
               .filter((user) => user.id !== ownerId)
               .map((user) => ({ userId: user.id, role: 'ADMIN' as const })),
           ],
+        },
+        settings: {
+          create: {},
         },
       },
     })
