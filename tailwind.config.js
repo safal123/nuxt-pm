@@ -49,16 +49,25 @@ module.exports = {
           DEFAULT: "var(--card-color, hsl(var(--card)))",
           foreground: "hsl(var(--card-foreground))",
         },
+        dropzone: {
+          DEFAULT: "var(--dropzone-color, hsl(var(--dropzone)))",
+          border: "var(--dropzone-border-color, hsl(var(--dropzone-border)))",
+        },
         sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
+          DEFAULT: "var(--sidebar-background-color, hsl(var(--sidebar-background)))",
           foreground: "hsl(var(--sidebar-foreground))",
           primary: "var(--sidebar-primary-color, hsl(var(--sidebar-primary)))",
           "primary-foreground": "var(--sidebar-primary-foreground-color, hsl(var(--sidebar-primary-foreground)))",
           accent: "var(--sidebar-accent-color, hsl(var(--sidebar-accent)))",
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+          active: "var(--sidebar-active-color, hsl(var(--sidebar-active)))",
+          "active-hover": "var(--sidebar-active-hover-color, hsl(var(--sidebar-active-hover)))",
           border: "var(--sidebar-border-color, hsl(var(--sidebar-border)))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      boxShadow: {
+        drag: "var(--shadow-drag)",
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

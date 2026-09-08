@@ -118,10 +118,9 @@ const saveName = () => {
     class="flex flex-col w-80 shrink-0 rounded-xl border max-h-[calc(100vh-12rem)]"
     :class="[
       isDropTarget
-        ? 'border-violet-400 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.25)]'
+        ? 'border-dropzone-border ring-1 ring-inset ring-dropzone-border'
         : 'border-border',
-      !columnTint &&
-        (isDropTarget ? 'bg-violet-50 dark:bg-violet-950/40' : 'bg-muted'),
+      !columnTint && (isDropTarget ? 'bg-dropzone' : 'bg-muted'),
     ]"
     :style="columnTint ? { backgroundColor: `${columnTint}2e` } : undefined"
   >
@@ -133,7 +132,7 @@ const saveName = () => {
         v-if="isEditing"
         ref="nameInputRef"
         v-model="nameDraft"
-        class="min-w-0 flex-1 h-7 rounded-md border border-violet-300 bg-background px-2 text-[13px] font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-violet-400"
+        class="min-w-0 flex-1 h-7 rounded-md border border-input bg-background px-2 text-[13px] font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         @blur="saveName"
         @keyup.enter="saveName"
         @keyup.esc="
@@ -286,7 +285,7 @@ const saveName = () => {
           ref="inputRef"
           v-model="newTaskTitle"
           placeholder="Task title"
-          class="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+          class="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           @keyup.enter="submitTask"
           @keyup.esc="cancelAdding"
           @blur="submitTask"

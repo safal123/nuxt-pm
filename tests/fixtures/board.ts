@@ -1,0 +1,40 @@
+import type { Task, TaskColumn } from "~/types";
+
+export const createTask = (overrides: Partial<Task> = {}): Task => ({
+  id: "task-1",
+  title: "Write the release notes",
+  description: null,
+  order: 0,
+  priority: "MEDIUM",
+  status: "TODO",
+  completedAt: null,
+  dueDate: null,
+  coverColor: null,
+  archivedAt: null,
+  labels: [],
+  columnId: "column-1",
+  projectId: "project-1",
+  createdBy: "user-1",
+  createdAt: "2026-03-01T12:00:00.000Z",
+  updatedAt: "2026-03-01T12:00:00.000Z",
+  creator: null,
+  assignee: null,
+  members: [],
+  commentCount: 0,
+  attachmentCount: 0,
+  likeCount: 0,
+  likedByMe: false,
+  ...overrides,
+});
+
+export const createColumn = (overrides: Partial<TaskColumn> = {}): TaskColumn => ({
+  id: "column-1",
+  name: "To Do",
+  order: 0,
+  color: null,
+  archivedAt: null,
+  projectId: "project-1",
+  tasks: [],
+  completedCount: 0,
+  ...overrides,
+});

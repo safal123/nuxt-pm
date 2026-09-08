@@ -31,8 +31,37 @@ const workspaceTintHex = (id: string | null | undefined) => {
   return hex.startsWith('#') ? hex : undefined
 }
 
-const mixToken = (hex: string, token: string, amount: number) =>
-  `color-mix(in srgb, ${hex} ${amount}%, hsl(var(${token})))`
+// Chroma of a fully saturated palette colour. Anything less saturated scales
+// the whole ramp down proportionally, so a muted pick such as "Black" stays
+// near-neutral instead of reading as a vivid blue.
+const REFERENCE_CHROMA = 0.15
+
+const srgbToLinear = (channel: number) =>
+  channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+
+const hexToOklch = (hex: string) => {
+  const value = hex.replace('#', '')
+  const [r, g, b] = [0, 2, 4].map((index) =>
+    srgbToLinear(parseInt(value.slice(index, index + 2), 16) / 255),
+  )
+  const long = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
+  const medium = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
+  const short = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+  const a = 1.9779984951 * long - 2.428592205 * medium + 0.4505937099 * short
+  const b2 = 0.0259040371 * long + 0.7827717662 * medium - 0.808675766 * short
+  const hue = (Math.atan2(b2, a) * 180) / Math.PI
+  return {
+    lightness: 0.2104542553 * long + 0.793617785 * medium - 0.0040720468 * short,
+    chroma: Math.hypot(a, b2),
+    hue: hue < 0 ? hue + 360 : hue,
+  }
+}
+
+// Naturally light hues such as yellow and lime read as khaki once pinned to a
+// mid lightness, so they lift the light ramp toward their own lightness. Capped
+// so no colour can wash the ramp out.
+const rampLift = (lightness: number) =>
+  Math.min(5.5, Math.max(0, (lightness - 0.62) * 22))
 
 const contrastForeground = (hex: string) => {
   const value = hex.replace('#', '')
@@ -60,21 +89,22 @@ const workspaceActionVars = (hex?: string) =>
         '--ring-color': 'hsl(var(--foreground))',
       }
 
-export const workspaceThemeVars = (id: string | null | undefined) => {
+export const workspaceThemeVars = (
+  id: string | null | undefined,
+): Record<string, string> => {
   const hex = workspaceTintHex(id)
   const actions = workspaceActionVars(hex)
   if (!hex) return actions
+  const { lightness, chroma, hue } = hexToOklch(hex)
   return {
-    '--background-color': mixToken(hex, '--background', 18),
-    '--card-color': mixToken(hex, '--card', 14),
-    '--popover-color': mixToken(hex, '--popover', 14),
-    '--muted-color': mixToken(hex, '--muted', 22),
-    '--accent-color': mixToken(hex, '--accent', 26),
-    '--secondary-color': mixToken(hex, '--secondary', 22),
-    '--border-color': mixToken(hex, '--border', 32),
-    '--input-color': mixToken(hex, '--input', 32),
-    '--sidebar-accent-color': mixToken(hex, '--sidebar-accent', 24),
-    '--sidebar-border-color': mixToken(hex, '--sidebar-border', 36),
+    // Only the hue, an intensity scale and a lightness nudge are published. The
+    // per-surface ramp lives in assets/css/main.css so it can differ between
+    // light and dark mode from a single set of injected values.
+    '--ws-hue': hue.toFixed(1),
+    '--ws-chroma': Math.min(1, chroma / REFERENCE_CHROMA).toFixed(3),
+    '--ws-lift': `${rampLift(lightness).toFixed(2)}%`,
+    // Drop feedback is meant to be obvious, so the outline uses the raw colour.
+    '--dropzone-border-color': hex,
     ...actions,
   }
 }
@@ -87,25 +117,5 @@ export const workspaceThemeCss = (id: string | null | undefined) => {
     .join('; ')
 }
 
-export const workspaceCardColor = (id: string | null | undefined) =>
-  workspaceThemeVars(id)?.['--card-color']
-
-const workspaceColorMix = (
-  id: string | null | undefined,
-  amount: number,
-  borderAmount = amount,
-) => {
-  const hex = workspaceTintHex(id)
-  if (!hex) return undefined
-  return {
-    backgroundColor: mixToken(hex, '--background', amount),
-    borderColor: mixToken(hex, '--border', borderAmount),
-    ...workspaceThemeVars(id),
-  }
-}
-
-export const workspaceBackgroundStyle = (id: string | null | undefined) =>
-  workspaceColorMix(id, 18, 32)
-
-export const workspaceSidebarStyle = (id: string | null | undefined) =>
-  workspaceColorMix(id, 28, 36)
+export const hasWorkspaceTint = (id: string | null | undefined) =>
+  Boolean(workspaceTintHex(id))

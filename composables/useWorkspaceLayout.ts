@@ -1,9 +1,5 @@
 import type { Project, Workspace } from "~/types";
-import {
-  workspaceBackgroundStyle,
-  workspaceSidebarStyle,
-  workspaceThemeCss,
-} from "~/utils/task-colors";
+import { hasWorkspaceTint, workspaceThemeCss } from "~/utils/task-colors";
 
 export const useWorkspaceLayout = () => {
   const route = useRoute();
@@ -20,21 +16,13 @@ export const useWorkspaceLayout = () => {
     ),
   );
 
-  const workspaceBackground = computed(() =>
-    workspaceBackgroundStyle(
-      workspaceStore.activeWorkspace?.settings?.backgroundColor,
-    ),
-  );
-
-  const sidebarBackground = computed(() =>
-    workspaceSidebarStyle(
-      workspaceStore.activeWorkspace?.settings?.backgroundColor,
-    ),
-  );
-
   const workspaceColorId = computed(
     () => workspaceStore.activeWorkspace?.settings?.backgroundColor,
   );
+
+  // Surfaces themselves are driven by CSS from the variables below; the layout
+  // only needs to know whether a tint is active to pick header translucency.
+  const isTinted = computed(() => hasWorkspaceTint(workspaceColorId.value));
 
   useHead({
     htmlAttrs: {
@@ -86,8 +74,7 @@ export const useWorkspaceLayout = () => {
 
   return {
     workspaceId,
-    workspaceBackground,
-    sidebarBackground,
+    isTinted,
     pageTitle,
     openMembers,
     openInvite,

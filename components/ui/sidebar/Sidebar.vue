@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { CSSProperties } from 'vue'
 import type { SidebarProps } from '.'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
@@ -9,25 +8,19 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<SidebarProps & { style?: CSSProperties }>(), {
+const props = withDefaults(defineProps<SidebarProps>(), {
   side: 'left',
   variant: 'sidebar',
   collapsible: 'offcanvas',
 })
 
 const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
-
-const hasCustomBackground = computed(() => !!props.style?.backgroundColor)
-const panelClass = computed(() =>
-  hasCustomBackground.value ? 'bg-transparent' : 'bg-sidebar',
-)
 </script>
 
 <template>
   <div
     v-if="collapsible === 'none'"
-    :class="cn('flex h-full w-[--sidebar-width] flex-col text-sidebar-foreground', panelClass, props.class)"
-    :style="props.style"
+    :class="cn('flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground', props.class)"
     v-bind="$attrs"
   >
     <slot />
@@ -38,11 +31,9 @@ const panelClass = computed(() =>
       data-sidebar="sidebar"
       data-mobile="true"
       :side="side"
-      class="w-[--sidebar-width] p-0 text-sidebar-foreground [&>button]:hidden"
-      :class="panelClass"
+      class="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
       :style="{
         '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
-        ...props.style,
       }"
     >
       <div class="flex h-full w-full flex-col">
@@ -81,14 +72,11 @@ const panelClass = computed(() =>
           : 'group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l border-sidebar-border',
         props.class,
       )"
-      :style="hasCustomBackground ? { borderColor: props.style?.borderColor } : undefined"
       v-bind="$attrs"
     >
       <div
         data-sidebar="sidebar"
-        class="flex h-full w-full flex-col text-sidebar-foreground group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
-        :class="panelClass"
-        :style="props.style"
+        class="flex h-full w-full flex-col bg-sidebar text-sidebar-foreground group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
       >
         <slot />
       </div>

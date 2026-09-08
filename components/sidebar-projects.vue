@@ -83,6 +83,15 @@ const liveProjects = computed(() =>
 const isCreator = (project: Project) =>
   project.createdBy === userStore.user?.id;
 
+// Active and idle share the `hover:bg-*` slot, so they are kept exclusive here
+// rather than layered as two competing utilities.
+const navItemClass = (isActive: boolean) => [
+  "flex items-center rounded-md",
+  isActive
+    ? "bg-sidebar-active hover:bg-sidebar-active-hover"
+    : "hover:bg-sidebar-accent",
+];
+
 const editProject = async (project: Project) => {
   if (project.id !== props.activeProjectId) {
     await handleSelectProject(project.id);
@@ -96,11 +105,7 @@ const editProject = async (project: Project) => {
   <SidebarGroup>
     <SidebarMenu class="px-2 mt-1">
       <SidebarMenuItem
-        class="flex items-center hover:bg-sidebar-accent rounded-md"
-        :class="{
-          'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
-            route.path.endsWith('/dashboard'),
-        }"
+        :class="navItemClass(route.path.endsWith('/dashboard'))"
       >
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
@@ -113,11 +118,11 @@ const editProject = async (project: Project) => {
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem
-        class="flex items-center hover:bg-sidebar-accent rounded-md"
-        :class="{
-          'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
+        :class="
+          navItemClass(
             route.path.endsWith('/projects') && !route.params.projectId,
-        }"
+          )
+        "
       >
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
@@ -150,12 +155,12 @@ const editProject = async (project: Project) => {
       <SidebarMenuItem
         v-for="item in liveProjects"
         :key="item.id"
-        class="flex items-center hover:bg-sidebar-accent rounded-md"
-        :class="{
-          'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
+        :class="
+          navItemClass(
             item.id === activeProjectId &&
-            String(route.params.projectId || '') === item.id,
-        }"
+              String(route.params.projectId || '') === item.id,
+          )
+        "
       >
         <SidebarMenuButton @click.prevent="handleSelectProject(item.id)">
           <div class="w-full cursor-pointer flex items-center gap-2 p-2">
@@ -217,11 +222,7 @@ const editProject = async (project: Project) => {
     </SidebarGroupLabel>
     <SidebarMenu class="px-2 mt-1">
       <SidebarMenuItem
-        class="flex items-center hover:bg-sidebar-accent rounded-md"
-        :class="{
-          'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
-            route.path.includes('/activities'),
-        }"
+        :class="navItemClass(route.path.includes('/activities'))"
       >
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
@@ -234,11 +235,7 @@ const editProject = async (project: Project) => {
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem
-        class="flex items-center hover:bg-sidebar-accent rounded-md"
-        :class="{
-          'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
-            route.path.includes('/emails'),
-        }"
+        :class="navItemClass(route.path.includes('/emails'))"
       >
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
@@ -251,11 +248,7 @@ const editProject = async (project: Project) => {
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem
-        class="flex items-center hover:bg-sidebar-accent rounded-md"
-        :class="{
-          'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
-            route.path.includes('/archived'),
-        }"
+        :class="navItemClass(route.path.includes('/archived'))"
       >
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
@@ -268,11 +261,7 @@ const editProject = async (project: Project) => {
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem
-        class="flex items-center hover:bg-sidebar-accent rounded-md"
-        :class="{
-          'bg-violet-100 hover:bg-violet-200 dark:bg-violet-500/20 dark:hover:bg-violet-500/30':
-            route.path.includes('/settings'),
-        }"
+        :class="navItemClass(route.path.includes('/settings'))"
       >
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink

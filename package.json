@@ -8,7 +8,11 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "test": "vitest --silent=false",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:nuxt": "vitest run tests/nuxt",
+    "test:coverage": "vitest run --coverage",
     "db:seed": "prisma db seed"
   },
   "prisma": {
@@ -44,11 +48,14 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@nuxt/test-utils": "^3.15.4",
+    "@nuxt/test-utils": "3.15.4",
     "@nuxtjs/tailwindcss": "^6.13.1",
+    "@vitest/coverage-v8": "^3.0.5",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^16.8.1",
     "prisma": "^6.3.1",
     "tsx": "^4.20.5",
     "typescript": "^5.8.3",
-    "vitest": "^3.0.5"
+    "vitest": "3.0.5"
   }
 }

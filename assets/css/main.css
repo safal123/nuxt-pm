@@ -41,8 +41,15 @@
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-active: 251.4 91.4% 95.5%;
+    --sidebar-active-hover: 250.5 95.3% 91.8%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 262.1 83.3% 57.8%;
+
+    --dropzone: 250 100% 97.6%;
+    --dropzone-border: 255 92% 76%;
+
+    --shadow-drag: 0 18px 40px rgba(15, 23, 42, 0.18);
   }
 
   .dark {
@@ -81,8 +88,73 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 14% 20%;
     --sidebar-accent-foreground: 210 20% 94%;
+    --sidebar-active: 250 28% 25%;
+    --sidebar-active-hover: 254 34% 30%;
     --sidebar-border: 220 12% 26%;
     --sidebar-ring: 263.4 70% 58%;
+
+    --dropzone: 253.5 37% 21%;
+    --dropzone-border: 263.4 70% 50.4%;
+
+    --shadow-drag: 0 18px 40px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/*
+ * Workspace tint ramp.
+ *
+ * useWorkspaceLayout injects `--ws-hue` and `--ws-chroma` onto <html> from the
+ * workspace colour. When no colour is picked both are absent, which makes every
+ * declaration below invalid at computed-value time, so the plain
+ * `hsl(var(--token))` fallbacks in tailwind.config.js take over untouched.
+ *
+ * Lightness is driven by the ramp rather than the workspace colour, so a
+ * workspace barely changes how readable the UI is — the dark "Black" and the
+ * bright "Yellow" both land on near-identical surface lightness. Chroma is set
+ * explicitly in OKLCH so every colour reads at the same intensity.
+ *
+ * `--ws-lift` nudges the light ramp up for hues that are naturally light
+ * (yellow, lime), which would otherwise turn khaki when pinned to a mid
+ * lightness. Each step scales the lift by its own headroom, largest on the
+ * darkest step, so no step is pushed outside the sRGB gamut.
+ */
+@layer base {
+  :root {
+    --card-color: oklch(calc(93.5% + var(--ws-lift) * 0.37) calc(0.029 * var(--ws-chroma)) var(--ws-hue));
+    --popover-color: oklch(calc(93.5% + var(--ws-lift) * 0.37) calc(0.029 * var(--ws-chroma)) var(--ws-hue));
+    --background-color: oklch(calc(90% + var(--ws-lift) * 0.57) calc(0.046 * var(--ws-chroma)) var(--ws-hue));
+    --muted-color: oklch(calc(89% + var(--ws-lift) * 0.63) calc(0.05 * var(--ws-chroma)) var(--ws-hue));
+    --secondary-color: oklch(calc(89% + var(--ws-lift) * 0.63) calc(0.05 * var(--ws-chroma)) var(--ws-hue));
+    --accent-color: oklch(calc(86% + var(--ws-lift) * 0.8) calc(0.064 * var(--ws-chroma)) var(--ws-hue));
+    --border-color: oklch(calc(82.5% + var(--ws-lift)) calc(0.083 * var(--ws-chroma)) var(--ws-hue));
+    --input-color: oklch(calc(82.5% + var(--ws-lift)) calc(0.083 * var(--ws-chroma)) var(--ws-hue));
+
+    --sidebar-background-color: oklch(calc(88% + var(--ws-lift) * 0.69) calc(0.055 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-accent-color: oklch(calc(85% + var(--ws-lift) * 0.86) calc(0.068 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-active-color: oklch(calc(81.5% + var(--ws-lift)) calc(0.085 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-active-hover-color: oklch(calc(78% + var(--ws-lift)) calc(0.1 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-border-color: oklch(calc(82.5% + var(--ws-lift)) calc(0.083 * var(--ws-chroma)) var(--ws-hue));
+
+    --dropzone-color: oklch(calc(89.5% + var(--ws-lift) * 0.6) calc(0.048 * var(--ws-chroma)) var(--ws-hue));
+  }
+
+  .dark {
+    --card-color: oklch(29.5% calc(0.047 * var(--ws-chroma)) var(--ws-hue));
+    --popover-color: oklch(29.5% calc(0.047 * var(--ws-chroma)) var(--ws-hue));
+    --background-color: oklch(25.5% calc(0.042 * var(--ws-chroma)) var(--ws-hue));
+    --muted-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
+    --secondary-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
+    --accent-color: oklch(37.5% calc(0.062 * var(--ws-chroma)) var(--ws-hue));
+    --border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
+    --input-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
+
+    --sidebar-background-color: oklch(22% calc(0.035 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-accent-color: oklch(30% calc(0.05 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-active-color: oklch(38% calc(0.062 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-active-hover-color: oklch(43% calc(0.07 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
+
+    --dropzone-color: oklch(35% calc(0.058 * var(--ws-chroma)) var(--ws-hue));
   }
 }
 

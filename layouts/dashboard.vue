@@ -1,15 +1,14 @@
 <script setup lang="ts">
 const workspaceStore = useWorkspaceStore();
 const userStore = useUserStore();
-const { workspaceBackground, sidebarBackground, pageTitle, initialize } =
-  useWorkspaceLayout();
+const { isTinted, pageTitle, initialize } = useWorkspaceLayout();
 
 await initialize();
 </script>
 
 <template>
   <SidebarProvider>
-    <Sidebar :style="sidebarBackground">
+    <Sidebar>
       <SidebarHeader class="border-b px-4 py-2">
         <WorkspaceSelector
           :workspaces="workspaceStore.workspaces"
@@ -31,11 +30,11 @@ await initialize();
       </SidebarFooter>
     </Sidebar>
 
-    <SidebarInset class="min-w-0 overflow-hidden" :style="workspaceBackground">
+    <SidebarInset class="min-w-0 overflow-hidden">
       <header
         class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b px-3 backdrop-blur md:px-6"
         :class="
-          workspaceBackground
+          isTinted
             ? 'bg-background/55 supports-[backdrop-filter]:bg-background/40'
             : 'bg-background/95 supports-[backdrop-filter]:bg-background/80'
         "

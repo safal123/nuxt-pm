@@ -11,7 +11,6 @@ import { format, isPast, isToday, isTomorrow, parseISO } from "date-fns";
 import type { Task, TaskPriority } from "@/types";
 import { priorityChip } from "@/utils/task-priority";
 import { statusChip, statusLabel } from "@/utils/task-status";
-import { workspaceCardColor } from "@/utils/task-colors";
 
 const props = withDefaults(
   defineProps<{
@@ -27,17 +26,6 @@ const emit = defineEmits<{
 }>();
 
 const boardStore = useBoardStore();
-const workspaceStore = useWorkspaceStore();
-
-const cardStyle = computed(() => {
-  const fill = workspaceCardColor(
-    workspaceStore.activeWorkspace?.settings?.backgroundColor,
-  );
-  return {
-    touchAction: "none" as const,
-    ...(fill ? { backgroundColor: fill } : {}),
-  };
-});
 
 const isPlaceholder = computed(
   () => !props.preview && boardStore.draggingTask?.id === props.task.id,
@@ -102,19 +90,18 @@ const onPointerDown = (event: PointerEvent) => {
 <template>
   <div
     v-if="isPlaceholder"
-    class="rounded-xl border-2 border-dashed border-violet-300 bg-violet-100/70 dark:border-violet-700 dark:bg-violet-950/40"
+    class="rounded-xl border-2 border-dashed border-dropzone-border bg-dropzone"
     :style="{ height: `${boardStore.dragSize.height}px` }"
   />
   <div
     v-else
-    class="group relative flex flex-col bg-card rounded-xl border border-border overflow-hidden"
+    class="group relative flex flex-col bg-card rounded-xl border border-border overflow-hidden touch-none"
     :class="[
       preview
-        ? 'shadow-[0_18px_40px_rgba(15,23,42,0.18)] dark:shadow-[0_18px_40px_rgba(0,0,0,0.45)] ring-1 ring-black/5 dark:ring-white/10'
+        ? 'shadow-drag ring-1 ring-black/5 dark:ring-white/10'
         : 'shadow-sm cursor-grab hover:border-muted-foreground/30 hover:shadow-md',
       isComplete ? 'opacity-80' : '',
     ]"
-    :style="cardStyle"
     @pointerdown="onPointerDown"
     @dragstart.prevent
   >
