@@ -6,7 +6,6 @@ export default defineNuxtConfig({
   modules: [
     'shadcn-nuxt',
     '@nuxtjs/tailwindcss',
-    '@prisma/nuxt',
     '@pinia/nuxt',
     '@uploadthing/nuxt',
   ],
@@ -45,8 +44,15 @@ export default defineNuxtConfig({
     }
   ],
   vite: {
+    resolve: {
+      alias: {
+        // Prisma emits a bare `.prisma/client/index-browser` import that the
+        // browser cannot resolve. Point Vite at the generated file instead.
+        '.prisma/client/index-browser': './node_modules/.prisma/client/index-browser.js',
+      },
+    },
     server: {
       allowedHosts: ['https://82ec-2403-4800-2590-b591-c14a-3d28-b356-27b6.ngrok-free.app']
     }
-  }
+  },
 })
