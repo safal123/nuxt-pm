@@ -16,8 +16,9 @@ const props = withDefaults(
   defineProps<{
     task: Task;
     preview?: boolean;
+    canDrag?: boolean;
   }>(),
-  { preview: false },
+  { preview: false, canDrag: true },
 );
 
 const emit = defineEmits<{
@@ -99,7 +100,9 @@ const onPointerDown = (event: PointerEvent) => {
     :class="[
       preview
         ? 'shadow-drag ring-1 ring-black/5 dark:ring-white/10'
-        : 'shadow-sm cursor-grab hover:border-muted-foreground/30 hover:shadow-md',
+        : 'shadow-sm hover:border-muted-foreground/30 hover:shadow-md',
+      !preview && canDrag ? 'cursor-grab' : '',
+      !preview && !canDrag ? 'cursor-pointer' : '',
       isComplete ? 'opacity-80' : '',
     ]"
     @pointerdown="onPointerDown"

@@ -2,8 +2,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const userStore = useUserStore();
   const workspaceStore = useWorkspaceStore();
 
-  await userStore.me();
-  await workspaceStore.fetchWorkspaces();
+  if (!userStore.user) await userStore.me();
+  if (!workspaceStore.workspaces.length) await workspaceStore.fetchWorkspaces();
 
   const routeWorkspaceId = String(to.params.workspaceId || "");
   let workspaceId =

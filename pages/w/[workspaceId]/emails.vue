@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { whenDate } from "@/utils/date";
 import { api } from "~/lib/api";
-import { pageKeys } from "~/lib/query";
 import type { EmailLogItem } from "@/types";
 import { EMAIL_TEMPLATES, sampleEmailHtml } from "@/utils/email-templates";
-import { emailStatusChip, emailTemplateChip, whenChip } from "@/utils/table-chips";
+import {
+  emailStatusChip,
+  emailTemplateChip,
+  whenChip,
+} from "@/utils/table-chips";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -45,49 +48,49 @@ const PAGE_SIZE = 12;
 const ALL = "all";
 
 const workspaceStore = useWorkspaceStore();
+const loading = ref(true);
 const view = ref<"inbox" | "sent" | "templates">("inbox");
+const emails = ref<EmailLogItem[]>([]);
+const projects = ref<{ id: string; name: string }[]>([]);
 const projectId = ref(ALL);
 const templateId = ref(ALL);
 const page = ref(1);
 const selected = ref<EmailLogItem | null>(null);
 const composeOpen = ref(false);
-const composeStarter = ref<"custom" | "welcome" | "project" | "notice">("custom");
+const composeStarter = ref<"custom" | "welcome" | "project" | "notice">(
+  "custom",
+);
 const box = computed(() => (view.value === "inbox" ? "inbox" : "sent"));
-const workspaceId = computed(() => workspaceStore.activeWorkspaceId || "");
 
-const emptyEmails = {
-  emails: [] as EmailLogItem[],
-  projects: [] as { id: string; name: string }[],
-};
-
-const { data, status, refresh } = await useAsyncData(
-  pageKeys.emails(workspaceId.value),
-  async () => {
-    if (!workspaceId.value) return emptyEmails;
+const fetchEmails = async () => {
+  const workspaceId = workspaceStore.activeWorkspaceId;
+  if (!workspaceId) {
+    loading.value = false;
+    return;
+  }
+  loading.value = true;
+  try {
     const result = await api<{
-      emails: EmailLogItem[]
-      projects: { id: string; name: string }[]
-    }>(`/api/workspaces/${workspaceId.value}/emails`, {
+      emails: EmailLogItem[];
+      projects: { id: string; name: string }[];
+    }>(`/api/workspaces/${workspaceId}/emails`, {
       query: {
         box: box.value,
         projectId: projectId.value,
         template: templateId.value,
       },
     });
-    return {
-      emails: result.emails ?? [],
-      projects: result.projects ?? [],
-    };
-  },
-  {
-    watch: [workspaceId, box, projectId, templateId],
-    default: () => emptyEmails,
-  },
-);
+    emails.value = result.emails ?? [];
+    projects.value = result.projects ?? [];
+  } catch (error) {
+    console.error(error);
+    emails.value = [];
+  } finally {
+    loading.value = false;
+  }
+};
 
-const emails = computed(() => data.value?.emails ?? []);
-const projects = computed(() => data.value?.projects ?? []);
-const loading = computed(() => status.value === "pending");
+await fetchEmails();
 
 watch(
   () => workspaceStore.activeWorkspaceId,
@@ -97,9 +100,13 @@ watch(
   },
 );
 
-watch([projectId, templateId, box, workspaceId], () => {
-  page.value = 1;
-});
+watch(
+  [projectId, templateId, box, () => workspaceStore.activeWorkspaceId],
+  () => {
+    page.value = 1;
+    fetchEmails();
+  },
+);
 
 const paged = computed(() => {
   const start = (page.value - 1) * PAGE_SIZE;
@@ -168,7 +175,9 @@ const starterFromTemplate = (
   return "custom";
 };
 
-const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "custom") => {
+const openCompose = (
+  starter: "custom" | "welcome" | "project" | "notice" = "custom",
+) => {
   composeStarter.value = starter;
   composeOpen.value = true;
 };
@@ -176,9 +185,13 @@ const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "cus
 
 <template>
   <div class="h-full min-w-0">
-    <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div
+      class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
+    >
       <div>
-        <h1 class="text-lg font-semibold tracking-tight text-foreground">Emails</h1>
+        <h1 class="text-lg font-semibold tracking-tight text-foreground">
+          Emails
+        </h1>
         <p class="mt-1 text-sm text-muted-foreground">
           {{
             view === "inbox"
@@ -190,9 +203,7 @@ const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "cus
         </p>
       </div>
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Button @click="openCompose('custom')">
-          Send email
-        </Button>
+        <Button @click="openCompose('custom')"> Send email </Button>
         <Tabs :model-value="view" @update:model-value="onView">
           <TabsList>
             <TabsTrigger value="inbox">Inbox</TabsTrigger>
@@ -204,7 +215,9 @@ const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "cus
     </div>
 
     <div v-if="view === 'inbox' || view === 'sent'" class="space-y-4">
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+      <div
+        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end"
+      >
         <Select :model-value="projectId" @update:model-value="onProject">
           <SelectTrigger class="h-9 w-full sm:w-[200px]">
             <SelectValue placeholder="All projects" />
@@ -245,7 +258,9 @@ const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "cus
         <Table>
           <TableHeader>
             <TableRow class="hover:bg-transparent border-border">
-              <TableHead class="h-10">{{ view === "inbox" ? "From" : "To" }}</TableHead>
+              <TableHead class="h-10">{{
+                view === "inbox" ? "From" : "To"
+              }}</TableHead>
               <TableHead class="h-10">Template</TableHead>
               <TableHead class="h-10">Subject</TableHead>
               <TableHead class="h-10">Project</TableHead>
@@ -272,7 +287,9 @@ const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "cus
               class="cursor-pointer"
               @click="openEmail(item)"
             >
-              <TableCell class="max-w-[200px] truncate text-sm font-medium text-foreground">
+              <TableCell
+                class="max-w-[200px] truncate text-sm font-medium text-foreground"
+              >
                 {{
                   view === "inbox"
                     ? item.fromName || item.fromEmail
@@ -287,7 +304,9 @@ const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "cus
               <TableCell class="max-w-[240px] truncate text-sm text-foreground">
                 {{ item.subject }}
               </TableCell>
-              <TableCell class="max-w-[160px] truncate text-sm text-muted-foreground">
+              <TableCell
+                class="max-w-[160px] truncate text-sm text-muted-foreground"
+              >
                 {{ item.projectName || "Workspace" }}
               </TableCell>
               <TableCell>
@@ -295,7 +314,10 @@ const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "cus
                   {{ item.status }}
                 </span>
               </TableCell>
-              <TableCell class="whitespace-nowrap" :title="when(item.createdAt).title">
+              <TableCell
+                class="whitespace-nowrap"
+                :title="when(item.createdAt).title"
+              >
                 <span :class="whenChip(item.createdAt)">
                   {{ when(item.createdAt).label }}
                 </span>
@@ -330,7 +352,9 @@ const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "cus
                 >
                   <Button
                     class="h-8 w-8 p-0"
-                    :variant="item.value === currentPage ? 'default' : 'outline'"
+                    :variant="
+                      item.value === currentPage ? 'default' : 'outline'
+                    "
                   >
                     {{ item.value }}
                   </Button>
@@ -352,7 +376,9 @@ const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "cus
         class="rounded-xl border border-border bg-card p-4 text-left"
       >
         <p class="text-sm font-semibold text-foreground">{{ item.label }}</p>
-        <p class="mt-1 text-sm leading-6 text-muted-foreground">{{ item.description }}</p>
+        <p class="mt-1 text-sm leading-6 text-muted-foreground">
+          {{ item.description }}
+        </p>
         <div class="mt-3 flex flex-wrap gap-2">
           <Button variant="outline" size="sm" @click="previewTemplate(item.id)">
             Preview
@@ -370,7 +396,7 @@ const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "cus
       :starter="composeStarter"
       :projects="projects"
       @close="composeOpen = false"
-      @sent="refresh"
+      @sent="fetchEmails"
     />
   </div>
 </template>

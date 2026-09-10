@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 
 const props = defineProps<{
   column: TaskColumn;
+  visibleTasks?: Task[];
+  filtered?: boolean;
+  canDrag?: boolean;
   isFirst?: boolean;
   isLast?: boolean;
 }>();
@@ -44,6 +47,8 @@ watch(
     if (!isEditing.value) nameDraft.value = name;
   },
 );
+
+const shownTasks = computed(() => props.visibleTasks ?? props.column.tasks);
 
 const isDropTarget = computed(
   () => boardStore.draggingTask?.columnId === props.column.id,
@@ -154,7 +159,10 @@ const saveName = () => {
       <span
         class="text-[11px] font-medium text-muted-foreground bg-background/80 border border-border rounded-full min-w-[1.25rem] h-5 px-1.5 inline-flex items-center justify-center shrink-0"
       >
-        {{ column.tasks.length }}
+        {{ shownTasks.length }}
+        <span v-if="filtered && shownTasks.length !== column.tasks.length">
+          /{{ column.tasks.length }}
+        </span>
       </span>
 
       <DropdownMenu>
@@ -250,8 +258,14 @@ const saveName = () => {
       data-task-list
       class="mt-2 flex-1 overflow-y-auto px-2 pb-2 flex flex-col gap-2 min-h-[88px]"
     >
+      <p
+        v-if="filtered && !shownTasks.length"
+        class="px-1 py-6 text-center text-[12px] text-muted-foreground"
+      >
+        No matching cards
+      </p>
       <div
-        v-for="task in column.tasks"
+        v-for="task in shownTasks"
         :key="task.id"
         data-task-slot
         :data-task-id="task.id"
@@ -259,11 +273,12 @@ const saveName = () => {
       >
         <TaskCard
           :task="task"
+          :can-drag="canDrag"
           @like="emit('like-task', $event)"
         />
       </div>
       <Button
-        v-if="hiddenCompleted > 0"
+        v-if="hiddenCompleted > 0 && !filtered"
         type="button"
         variant="ghost"
         size="sm"

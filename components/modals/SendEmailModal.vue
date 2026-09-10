@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { SendIcon } from "lucide-vue-next";
 import { api } from "~/lib/api";
-import { invalidateWorkspacePages } from "~/lib/query";
 import { toast } from "vue-sonner";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
@@ -168,7 +167,6 @@ async function onSubmit(values: any) {
     toast.success("Email sent", {
       description: `Sent to ${values.to.trim()}.`,
     });
-    invalidateWorkspacePages(workspaceId);
     emit("sent");
     emit("close");
   } catch (error: any) {

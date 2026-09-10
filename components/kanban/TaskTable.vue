@@ -2,7 +2,6 @@
 import { format, formatDistanceToNow, isPast, isToday, isTomorrow, parseISO } from "date-fns";
 import { CalendarIcon, MessageSquareIcon } from "lucide-vue-next";
 import type { Task, TaskAssignee } from "@/types";
-import { api } from "~/lib/api";
 import { priorityChip, priorityLabel } from "@/utils/task-priority";
 import { statusChip, statusLabel } from "@/utils/task-status";
 import { Button } from "@/components/ui/button";
@@ -29,10 +28,8 @@ import {
 const PAGE_SIZE = 10;
 
 const boardStore = useBoardStore();
+const { filteredTasks, isFiltered, query } = useBoardQuery();
 const page = ref(1);
-const total = ref(0);
-const tasks = ref<Task[]>([]);
-const loading = ref(false);
 
 const parseDate = (value: Date | string | null | undefined) => {
   if (!value) return null;
@@ -58,8 +55,15 @@ const dueFor = (task: Task) => {
   };
 };
 
+const total = computed(() => filteredTasks.value.length);
+
+const pagedTasks = computed(() => {
+  const start = (page.value - 1) * PAGE_SIZE;
+  return filteredTasks.value.slice(start, start + PAGE_SIZE);
+});
+
 const rows = computed(() =>
-  tasks.value.map((task) => ({
+  pagedTasks.value.map((task) => ({
     ...task,
     due: dueFor(task),
   })),
@@ -72,56 +76,25 @@ const rangeLabel = computed(() => {
   return `${start}–${end} of ${total.value}`;
 });
 
-const fetchTasks = async (options?: { silent?: boolean }) => {
-  const projectId = boardStore.projectId;
-  if (!projectId) {
-    tasks.value = [];
-    total.value = 0;
-    return;
-  }
-  if (!options?.silent) loading.value = true;
-  try {
-    const result = await api<{ tasks: Task[]; total: number }>(
-      `/api/projects/${projectId}/tasks`,
-      { query: { page: page.value, limit: PAGE_SIZE } },
-    );
-    tasks.value = result.tasks ?? [];
-    total.value = result.total ?? 0;
-    const maxPage = Math.max(1, Math.ceil(total.value / PAGE_SIZE) || 1);
-    if (page.value > maxPage) {
-      page.value = maxPage;
-      await fetchTasks({ silent: true });
-    }
-  } catch (error) {
-    console.error("Failed to load tasks:", error);
-    tasks.value = [];
-    total.value = 0;
-  } finally {
-    if (!options?.silent) loading.value = false;
-  }
-};
-
 watch(
-  () => boardStore.projectId,
+  query,
   () => {
     page.value = 1;
-    fetchTasks();
   },
-  { immediate: true },
+  { deep: true },
 );
 
 watch(
-  () => boardStore.listVersion,
+  [() => boardStore.projectId, filteredTasks],
   () => {
-    if (!boardStore.projectId) return;
-    fetchTasks({ silent: true });
+    const lastPage = Math.max(1, Math.ceil(total.value / PAGE_SIZE) || 1);
+    if (page.value > lastPage) page.value = lastPage;
   },
 );
 
 const onPage = (next: number) => {
   if (next === page.value) return;
   page.value = next;
-  fetchTasks();
 };
 
 const createdLabel = (task: Task) => {
@@ -156,11 +129,17 @@ const initials = (person: TaskAssignee | null) => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableEmpty v-if="loading" :colspan="7">
+        <TableEmpty v-if="boardStore.loading && !rows.length" :colspan="7">
           <span class="text-muted-foreground">Loading tasks…</span>
         </TableEmpty>
         <TableEmpty v-else-if="!rows.length" :colspan="7">
-          <span class="text-muted-foreground">No tasks in this project yet.</span>
+          <span class="text-muted-foreground">
+            {{
+              isFiltered
+                ? "No cards match these filters."
+                : "No tasks in this project yet."
+            }}
+          </span>
         </TableEmpty>
         <template v-else>
         <TableRow

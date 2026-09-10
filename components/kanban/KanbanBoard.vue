@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { visibleDropIndex } from "~/utils/board-query";
 import type { Task } from "@/types";
 import AddKanbanColumn from "~/components/kanban/AddKanbanColumn.vue";
 import { toast } from "vue-sonner";
@@ -9,11 +10,16 @@ const props = defineProps<{
 
 const boardStore = useBoardStore();
 const overlayEl = ref<HTMLElement | null>(null);
+const {
+  isFiltered,
+  canDrag,
+  visibleTasksFor,
+} = useBoardQuery();
 
 const archiveTask = async (taskId: string) => {
   try {
     await boardStore.archiveTask(taskId);
-    await useWorkspaceStore().fetchArchive({ silent: true, force: true });
+    await useWorkspaceStore().fetchArchive({ silent: true });
   } catch (error: any) {
     toast.error("Could not archive card", {
       description: error?.data?.message || "Please try again.",
@@ -24,7 +30,7 @@ const archiveTask = async (taskId: string) => {
 const archiveList = async (columnId: string) => {
   try {
     await boardStore.archiveColumn(columnId);
-    await useWorkspaceStore().fetchArchive({ silent: true, force: true });
+    await useWorkspaceStore().fetchArchive({ silent: true });
     toast.success("List archived");
   } catch (error: any) {
     toast.error("Could not archive list", {
@@ -67,37 +73,44 @@ const applyOverlay = (x: number, y: number) => {
 
 const updateDropTarget = (x: number, y: number) => {
   const el = document.elementFromPoint(x, y);
-  const column = el?.closest("[data-column-id]") as HTMLElement | null;
-  if (!column) return;
+  const columnEl = el?.closest("[data-column-id]") as HTMLElement | null;
+  if (!columnEl) return;
 
-  const columnId = column.dataset.columnId;
+  const columnId = columnEl.dataset.columnId;
   if (!columnId) return;
 
-  const overSlot = el?.closest("[data-task-slot]") as HTMLElement | null;
-  const slots = [...column.querySelectorAll<HTMLElement>("[data-task-slot]")];
-  const draggingId = boardStore.draggingTask?.id;
+  const source = boardStore.columns.find((item) => item.id === columnId);
+  if (!source) return;
 
-  let nextIndex: number | null = null;
+  const overSlot = el?.closest("[data-task-slot]") as HTMLElement | null;
+  const slots = [...columnEl.querySelectorAll<HTMLElement>("[data-task-slot]")];
+  const draggingId = boardStore.draggingTask?.id;
+  const visible = visibleTasksFor(source);
+
+  let visibleIndex: number | null = null;
 
   if (overSlot?.dataset.taskId) {
     const overIndex = slots.findIndex(
       (slot) => slot.dataset.taskId === overSlot.dataset.taskId,
     );
     if (overIndex === -1) return;
-    nextIndex = overIndex;
+    visibleIndex = overIndex;
   } else if (!slots.length) {
-    nextIndex = 0;
+    visibleIndex = 0;
   } else {
     const last = slots[slots.length - 1];
     if (y > last.getBoundingClientRect().bottom) {
       const draggedHere = slots.some(
         (slot) => slot.dataset.taskId === draggingId,
       );
-      nextIndex = draggedHere ? slots.length - 1 : slots.length;
+      visibleIndex = draggedHere ? slots.length - 1 : slots.length;
     }
   }
 
-  if (nextIndex === null) return;
+  if (visibleIndex === null) return;
+  const nextIndex = isFiltered.value
+    ? visibleDropIndex(source.tasks, visible, visibleIndex)
+    : visibleIndex;
   if (columnId === lastDropColumnId && nextIndex === lastDropIndex) return;
   lastDropColumnId = columnId;
   lastDropIndex = nextIndex;
@@ -181,6 +194,10 @@ const onCardPointerDown = (event: PointerEvent, task: Task) => {
   if ((event.target as HTMLElement | null)?.closest("[data-card-action]")) {
     return;
   }
+  if (!canDrag.value) {
+    boardStore.openTask(task);
+    return;
+  }
   const slot = (event.currentTarget as HTMLElement | null)?.closest(
     "[data-task-slot]",
   ) as HTMLElement | null;
@@ -215,6 +232,7 @@ const { view } = useProjectView();
 
 <template>
   <div class="w-full min-w-0">
+    <KanbanToolbar />
     <TaskTable v-if="view === 'table'" />
     <div
       v-else-if="boardStore.loading && !boardStore.columns.length"
@@ -272,6 +290,9 @@ const { view } = useProjectView();
         v-for="(column, index) in boardStore.columns"
         :key="column.id"
         :column="column"
+        :visible-tasks="visibleTasksFor(column)"
+        :filtered="isFiltered"
+        :can-drag="canDrag"
         :is-first="index === 0"
         :is-last="index === boardStore.columns.length - 1"
         @add-task="boardStore.addTask"

@@ -48,6 +48,7 @@ async function onSubmit() {
 
   try {
     await workspaceStore.updateProject(id, { archived: true });
+    await workspaceStore.fetchArchive({ silent: true });
 
     const wasActive = userStore.user?.activeProjectId === id;
     if (wasActive) {

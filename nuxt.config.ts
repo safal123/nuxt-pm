@@ -14,6 +14,10 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
+      link: [
+        { rel: 'icon', type: 'image/png', href: '/images/logo.png' },
+        { rel: 'apple-touch-icon', href: '/images/logo.png' },
+      ],
       script: [
         {
           innerHTML: `(function(){try{var r=localStorage.getItem('nuxt-color-mode');var s='auto';if(r){try{s=JSON.parse(r)}catch(e){s=r}}var d=s==='dark'||((!s||s==='auto')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',!!d);}catch(e){}})();`,

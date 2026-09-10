@@ -1,6 +1,5 @@
 import type { WorkspaceActivity } from "~/types";
 import { api } from "~/lib/api";
-import { pageKeys } from "~/lib/query";
 
 export type WorkspaceSummaryStats = {
   liveProjects: number;
@@ -21,34 +20,26 @@ const emptyStats: WorkspaceSummaryStats = {
   doneTasks: 0,
 };
 
-const emptySummary = {
-  stats: emptyStats,
-  activity: [] as WorkspaceSummaryActivity[],
-};
-
 export const useWorkspaceSummary = (
   workspaceId: MaybeRefOrGetter<string>,
 ) => {
-  const id = computed(() => toValue(workspaceId) || "none");
-
-  const { data, status, error, refresh } = useAsyncData(
-    pageKeys.summary(id.value),
+  const { data, status, error } = useAsyncData(
+    `workspace-summary-${toValue(workspaceId) || "none"}`,
     async () => {
-      const workspaceIdValue = toValue(workspaceId);
-      if (!workspaceIdValue) return emptySummary;
+      const id = toValue(workspaceId);
+      if (!id) {
+        return { stats: emptyStats, activity: [] as WorkspaceSummaryActivity[] };
+      }
       const result = await api<{
         stats: WorkspaceSummaryStats;
         activity: WorkspaceSummaryActivity[];
-      }>(`/api/workspaces/${workspaceIdValue}/summary`);
+      }>(`/api/workspaces/${id}/summary`);
       return {
         stats: result.stats ?? emptyStats,
         activity: result.activity ?? [],
       };
     },
-    {
-      watch: [id],
-      default: () => emptySummary,
-    },
+    { watch: [() => toValue(workspaceId)] },
   );
 
   return {
@@ -56,6 +47,5 @@ export const useWorkspaceSummary = (
     activity: computed(() => data.value?.activity ?? []),
     pending: computed(() => status.value === "pending"),
     error,
-    refresh,
   };
 };

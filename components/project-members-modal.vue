@@ -54,7 +54,7 @@ const addMember = async (person: Member) => {
     );
     if (member) members.value.push(member);
     if (boardStore.projectId === props.projectId) {
-      await boardStore.fetchProjectMembers(props.projectId, { force: true });
+      await boardStore.fetchProjectMembers(props.projectId);
     }
     toast.success("Member added to the project.");
   } catch (error: any) {
@@ -73,7 +73,7 @@ const removeMember = async (person: Member) => {
     });
     members.value = members.value.filter((member) => member.id !== person.id);
     if (boardStore.projectId === props.projectId) {
-      await boardStore.fetchProjectMembers(props.projectId, { force: true });
+      await boardStore.fetchProjectMembers(props.projectId);
     }
     toast.success("Member removed from the project.");
   } catch (error: any) {
