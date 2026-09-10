@@ -1,33 +1,19 @@
 <script setup lang="ts">
 import { MoonIcon, SunIcon } from "lucide-vue-next";
 
-const { isDark, toggleTheme } = useTheme();
+const { toggleTheme } = useTheme();
 </script>
 
 <template>
-  <ClientOnly>
-    <Button
-      type="button"
-      variant="outline"
-      size="icon"
-      class="shrink-0"
-      :aria-label="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
-      @click="toggleTheme"
-    >
-      <SunIcon v-if="isDark" class="h-4 w-4" />
-      <MoonIcon v-else class="h-4 w-4" />
-    </Button>
-    <template #fallback>
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        class="shrink-0"
-        aria-label="Toggle theme"
-        disabled
-      >
-        <SunIcon class="h-4 w-4" />
-      </Button>
-    </template>
-  </ClientOnly>
+  <Button
+    type="button"
+    variant="outline"
+    size="icon"
+    class="relative shrink-0"
+    aria-label="Toggle theme"
+    @click="toggleTheme"
+  >
+    <SunIcon class="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+    <MoonIcon class="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+  </Button>
 </template>
