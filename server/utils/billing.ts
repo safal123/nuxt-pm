@@ -244,6 +244,7 @@ const priceIdFromSubscription = (subscription: Stripe.Subscription) => {
   return typeof price === "string" ? price : price?.id ?? null;
 };
 
+// TODO: use this to mark a subscription as canceled
 export const markSubscriptionCanceled = async (subscriptionId: string) => {
   const existing = await prisma.subscription.findUnique({
     where: { stripeSubscriptionId: subscriptionId },
