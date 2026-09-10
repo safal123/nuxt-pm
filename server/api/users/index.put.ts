@@ -1,27 +1,25 @@
 import prisma from '~/lib/prisma'
+import { serializeAppUser } from '~/server/utils/person'
+import { userUpdateSchema } from '~/server/utils/schemas'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const authUser = await validateAndGetUser(event)
-    const body = await readBody(event)
-
-    const user = await prisma.user.update({
-      where: {
-        id: authUser.id
-      },
+export default defineApi({
+  body: userUpdateSchema,
+  handler: async ({ user, body }) => {
+    const updated = await prisma.user.update({
+      where: { id: user.id },
       data: {
-        ...body
-      }
+        ...(body.activeWorkspaceId !== undefined
+          ? { activeWorkspaceId: body.activeWorkspaceId }
+          : {}),
+        ...(body.activeProjectId !== undefined
+          ? { activeProjectId: body.activeProjectId }
+          : {}),
+      },
     })
 
     return {
-      data: { user },
-      message: 'User updated successfully'
+      data: { user: serializeAppUser(updated) },
+      message: 'User updated successfully',
     }
-  } catch (error: any) {
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Error updating user'
-    })
-  }
+  },
 })

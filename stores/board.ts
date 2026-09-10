@@ -1,32 +1,7 @@
 import { defineStore } from 'pinia'
 import type { Task, TaskColumn } from '~/types'
 import { BOARD_COMPLETED_LIMIT } from '~/utils/board'
-
-interface BoardResponse {
-  data: { columns: TaskColumn[] }
-  message?: string
-}
-
-interface TaskResponse {
-  data: { task: Task }
-  message?: string
-}
-
-interface LikeResponse {
-  data: { liked: boolean; likeCount: number }
-  message?: string
-}
-
-interface TasksPageResponse {
-  data: {
-    tasks: Task[]
-    total: number
-    page: number
-    limit: number
-    hasMore: boolean
-  }
-  message?: string
-}
+import { api } from '~/lib/api'
 
 export const useBoardStore = defineStore('board', () => {
   const projectId = ref<string | null>(null)
@@ -135,16 +110,13 @@ export const useBoardStore = defineStore('board', () => {
     loading.value = true
     projectId.value = id
     try {
-      const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
-      const result = await $fetch<BoardResponse>(`/api/projects/${id}/board`, { headers })
-      columns.value = (result?.data.columns ?? []).map((column) => ({
+      const { columns: next } = await api<{ columns: TaskColumn[] }>(`/api/projects/${id}/board`)
+      columns.value = (next ?? []).map((column) => ({
         ...column,
         completedCount: column.completedCount ?? 0,
         tasks: column.tasks ?? []
       }))
       await Promise.all([fetchLabels(id), fetchProjectMembers(id)])
-    } catch (error) {
-      console.error('Failed to fetch board:', error)
     } finally {
       loading.value = false
     }
@@ -152,18 +124,13 @@ export const useBoardStore = defineStore('board', () => {
 
   const addTask = async (columnId: string, title: string) => {
     if (!projectId.value) return
-    try {
-      const { data } = await useFetch<TaskResponse>(`/api/projects/${projectId.value}/tasks`, {
-        method: 'POST',
-        body: { columnId, title }
-      })
-      const task = data.value?.data.task
-      const column = columns.value.find((c) => c.id === columnId)
-      if (task && column) {
-        column.tasks.push({ ...task, labels: task.labels || [] })
-      }
-    } catch (error) {
-      console.error('Failed to create task:', error)
+    const { task } = await api<{ task: Task }>(`/api/projects/${projectId.value}/tasks`, {
+      method: 'POST',
+      body: { columnId, title },
+    })
+    const column = columns.value.find((c) => c.id === columnId)
+    if (task && column) {
+      column.tasks.push({ ...task, labels: task.labels || [] })
     }
   }
 
@@ -193,7 +160,7 @@ export const useBoardStore = defineStore('board', () => {
     if (unchanged) return
 
     try {
-      await $fetch(`/api/tasks/${task.id}`, {
+      await api(`/api/tasks/${task.id}`, {
         method: 'PATCH',
         body: { columnId: location.column.id, order: location.index }
       })
@@ -228,11 +195,10 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   const patchTask = async (taskId: string, body: Record<string, unknown>) => {
-    const result = await $fetch<TaskResponse>(`/api/tasks/${taskId}`, {
+    const { task: updated } = await api<{ task: Task }>(`/api/tasks/${taskId}`, {
       method: 'PATCH',
       body
     })
-    const updated = result?.data?.task
     if (updated) {
       syncBoardTask(updated)
       if (selectedTask.value?.id === taskId) {
@@ -260,18 +226,21 @@ export const useBoardStore = defineStore('board', () => {
       ? `${oldestDone.completedAt ? new Date(oldestDone.completedAt).toISOString() : ''}::${oldestDone.id}`
       : undefined
 
-    const result = await $fetch<TasksPageResponse>(
-      `/api/projects/${projectId.value}/tasks`,
-      {
-        query: {
-          columnId,
-          status: 'DONE',
-          limit: BOARD_COMPLETED_LIMIT,
-          ...(cursor ? { cursor } : {})
-        }
+    const { tasks } = await api<{
+      tasks: Task[]
+      total: number
+      page: number
+      limit: number
+      hasMore: boolean
+    }>(`/api/projects/${projectId.value}/tasks`, {
+      query: {
+        columnId,
+        status: 'DONE',
+        limit: BOARD_COMPLETED_LIMIT,
+        ...(cursor ? { cursor } : {})
       }
-    )
-    const incoming = (result?.data?.tasks ?? []).filter(
+    })
+    const incoming = (tasks ?? []).filter(
       (task) => !column.tasks.some((item) => item.id === task.id)
     )
     for (const task of incoming) insertTaskByOrder(column, task)
@@ -281,11 +250,11 @@ export const useBoardStore = defineStore('board', () => {
     selectedTask.value = { ...task, comments: task.comments ?? [] }
     selectedTaskLoading.value = true
     try {
-      const result = await $fetch<TaskResponse>(`/api/tasks/${task.id}`)
-      if (result?.data?.task) {
-        selectedTask.value = result.data.task
+      const { task: next } = await api<{ task: Task }>(`/api/tasks/${task.id}`)
+      if (next) {
+        selectedTask.value = next
         const boardTask = findTask(task.id)
-        if (boardTask) Object.assign(boardTask, result.data.task)
+        if (boardTask) Object.assign(boardTask, next)
       }
     } catch (error) {
       console.error('Failed to load task:', error)
@@ -306,10 +275,10 @@ export const useBoardStore = defineStore('board', () => {
 
   const fetchWorkspaceMembers = async (workspaceId: string) => {
     try {
-      const result = await $fetch<{ data: { members: Task['members'] } }>(
+      const { members } = await api<{ members: Task['members'] }>(
         `/api/workspaces/${workspaceId}/members`
       )
-      workspaceMembers.value = result?.data?.members ?? []
+      workspaceMembers.value = members ?? []
     } catch (error) {
       console.error('Failed to load members:', error)
     }
@@ -317,10 +286,10 @@ export const useBoardStore = defineStore('board', () => {
 
   const fetchProjectMembers = async (id: string) => {
     try {
-      const result = await $fetch<{ data: { members: Task['members'] } }>(
+      const { members } = await api<{ members: Task['members'] }>(
         `/api/projects/${id}/members`
       )
-      projectMembers.value = result?.data?.members ?? []
+      projectMembers.value = members ?? []
     } catch (error) {
       console.error('Failed to load project members:', error)
     }
@@ -328,10 +297,10 @@ export const useBoardStore = defineStore('board', () => {
 
   const fetchLabels = async (id: string) => {
     try {
-      const result = await $fetch<{ data: { labels: Task['labels'] } }>(
+      const { labels } = await api<{ labels: Task['labels'] }>(
         `/api/projects/${id}/labels`
       )
-      projectLabels.value = result?.data?.labels ?? []
+      projectLabels.value = labels ?? []
     } catch (error) {
       console.error('Failed to load labels:', error)
     }
@@ -339,11 +308,10 @@ export const useBoardStore = defineStore('board', () => {
 
   const createLabel = async (name: string, color: string, taskId?: string) => {
     if (!projectId.value) return null
-    const result = await $fetch<{ data: { label: Task['labels'][number] } }>(
+    const { label } = await api<{ label: Task['labels'][number] }>(
       `/api/projects/${projectId.value}/labels`,
       { method: 'POST', body: { name, color, taskId } }
     )
-    const label = result?.data?.label
     if (label) {
       projectLabels.value.push(label)
       if (taskId) {
@@ -375,24 +343,22 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   const refreshTask = async (taskId: string) => {
-    const result = await $fetch<TaskResponse>(`/api/tasks/${taskId}`)
-    const updated = result?.data?.task
+    const { task: updated } = await api<{ task: Task }>(`/api/tasks/${taskId}`)
     if (updated) applyUpdatedTask(updated)
     return updated
   }
 
   const addComment = async (taskId: string, content: string) => {
-    const result = await $fetch<TaskResponse>(`/api/tasks/${taskId}/comments`, {
+    const { task: updated } = await api<{ task: Task }>(`/api/tasks/${taskId}/comments`, {
       method: 'POST',
       body: { content }
     })
-    const updated = result?.data?.task
     if (updated) applyUpdatedTask(updated)
     return updated
   }
 
   const archiveTask = async (taskId: string) => {
-    await $fetch<TaskResponse>(`/api/tasks/${taskId}`, {
+    await api(`/api/tasks/${taskId}`, {
       method: 'PATCH',
       body: { archived: true }
     })
@@ -400,11 +366,10 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   const restoreTask = async (taskId: string) => {
-    const result = await $fetch<TaskResponse>(`/api/tasks/${taskId}`, {
+    const { task: updated } = await api<{ task: Task }>(`/api/tasks/${taskId}`, {
       method: 'PATCH',
       body: { archived: false }
     })
-    const updated = result?.data?.task
     if (updated && projectId.value) await fetchBoard(projectId.value)
     return updated
   }
@@ -418,12 +383,12 @@ export const useBoardStore = defineStore('board', () => {
     task.likeCount = Math.max(0, task.likeCount + (task.likedByMe ? 1 : -1))
 
     try {
-      const result = await $fetch<LikeResponse>(`/api/tasks/${taskId}/like`, {
+      const result = await api<{ liked: boolean; likeCount: number }>(`/api/tasks/${taskId}/like`, {
         method: 'POST'
       })
-      if (result?.data) {
-        task.likedByMe = result.data.liked
-        task.likeCount = result.data.likeCount
+      if (result) {
+        task.likedByMe = result.liked
+        task.likeCount = result.likeCount
       }
     } catch (error) {
       task.likedByMe = previous.likedByMe
@@ -437,11 +402,10 @@ export const useBoardStore = defineStore('board', () => {
     const trimmed = name.trim()
     if (!trimmed) return
     try {
-      const result = await $fetch<{ data: { column: TaskColumn } }>(
+      const { column } = await api<{ column: TaskColumn }>(
         `/api/projects/${projectId.value}/columns`,
         { method: 'POST', body: { name: trimmed } }
       )
-      const column = result?.data?.column
       if (column) {
         columns.value.push({
           ...column,
@@ -461,7 +425,7 @@ export const useBoardStore = defineStore('board', () => {
     const previous = column.name
     column.name = trimmed
     try {
-      await $fetch(`/api/columns/${columnId}`, {
+      await api(`/api/columns/${columnId}`, {
         method: 'PATCH',
         body: { name: trimmed }
       })
@@ -481,7 +445,7 @@ export const useBoardStore = defineStore('board', () => {
       item.order = order
     })
     try {
-      await $fetch(`/api/columns/${columnId}`, {
+      await api(`/api/columns/${columnId}`, {
         method: 'PATCH',
         body: { direction }
       })
@@ -502,7 +466,7 @@ export const useBoardStore = defineStore('board', () => {
     const previous = column.color ?? null
     column.color = color
     try {
-      await $fetch(`/api/columns/${columnId}`, {
+      await api(`/api/columns/${columnId}`, {
         method: 'PATCH',
         body: { color }
       })
@@ -517,7 +481,7 @@ export const useBoardStore = defineStore('board', () => {
     if (index === -1) return
     const [removed] = columns.value.splice(index, 1)
     try {
-      await $fetch(`/api/columns/${columnId}`, {
+      await api(`/api/columns/${columnId}`, {
         method: 'PATCH',
         body: { archived: true }
       })

@@ -1,20 +1,155 @@
 <script setup lang="ts">
-const route = useRoute()
+import { toTypedSchema } from "@vee-validate/zod";
+import * as z from "zod";
+import { toast } from "vue-sonner";
+import { authClient } from "~/lib/auth-client";
+
+useHead({ title: "Create account — Northstar" });
+
+const route = useRoute();
+const { fetchSession } = useAuth();
+
 const redirectUrl = computed(() =>
-  typeof route.query.redirect_url === 'string' ? route.query.redirect_url : '/w',
-)
-const clerkAppearance = useClerkAppearance()
+  typeof route.query.redirect_url === "string"
+    ? route.query.redirect_url
+    : "/w",
+);
+
+const submitting = ref(false);
+
+const formSchema = toTypedSchema(
+  z.object({
+    name: z.string().trim().min(1, "Name is required"),
+    email: z
+      .string()
+      .trim()
+      .min(1, "Email is required")
+      .email("Enter a valid email"),
+    password: z.string().min(8, "Use at least 8 characters"),
+  }),
+);
+
+async function onSubmit(values: any) {
+  if (submitting.value) return;
+  submitting.value = true;
+
+  const { error } = await authClient.signUp.email({
+    name: values.name.trim(),
+    email: values.email.trim(),
+    password: values.password,
+  });
+
+  if (error) {
+    submitting.value = false;
+    toast.error(error.message || "Could not create your account");
+    return;
+  }
+
+  await fetchSession();
+  await navigateTo(redirectUrl.value);
+}
+
+async function continueWithGoogle() {
+  submitting.value = true;
+  const { error } = await authClient.signIn.social({
+    provider: "google",
+    callbackURL: redirectUrl.value,
+    errorCallbackURL: "/sign-up",
+    newUserCallbackURL: redirectUrl.value,
+  });
+  if (error) {
+    submitting.value = false;
+    toast.error(error.message || "Could not reach Google");
+  }
+}
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-background">
-    <div class="absolute top-4 right-4">
-      <ThemeToggle />
+  <AuthShell
+    title="Create your account"
+    subtitle="Start a Northstar workspace in a minute — Google or email."
+  >
+    <div class="space-y-5">
+      <GoogleButton
+        label="Continue with Google"
+        :disabled="submitting"
+        @click="continueWithGoogle"
+      />
+      <AuthDivider />
+
+      <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
+        <form class="space-y-4" @submit="handleSubmit($event, onSubmit)">
+          <FormField v-slot="{ componentField }" name="name">
+            <FormItem>
+              <FormLabel>Full name</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  class="h-11"
+                  autocomplete="name"
+                  placeholder="Ada Lovelace"
+                  v-bind="componentField"
+                  :disabled="submitting"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+
+          <FormField v-slot="{ componentField }" name="email">
+            <FormItem>
+              <FormLabel>Work email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  class="h-11"
+                  autocomplete="email"
+                  placeholder="you@company.com"
+                  v-bind="componentField"
+                  :disabled="submitting"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+
+          <FormField v-slot="{ componentField }" name="password">
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  class="h-11"
+                  autocomplete="new-password"
+                  placeholder="At least 8 characters"
+                  v-bind="componentField"
+                  :disabled="submitting"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+
+          <Button
+            type="submit"
+            size="lg"
+            class="h-11 w-full"
+            :disabled="submitting"
+          >
+            {{ submitting ? "Creating account…" : "Create account" }}
+          </Button>
+        </form>
+      </Form>
+
+      <p class="text-center text-sm text-muted-foreground">
+        Already have an account?
+        <NuxtLink
+          :to="{ path: '/sign-in', query: route.query }"
+          class="font-medium text-foreground underline-offset-4 hover:underline"
+        >
+          Sign in
+        </NuxtLink>
+      </p>
     </div>
-    <SignUp
-      :force-redirect-url="redirectUrl"
-      :sign-in-force-redirect-url="redirectUrl"
-      :appearance="clerkAppearance"
-    />
-  </div>
+  </AuthShell>
 </template>

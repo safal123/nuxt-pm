@@ -3,20 +3,25 @@
  *
  * Rebuilds a realistic company: teammates, workspaces, colored lists,
  * cards with dates / labels / covers / comments / likes / activity.
- * Any signed-in Clerk user is attached as an owner so the dashboard
+ * Any registered user is attached as an owner so the dashboard
  * shows this data immediately.
  *
  *   npm run db:seed
  *
  * Safe to re-run: previous seed rows are removed first. Real users
  * and workspaces they created themselves are left alone.
+ *
+ * Demo teammates can be signed in as, using SEED_PASSWORD below.
  */
 import { PrismaClient } from '@prisma/client'
+import { auth } from '../lib/auth'
 
 const prisma = new PrismaClient()
 
 const SEED_TAG = '[seed]'
-const SEED_CLERK = 'seed_'
+/** Every demo teammate lives on this domain, which marks a row as seeded. */
+const SEED_EMAIL_DOMAIN = '@northstar.demo'
+const SEED_PASSWORD = 'northstar-demo'
 
 type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 type Status = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED'
@@ -322,8 +327,8 @@ const WORKSPACES: WorkspaceDraft[] = [
             status: 'DONE',
             tasks: [
               {
-                title: 'Clerk sign-in + sign-up screens',
-                description: 'Custom appearance tokens, dark/light, and the post-auth redirect into the dashboard.',
+                title: 'Better Auth sign-in + sign-up screens',
+                description: 'Email/password and Google, dark/light, and the post-auth redirect into the dashboard.',
                 priority: 'HIGH',
                 cover: 'green',
                 labels: ['Feature'],
@@ -795,15 +800,6 @@ function pickN<T>(items: T[], count: number, seed: string): T[] {
   return chosen
 }
 
-function clerkObject(name: string) {
-  return {
-    firstName: name.split(' ')[0],
-    lastName: name.split(' ').slice(1).join(' '),
-    imageUrl: avatarUrl(name),
-    image_url: avatarUrl(name),
-  }
-}
-
 async function resetSeedData() {
   const seeded = await prisma.workspace.findMany({
     where: { description: { startsWith: SEED_TAG } },
@@ -817,12 +813,17 @@ async function resetSeedData() {
   }
 
   await prisma.user.deleteMany({
-    where: { clerkId: { startsWith: SEED_CLERK } },
+    where: { email: { endsWith: SEED_EMAIL_DOMAIN } },
   })
 }
 
 async function upsertTeam() {
   const byKey = {} as Record<PersonKey, { id: string; name: string; email: string }>
+
+  // Hashed with Better Auth's own hasher so these demo accounts can sign in
+  // through the normal email/password form.
+  const { password } = await auth.$context
+  const passwordHash = await password.hash(SEED_PASSWORD)
 
   for (const key of PERSON_KEYS) {
     const person = TEAM[key]
@@ -830,16 +831,38 @@ async function upsertTeam() {
       where: { email: person.email },
       update: {
         name: person.name,
-        clerkId: `${SEED_CLERK}${key}`,
-        clerkObject: clerkObject(person.name),
+        image: avatarUrl(person.name),
       },
       create: {
-        clerkId: `${SEED_CLERK}${key}`,
         email: person.email,
         name: person.name,
-        clerkObject: clerkObject(person.name),
+        image: avatarUrl(person.name),
+        emailVerified: true,
       },
     })
+
+    const credential = await prisma.account.findFirst({
+      where: { userId: user.id, providerId: 'credential' },
+      select: { id: true },
+    })
+
+    if (credential) {
+      await prisma.account.update({
+        where: { id: credential.id },
+        data: { password: passwordHash },
+      })
+    } else {
+      await prisma.account.create({
+        data: {
+          id: `seed_cred_${key}`,
+          accountId: user.id,
+          providerId: 'credential',
+          userId: user.id,
+          password: passwordHash,
+        },
+      })
+    }
+
     byKey[key] = { id: user.id, name: user.name ?? person.name, email: user.email }
   }
 
@@ -848,7 +871,7 @@ async function upsertTeam() {
 
 async function realUsers() {
   return prisma.user.findMany({
-    where: { clerkId: { not: { startsWith: SEED_CLERK } } },
+    where: { email: { not: { endsWith: SEED_EMAIL_DOMAIN } } },
     orderBy: { createdAt: 'asc' },
   })
 }
@@ -956,6 +979,7 @@ function taskActivity(draft: TaskDraft, column: ColumnDraft, creatorKey: PersonK
 }
 
 async function seedProject(
+  workspaceId: string,
   projectId: string,
   draft: ProjectDraft,
   ownerId: string,
@@ -990,6 +1014,18 @@ async function seedProject(
         projectId,
       },
     })
+
+    await prisma.activity.create({
+      data: {
+        type: 'COLUMN_CREATED',
+        message: `created the list "${column.name}"`,
+        workspaceId,
+        projectId,
+        userId: ownerId,
+        createdAt: hoursAgo(400 + columnOrder),
+      },
+    })
+    activityCount += 1
 
     for (const [taskOrder, task] of column.tasks.entries()) {
       const creatorKey = task.assignee ?? pick(PERSON_KEYS, task.title)
@@ -1065,10 +1101,12 @@ async function seedProject(
             createdAt: hoursAgo(comment.hoursAgo),
           },
         })
-        await prisma.taskActivity.create({
+        await prisma.activity.create({
           data: {
             type: 'COMMENT',
             message: 'commented on this card',
+            workspaceId,
+            projectId,
             taskId: created.id,
             userId: people[comment.by].id,
             createdAt: hoursAgo(comment.hoursAgo),
@@ -1080,11 +1118,13 @@ async function seedProject(
 
       const activities = taskActivity(task, column, creatorKey)
       for (const activity of activities) {
-        await prisma.taskActivity.create({
+        await prisma.activity.create({
           data: {
             type: activity.type,
             message: activity.message,
             metadata: activity.metadata ?? undefined,
+            workspaceId,
+            projectId,
             taskId: created.id,
             userId: people[activity.userKey].id,
             createdAt: activity.at,
@@ -1133,7 +1173,7 @@ async function main() {
       log.ok(`Attached signed-in account  ${user.email}`)
     }
   } else {
-    log.warn('No Clerk user in the database yet.')
+    log.warn('No registered user in the database yet.')
     log.dim('Sign in once, then run npm run db:seed again so your account owns these boards.')
   }
 
@@ -1192,7 +1232,7 @@ async function main() {
       if (!firstProjectId) firstProjectId = project.id
 
       const extraMemberIds = signedIn.map((user) => user.id)
-      const seeded = await seedProject(project.id, projectDraft, ownerId, people, extraMemberIds)
+      const seeded = await seedProject(workspace.id, project.id, projectDraft, ownerId, people, extraMemberIds)
       taskCount += seeded.taskCount
       commentCount += seeded.commentCount
       activityCount += seeded.activityCount

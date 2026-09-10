@@ -27,7 +27,7 @@ const steps = [
           From empty workspace to a live board.
         </h2>
         <p class="mt-4 text-base leading-7 text-muted-foreground">
-          No extra tools. Sign in with Clerk, pick a workspace, and start from
+          No extra tools. Sign in, pick a workspace, and start from
           the same sidebar your team will use every day.
         </p>
       </div>

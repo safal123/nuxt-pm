@@ -2,7 +2,6 @@
 import { MenuIcon } from "lucide-vue-next";
 
 const { isSignedIn } = useAuth();
-const clerkAppearance = useClerkAppearance();
 const menuOpen = ref(false);
 
 const navigation = [
@@ -53,7 +52,7 @@ const closeMenu = () => {
           <Button as-child>
             <NuxtLink to="/w">Open dashboard</NuxtLink>
           </Button>
-          <UserButton :appearance="clerkAppearance" />
+          <AppUserButton />
         </template>
         <template v-else>
           <Button as-child variant="ghost">

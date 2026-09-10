@@ -1,30 +1,18 @@
 import prisma from '~/lib/prisma'
+import { workspaceAccessWhere } from '~/server/utils/access'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
-
+export default defineApi({
+  handler: async ({ user }) => {
     const workspaces = await prisma.workspace.findMany({
-      where: {
-        OR: [
-          { createdBy: user.id },
-          {
-            members: {
-              some: {
-                userId: user.id
-              }
-            }
-          }
-        ]
-      },
+      where: workspaceAccessWhere(user.id),
       include: {
         projects: true,
         members: true,
         settings: true,
         creator: {
-          select: { id: true, name: true, email: true }
-        }
-      }
+          select: { id: true, name: true, email: true },
+        },
+      },
     })
 
     const withSettings = await Promise.all(
@@ -32,20 +20,14 @@ export default defineEventHandler(async (event) => {
         const settings = workspace.settings ?? await ensureWorkspaceSettings(workspace.id)
         return {
           ...workspace,
-          settings: serializeWorkspaceSettings(settings)
+          settings: serializeWorkspaceSettings(settings),
         }
-      })
+      }),
     )
 
     return {
       data: { workspaces: withSettings },
-      message: 'Workspaces fetched successfully'
+      message: 'Workspaces fetched successfully',
     }
-  } catch (error: any) {
-    console.error('Failed to fetch workspaces:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

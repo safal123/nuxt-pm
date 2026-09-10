@@ -171,8 +171,8 @@ const commentText = computed(() => {
             <dd class="text-sm capitalize text-foreground">{{ activity.email.status }}</dd>
           </div>
           <div v-else class="grid grid-cols-[110px_1fr] gap-3 px-3 py-2.5">
-            <dt class="text-xs font-medium text-muted-foreground">Task</dt>
-            <dd class="text-sm text-foreground">{{ activity.task?.title || "—" }}</dd>
+            <dt class="text-xs font-medium text-muted-foreground">{{ activity.task ? "Task" : "Project" }}</dt>
+            <dd class="text-sm text-foreground">{{ activity.task?.title || activity.project?.name || "—" }}</dd>
           </div>
         </dl>
 

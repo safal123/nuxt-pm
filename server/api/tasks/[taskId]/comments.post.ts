@@ -1,47 +1,35 @@
 import prisma from '~/lib/prisma'
+import { taskCommentSchema } from '~/server/utils/schemas'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  body: taskCommentSchema,
+  handler: async ({ user, event, body }) => {
     const taskId = getRouterParam(event, 'taskId') as string
-    const { content } = await readBody(event)
-
-    if (!content || typeof content !== 'string' || !content.trim()) {
-      throw createError({
-        statusCode: 400,
-        message: 'Comment cannot be empty.'
-      })
-    }
-
-    await validateTaskAccess(taskId, user.id)
+    const task = await validateTaskAccess(taskId, user.id)
 
     await prisma.taskComment.create({
       data: {
         taskId,
         userId: user.id,
-        content: content.trim()
-      }
+        content: body.content,
+      },
     })
 
-    await logTaskActivity({
-      taskId,
+    await logActivity({
+      workspaceId: task.project.workspaceId,
+      projectId: task.projectId,
+      taskId: task.id,
       userId: user.id,
       type: 'COMMENT',
-      message: 'commented on this card',
-      metadata: { content: content.trim() }
+      message: `${user.name} commented on this card`,
+      metadata: { content: body.content },
     })
 
-    const task = await getTaskWithDetails(taskId, user.id)
-    setResponseStatus(event, 201)
+    const created = await getTaskWithDetails(taskId, user.id)
     return {
-      data: { task: serializeTask(task) },
-      message: 'Comment added'
+      data: { task: serializeTask(created) },
+      message: 'Comment added',
+      status: 201,
     }
-  } catch (error: any) {
-    console.error('Failed to add comment:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

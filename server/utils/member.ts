@@ -1,20 +1,5 @@
 import prisma from '~/lib/prisma'
-
-const userSelect = {
-  id: true,
-  name: true,
-  email: true,
-  clerkObject: true
-} as const
-
-export const serializeMember = (
-  user: any,
-  extras?: { role?: string; isOwner?: boolean }
-) => ({
-  ...serializePerson(user),
-  role: extras?.role,
-  isOwner: extras?.isOwner ?? extras?.role === 'OWNER'
-})
+import { personSelect, serializeMember } from '~/server/utils/person'
 
 export const listWorkspaceMembers = async (workspaceId: string) => {
   const workspace = await prisma.workspace.findUniqueOrThrow({
@@ -24,23 +9,23 @@ export const listWorkspaceMembers = async (workspaceId: string) => {
 
   const members = await prisma.workspaceMember.findMany({
     where: { workspaceId },
-    include: { user: { select: userSelect } }
+    include: { user: { select: personSelect } }
   })
 
   const people = members.map((member) =>
     serializeMember(member.user, {
       role: member.userId === workspace.createdBy ? 'OWNER' : member.role,
-      isOwner: member.userId === workspace.createdBy || member.role === 'OWNER'
     })
   )
 
+  // Older workspaces may have a creator who was never inserted as a member row.
   if (!people.some((person) => person.id === workspace.createdBy)) {
     const creator = await prisma.user.findUnique({
       where: { id: workspace.createdBy },
-      select: userSelect
+      select: personSelect
     })
     if (creator) {
-      people.unshift(serializeMember(creator, { role: 'OWNER', isOwner: true }))
+      people.unshift(serializeMember(creator, { role: 'OWNER' }))
     }
   }
 
@@ -55,13 +40,12 @@ export const listProjectMembers = async (projectId: string) => {
 
   const members = await prisma.projectMember.findMany({
     where: { projectId },
-    include: { user: { select: userSelect } }
+    include: { user: { select: personSelect } }
   })
 
   return members.map((member) =>
     serializeMember(member.user, {
       role: member.userId === project.createdBy ? 'OWNER' : member.role,
-      isOwner: member.userId === project.createdBy || member.role === 'OWNER'
     })
   )
 }
@@ -87,10 +71,10 @@ export const addWorkspaceMember = async (
   if (existing) {
     const user = await prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: userSelect
+      select: personSelect
     })
     return {
-      member: serializeMember(user, { role: existing.role, isOwner: existing.role === 'OWNER' }),
+      member: serializeMember(user, { role: existing.role }),
       alreadyMember: true
     }
   }
@@ -101,10 +85,10 @@ export const addWorkspaceMember = async (
 
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: userSelect
+    select: personSelect
   })
   return {
-    member: serializeMember(user, { role, isOwner: false }),
+    member: serializeMember(user, { role }),
     alreadyMember: false
   }
 }
@@ -205,11 +189,10 @@ export const addProjectMember = async (projectId: string, userId: string) => {
 
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: userSelect
+    select: personSelect
   })
   return serializeMember(user, {
     role: userId === project.createdBy ? 'OWNER' : 'MEMBER',
-    isOwner: userId === project.createdBy
   })
 }
 

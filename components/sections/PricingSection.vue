@@ -57,7 +57,7 @@ const plans = computed(() => {
         "Unlimited workspaces",
         "Activity and archive across every workspace",
         "Priority email sending",
-        "SSO-ready with Clerk organizations",
+        "Google sign-in and SSO-ready",
         "Priority support",
       ],
     },

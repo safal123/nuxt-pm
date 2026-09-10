@@ -1,18 +1,13 @@
 import prisma from '~/lib/prisma'
+import { projectMemberSchema } from '~/server/utils/schemas'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  body: projectMemberSchema,
+  handler: async ({ user, event, body }) => {
     const projectId = getRouterParam(event, 'projectId') as string
-    const { userId } = await readBody(event)
-
     await validateProjectAccess(projectId, user.id)
 
-    if (!userId || typeof userId !== 'string') {
-      throw createError({ statusCode: 400, message: 'userId is required.' })
-    }
-
-    const member = await addProjectMember(projectId, userId)
+    const member = await addProjectMember(projectId, body.userId)
 
     if (member.email && member.email !== user.email) {
       try {
@@ -22,8 +17,8 @@ export default defineEventHandler(async (event) => {
             id: true,
             name: true,
             workspaceId: true,
-            workspace: { select: { name: true } }
-          }
+            workspace: { select: { name: true } },
+          },
         })
         if (project) {
           const settings = await ensureWorkspaceSettings(project.workspaceId)
@@ -38,7 +33,7 @@ export default defineEventHandler(async (event) => {
               workspaceId: project.workspaceId,
               workspaceName: project.workspace.name,
               dashboardUrl: `${requestUrl.protocol}//${requestUrl.host}/w/${project.workspaceId}/dashboard`,
-              createdBy: user.id
+              createdBy: user.id,
             })
           }
         }
@@ -47,16 +42,10 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    setResponseStatus(event, 201)
     return {
       data: { member },
-      message: 'Member added to project'
+      message: 'Member added to project',
+      status: 201,
     }
-  } catch (error: any) {
-    console.error('Failed to add project member:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

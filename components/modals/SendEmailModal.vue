@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { SendIcon } from "lucide-vue-next";
+import { api } from "~/lib/api";
 import { toast } from "vue-sonner";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
@@ -150,7 +151,7 @@ async function onSubmit(values: any) {
   if (!workspaceId || sending.value) return;
   sending.value = true;
   try {
-    await $fetch(`/api/workspaces/${workspaceId}/emails`, {
+    await api(`/api/workspaces/${workspaceId}/emails`, {
       method: "POST",
       body: {
         to: values.to.trim(),

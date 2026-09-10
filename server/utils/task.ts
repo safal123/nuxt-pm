@@ -1,32 +1,15 @@
 import { format } from 'date-fns'
 import prisma from '~/lib/prisma'
-
-export const LABEL_COLORS = [
-  { id: 'green', value: '#61bd4f', name: 'Green' },
-  { id: 'yellow', value: '#f2d600', name: 'Yellow' },
-  { id: 'orange', value: '#ff9f1a', name: 'Orange' },
-  { id: 'red', value: '#eb5a46', name: 'Red' },
-  { id: 'purple', value: '#c377e0', name: 'Purple' },
-  { id: 'blue', value: '#0079bf', name: 'Blue' },
-  { id: 'sky', value: '#00c2e0', name: 'Sky' },
-  { id: 'lime', value: '#51e898', name: 'Lime' },
-  { id: 'pink', value: '#ff78cb', name: 'Pink' },
-  { id: 'black', value: '#344563', name: 'Black' }
-] as const
-
-const assigneeSelect = {
-  id: true,
-  name: true,
-  email: true,
-  clerkObject: true
-} as const
+import { workspaceAccessWhere } from '~/server/utils/access'
+import { serializeActivity } from '~/server/utils/activity'
+import { personSelect, serializePerson } from '~/server/utils/person'
 
 export const taskBoardInclude = (userId: string) => ({
-  creator: { select: assigneeSelect },
-  assignee: { select: assigneeSelect },
+  creator: { select: personSelect },
+  assignee: { select: personSelect },
   members: {
     include: {
-      user: { select: assigneeSelect }
+      user: { select: personSelect }
     }
   },
   taskLabels: {
@@ -44,21 +27,6 @@ export const taskBoardInclude = (userId: string) => ({
       likes: true
     }
   }
-})
-
-export const imageUrlFromClerk = (clerkObject: unknown) => {
-  if (!clerkObject || typeof clerkObject !== 'object') return null
-  const obj = clerkObject as Record<string, unknown>
-  if (typeof obj.imageUrl === 'string') return obj.imageUrl
-  if (typeof obj.image_url === 'string') return obj.image_url
-  return null
-}
-
-export const serializePerson = (user: any) => ({
-  id: user.id,
-  name: user.name ?? null,
-  email: user.email,
-  imageUrl: imageUrlFromClerk(user.clerkObject)
 })
 
 const serializeLabels = (task: any) => {
@@ -84,15 +52,6 @@ export const serializeAttachment = (attachment: any) => ({
   createdAt: attachment.createdAt,
   uploadedBy: attachment.uploadedBy,
   uploader: attachment.uploader ? serializePerson(attachment.uploader) : null
-})
-
-export const serializeActivity = (activity: any) => ({
-  id: activity.id,
-  type: activity.type,
-  message: activity.message,
-  metadata: activity.metadata ?? null,
-  createdAt: activity.createdAt,
-  user: serializePerson(activity.user)
 })
 
 export const serializeTask = (task: any, options?: { compact?: boolean }) => {
@@ -150,24 +109,6 @@ export const serializeTask = (task: any, options?: { compact?: boolean }) => {
 export const personName = (user: { name?: string | null; email?: string | null }) =>
   user.name || user.email || 'Someone'
 
-export const logTaskActivity = async (input: {
-  taskId: string
-  userId: string
-  type: string
-  message: string
-  metadata?: Record<string, unknown> | null
-}) => {
-  await prisma.taskActivity.create({
-    data: {
-      taskId: input.taskId,
-      userId: input.userId,
-      type: input.type,
-      message: input.message,
-      metadata: input.metadata ?? undefined
-    }
-  })
-}
-
 const toDateKey = (value: Date | string | null | undefined) => {
   if (!value) return null
   const date = typeof value === 'string' ? new Date(value) : value
@@ -195,23 +136,18 @@ export const dateChangeEntry = (
   return { field, from, to, message }
 }
 
-/**
- * Throws a 404 `createError` if `userId` (local User.id) does not have access
- * to `taskId` via workspace membership. Returns the task otherwise.
- */
+/** 404 unless the user can reach this task through the workspace. */
 export const validateTaskAccess = async (taskId: string, userId: string) => {
   const task = await prisma.task.findFirst({
     where: {
       id: taskId,
       project: {
-        workspace: {
-          OR: [
-            { createdBy: userId },
-            { members: { some: { userId } } }
-          ]
-        }
+        workspace: workspaceAccessWhere(userId),
       }
-    }
+    },
+    include: {
+      project: { select: { workspaceId: true } },
+    },
   })
 
   if (!task) {
@@ -234,13 +170,13 @@ export const getTaskWithDetails = async (taskId: string, userId: string) => {
         comments: {
           orderBy: { createdAt: 'desc' },
           include: {
-            user: { select: assigneeSelect }
+            user: { select: personSelect }
           }
         },
         activities: {
           orderBy: { createdAt: 'desc' },
           include: {
-            user: { select: assigneeSelect }
+            user: { select: personSelect }
           }
         }
       }
@@ -249,7 +185,7 @@ export const getTaskWithDetails = async (taskId: string, userId: string) => {
       where: { attachableType: 'Task', attachableId: taskId },
       orderBy: { createdAt: 'desc' },
       include: {
-        uploader: { select: assigneeSelect }
+        uploader: { select: personSelect }
       }
     })
   ])
@@ -343,23 +279,7 @@ export const syncTaskLabels = async (
   }
 }
 
-export const dateChangeMessage = (
-  field: 'start date' | 'due date' | 'end date',
-  previous: Date | string | null | undefined,
-  next: Date | string | null | undefined
-) => {
-  const from = formatDateLabel(previous)
-  const to = formatDateLabel(next)
-  if (from === to) return null
-  if (!from && to) return `set the ${field} to ${to}`
-  if (from && !to) return `cleared the ${field}`
-  return `changed the ${field} from ${from} to ${to}`
-}
-
-/**
- * Moves a task to `columnId` at `index` and rewrites `order` for every task
- * in the affected column(s) so the board order stays consistent.
- */
+/** Rewrite `order` in the destination (and source, on a column change). */
 export const moveTaskToIndex = async (
   taskId: string,
   columnId: string,

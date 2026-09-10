@@ -12,11 +12,6 @@ const workspaceId = computed(() => String(route.params.workspaceId || ""));
 
 const syncWorkspace = async (id: string) => {
   if (!id) return;
-  if (!workspaceStore.workspaces.length) {
-    await workspaceStore.fetchWorkspaces();
-  }
-  const match = workspaceStore.workspaces.find((workspace) => workspace.id === id);
-  if (!match) return;
   if (workspaceStore.activeWorkspaceId !== id) {
     await workspaceStore.setActiveWorkspace(id);
   }

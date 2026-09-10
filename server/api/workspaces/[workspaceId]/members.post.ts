@@ -1,26 +1,16 @@
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+import { workspaceMemberSchema } from '~/server/utils/schemas'
+
+export default defineApi({
+  body: workspaceMemberSchema,
+  handler: async ({ user, event, body }) => {
     const workspaceId = getRouterParam(event, 'workspaceId') as string
-    const { email } = await readBody(event)
+    await validateWorkspaceAccess(workspaceId, user.id)
+    const member = await addWorkspaceMemberByEmail(workspaceId, body.email)
 
-    await validateWorkspace(workspaceId, user.id)
-
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
-      throw createError({ statusCode: 400, message: 'A valid email is required.' })
-    }
-
-    const member = await addWorkspaceMemberByEmail(workspaceId, email)
-    setResponseStatus(event, 201)
     return {
       data: { member },
-      message: 'Member added to workspace'
+      message: 'Member added to workspace',
+      status: 201,
     }
-  } catch (error: any) {
-    console.error('Failed to add workspace member:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

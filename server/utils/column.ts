@@ -1,16 +1,15 @@
 import prisma from '~/lib/prisma'
+import { workspaceAccessWhere } from '~/server/utils/access'
 
+const DEFAULT_COLUMNS = ['To Do', 'In Progress', 'Done']
+
+/** 404 unless the user can reach this column through the workspace. */
 export const validateColumnAccess = async (columnId: string, userId: string) => {
   const column = await prisma.taskColumn.findFirst({
     where: {
       id: columnId,
       project: {
-        workspace: {
-          OR: [
-            { createdBy: userId },
-            { members: { some: { userId } } }
-          ]
-        }
+        workspace: workspaceAccessWhere(userId),
       }
     }
   })
@@ -23,6 +22,16 @@ export const validateColumnAccess = async (columnId: string, userId: string) => 
   }
 
   return column
+}
+
+export const createDefaultColumns = async (projectId: string) => {
+  await prisma.taskColumn.createMany({
+    data: DEFAULT_COLUMNS.map((name, order) => ({
+      name,
+      order,
+      projectId,
+    })),
+  })
 }
 
 export const createProjectColumn = async (projectId: string, name: string) => {

@@ -1,34 +1,32 @@
-import prisma from '~/lib/prisma'
+import { columnUpdateSchema } from '~/server/utils/schemas'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  body: columnUpdateSchema,
+  handler: async ({ user, event, body }) => {
     const columnId = getRouterParam(event, 'columnId') as string
-    const body = await readBody(event)
-
     await validateColumnAccess(columnId, user.id)
 
-    if (typeof body.name === 'string') {
+    if (body.name !== undefined) {
       const column = await renameProjectColumn(columnId, body.name)
       return {
         data: { column },
-        message: 'Column renamed successfully'
+        message: 'Column renamed successfully',
       }
     }
 
-    if (body.direction === 'left' || body.direction === 'right') {
+    if (body.direction) {
       const columns = await moveProjectColumn(columnId, body.direction)
       return {
         data: { columns },
-        message: 'Column moved successfully'
+        message: 'Column moved successfully',
       }
     }
 
-    if (body.color === null || typeof body.color === 'string') {
+    if (body.color !== undefined) {
       const column = await setColumnColor(columnId, body.color)
       return {
         data: { column },
-        message: 'Column color updated successfully'
+        message: 'Column color updated successfully',
       }
     }
 
@@ -36,24 +34,14 @@ export default defineEventHandler(async (event) => {
       const column = await archiveProjectColumn(columnId)
       return {
         data: { column },
-        message: 'Column archived successfully'
+        message: 'Column archived successfully',
       }
     }
 
-    if (body.archived === false) {
-      const column = await restoreProjectColumn(columnId)
-      return {
-        data: { column },
-        message: 'Column restored successfully'
-      }
+    const column = await restoreProjectColumn(columnId)
+    return {
+      data: { column },
+      message: 'Column restored successfully',
     }
-
-    throw createError({ statusCode: 400, message: 'Nothing to update.' })
-  } catch (error: any) {
-    console.error('Failed to update column:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

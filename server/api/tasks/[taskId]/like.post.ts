@@ -1,37 +1,39 @@
 import prisma from '~/lib/prisma'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  handler: async ({ user, event }) => {
     const taskId = getRouterParam(event, 'taskId') as string
-
-    await validateTaskAccess(taskId, user.id)
+    const task = await validateTaskAccess(taskId, user.id)
 
     const existing = await prisma.taskLike.findUnique({
       where: {
-        userId_taskId: { userId: user.id, taskId }
-      }
+        userId_taskId: { userId: user.id, taskId },
+      },
     })
 
     if (existing) {
       await prisma.taskLike.delete({
-        where: { userId_taskId: { userId: user.id, taskId } }
+        where: { userId_taskId: { userId: user.id, taskId } },
       })
-      await logTaskActivity({
+      await logActivity({
+        workspaceId: task.project.workspaceId,
+        projectId: task.projectId,
         taskId,
         userId: user.id,
         type: 'UNLIKED',
-        message: 'unliked this card'
+        message: 'unliked this card',
       })
     } else {
       await prisma.taskLike.create({
-        data: { userId: user.id, taskId }
+        data: { userId: user.id, taskId },
       })
-      await logTaskActivity({
+      await logActivity({
+        workspaceId: task.project.workspaceId,
+        projectId: task.projectId,
         taskId,
         userId: user.id,
         type: 'LIKED',
-        message: 'liked this card'
+        message: 'liked this card',
       })
     }
 
@@ -40,15 +42,9 @@ export default defineEventHandler(async (event) => {
     return {
       data: {
         liked: !existing,
-        likeCount
+        likeCount,
       },
-      message: existing ? 'Like removed' : 'Task liked'
+      message: existing ? 'Like removed' : 'Task liked',
     }
-  } catch (error: any) {
-    console.error('Failed to toggle like:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

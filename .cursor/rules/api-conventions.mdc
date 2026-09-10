@@ -8,55 +8,56 @@ alwaysApply: false
 
 ## Auth
 
-Always resolve the current user via `validateAndGetUser(event)` from `~/server/utils/user`. Never read `event.context.auth` directly in a route handler. It throws a 401 `createError` when signed out, and transparently creates the local `User` row (+ default workspace) from Clerk if the webhook hasn't synced yet.
+Always resolve the current user through `defineApi` (default `auth: true`), which calls `validateAndGetUser(event)`. Never read the session cookie or `event.context` in a route handler.
 
 ```ts
 // BAD
-const userId = event.context.auth?.userId
-if (!userId) return new Response('Unauthorized', { status: 401 })
+export default defineEventHandler(async (event) => {
+  const session = await auth.api.getSession({ headers: event.headers })
+})
 
 // GOOD
-const user = await validateAndGetUser(event)
+export default defineApi({
+  handler: async ({ user, event }) => {
+    await validateWorkspaceAccess(getRouterParam(event, 'workspaceId')!, user.id)
+    return { data: { ... }, message: '...' }
+  },
+})
 ```
 
-Webhook handlers (`server/api/webhooks/**`) are the only exception, since they authenticate via signature verification, not a Clerk session.
+`server/api/auth/[...all].ts` is the only exception — it is Better Auth's catch-all. Public invite preview uses `defineApi({ auth: false, ... })`.
 
 ## Imports
 
-- Use the `~/` alias for internal imports: `~/lib/prisma`, `~/server/utils/user`. Never `@/` in `server/**`.
-- Reusable, multi-step, or cross-cutting logic (e.g. workspace membership checks) belongs in `server/utils/*.ts`, not inlined in the handler.
+- Use the `~/` alias: `~/lib/prisma`, `~/server/utils/http`. Never `@/` in `server/**`.
+- Reusable logic belongs in `server/utils/*.ts`. Access checks use `workspaceAccessWhere` via `validateWorkspaceAccess`, `validateProjectAccess`, `validateTaskAccess`, `validateColumnAccess`. Person rows use `personSelect` / `serializePerson` / `serializeMember` from `~/server/utils/person` only — do not re-export those names from other utils (Nuxt auto-import collides).
+- Utils that call each other import explicitly — do not rely on Nuxt auto-import between `server/utils` files.
 
 ## Handler shape
 
 ```ts
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
-    const body = await readBody(event) // only for POST/PUT/PATCH
-
-    // ...business logic...
-
-    return { data, message: 'Workspace created successfully' }
-  } catch (error: any) {
-    console.error('Failed to create workspace:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error',
-    })
-  }
+export default defineApi({
+  body: workspaceCreateSchema, // Zod; omit on GET/DELETE with no body
+  handler: async ({ user, event, body }) => {
+    // business logic only
+    return { data: { workspace }, message: 'Workspace created successfully', status: 201 }
+  },
 })
 ```
+
+Do not wrap handlers in try/catch. `defineApi` parses the body/query, runs auth, returns `{ data, message }`, sets 201 when `status: 201`, and rethrows `createError` preserving `statusCode`. Unexpected errors log via `console.error` and become 500.
 
 ## Errors
 
 - Always `throw createError({ statusCode, message })`. Never `return new Response(...)` and never the `statusMessage` key.
-- Preserve an already-set `error.statusCode` from a lower-level throw (e.g. the 401 from `validateAndGetUser`, or a 404 from a `server/utils` helper) instead of collapsing everything to 500.
+- Validate request bodies and queries with Zod schemas from `~/server/utils/schemas`. Do not spread `readBody()` into Prisma.
 
 ## Responses
 
-- Success responses are always `{ data, message }`. `data` holds the resource(s), e.g. `{ workspace }`, `{ workspaces }`, `{ project }`. Don't duplicate the HTTP status code inside the JSON body.
-- For handlers that create a resource, call `setResponseStatus(event, 201)` before returning.
+- Success responses are always `{ data, message }`. `data` holds the resource(s). Don't duplicate the HTTP status code inside the JSON body.
+- Never return a raw Prisma `User`. Use `serializeAppUser` / `serializePerson` / `serializeMember`.
+- For handlers that create a resource, return `status: 201`.
 
 ## Cleanup
 
-No leftover `console.log` debugging left in committed handlers — only `console.error` inside `catch` blocks.
+No leftover `console.log` debugging in committed handlers.

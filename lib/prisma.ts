@@ -24,7 +24,7 @@ declare const globalThis: {
 } & typeof global
 
 // Bump when models are added so a stale HMR client is not reused.
-const PRISMA_CLIENT_VERSION = 17
+const PRISMA_CLIENT_VERSION = 18
 
 const currentUrl = databaseUrl()
 const prisma =

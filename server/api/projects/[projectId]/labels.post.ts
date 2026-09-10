@@ -1,69 +1,54 @@
 import prisma from '~/lib/prisma'
+import { projectLabelCreateSchema } from '~/server/utils/schemas'
 
-const HEX_COLOR = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
-
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  body: projectLabelCreateSchema,
+  handler: async ({ user, event, body }) => {
     const projectId = getRouterParam(event, 'projectId') as string
-    const { name, color, taskId } = await readBody(event)
-
     await validateProjectAccess(projectId, user.id)
 
-    const trimmed = typeof name === 'string' ? name.trim() : ''
-    if (!trimmed) {
-      throw createError({ statusCode: 400, message: 'Label name is required.' })
-    }
-    if (typeof color !== 'string' || !HEX_COLOR.test(color)) {
-      throw createError({ statusCode: 400, message: 'A valid color is required.' })
-    }
-
     const existing = await prisma.label.findFirst({
-      where: { projectId, name: trimmed }
+      where: { projectId, name: body.name },
     })
     if (existing) {
       throw createError({
         statusCode: 409,
-        message: 'A label with that name already exists in this project.'
+        message: 'A label with that name already exists in this project.',
       })
     }
 
     const label = await prisma.label.create({
       data: {
-        name: trimmed,
-        color,
+        name: body.name,
+        color: body.color,
         projectId,
-        createdBy: user.id
-      }
+        createdBy: user.id,
+      },
     })
 
-    if (typeof taskId === 'string' && taskId) {
-      const task = await validateTaskAccess(taskId, user.id)
+    if (body.taskId) {
+      const task = await validateTaskAccess(body.taskId, user.id)
       if (task.projectId !== projectId) {
         throw createError({ statusCode: 400, message: 'Task is not in this project.' })
       }
       await prisma.taskLabel.create({
-        data: { taskId, labelId: label.id }
+        data: { taskId: body.taskId, labelId: label.id },
       })
-      await logTaskActivity({
-        taskId,
+      await logActivity({
+        workspaceId: task.project.workspaceId,
+        projectId,
+        taskId: body.taskId,
         userId: user.id,
         type: 'LABEL_ADDED',
         message: `added the label "${label.name}"`,
-        metadata: { labelId: label.id }
+        metadata: { labelId: label.id },
       })
     }
 
-    setResponseStatus(event, 201)
     return {
       data: { label: { id: label.id, name: label.name, color: label.color } },
-      message: 'Label created successfully'
+      message: 'Label created successfully',
+      status: 201,
     }
-  } catch (error: any) {
-    console.error('Failed to create label:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

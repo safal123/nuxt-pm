@@ -1,4 +1,5 @@
 import prisma from '~/lib/prisma'
+import { taskUpdateSchema } from '~/server/utils/schemas'
 
 const parseOptionalDate = (value: unknown) => {
   if (value === undefined) return undefined
@@ -10,21 +11,35 @@ const parseOptionalDate = (value: unknown) => {
   return date
 }
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  body: taskUpdateSchema,
+  handler: async ({ user, event, body }) => {
     const taskId = getRouterParam(event, 'taskId') as string
-    const body = await readBody(event)
-
     await validateTaskAccess(taskId, user.id)
 
     const existing = await prisma.task.findUnique({
       where: { id: taskId },
-      include: { column: { select: { id: true, name: true } } }
+      include: {
+        column: { select: { id: true, name: true } },
+        project: { select: { workspaceId: true } },
+      },
     })
     if (!existing) {
       throw createError({ statusCode: 404, message: 'Task not found.' })
     }
+
+    const log = (entry: {
+      type: string
+      message: string
+      metadata?: Record<string, unknown> | null
+    }) =>
+      logActivity({
+        workspaceId: existing.project.workspaceId,
+        projectId: existing.projectId,
+        taskId,
+        userId: user.id,
+        ...entry,
+      })
 
     if (body.archived === true || body.archived === false) {
       assertCreator(existing.createdBy, user.id, 'card')
@@ -33,51 +48,47 @@ export default defineEventHandler(async (event) => {
       if (body.archived && !currentlyArchived) {
         await prisma.task.update({
           where: { id: taskId },
-          data: { archivedAt: new Date() }
+          data: { archivedAt: new Date() },
         })
-        await logTaskActivity({
-          taskId,
-          userId: user.id,
+        await log({
           type: 'ARCHIVED',
-          message: 'archived this card'
+          message: 'archived this card',
         })
       } else if (!body.archived && currentlyArchived) {
         const column = await prisma.taskColumn.findUnique({
           where: { id: existing.columnId },
-          select: { id: true, archivedAt: true, projectId: true }
+          select: { id: true, archivedAt: true, projectId: true },
         })
         let columnId = existing.columnId
         if (column?.archivedAt) {
           const fallback = await prisma.taskColumn.findFirst({
             where: { projectId: existing.projectId, archivedAt: null },
             orderBy: { order: 'asc' },
-            select: { id: true }
+            select: { id: true },
           })
           if (fallback) columnId = fallback.id
         }
         await prisma.task.update({
           where: { id: taskId },
-          data: { archivedAt: null, columnId }
+          data: { archivedAt: null, columnId },
         })
-        await logTaskActivity({
-          taskId,
-          userId: user.id,
+        await log({
           type: 'RESTORED',
-          message: 'restored this card'
+          message: 'restored this card',
         })
       }
 
       const task = await getTaskWithDetails(taskId, user.id)
       return {
         data: { task: serializeTask(task) },
-        message: body.archived ? 'Task archived successfully' : 'Task restored successfully'
+        message: body.archived ? 'Task archived successfully' : 'Task restored successfully',
       }
     }
 
     if (existing.archivedAt) {
       throw createError({
         statusCode: 400,
-        message: 'Restore this card before editing.'
+        message: 'Restore this card before editing.',
       })
     }
 
@@ -88,38 +99,30 @@ export default defineEventHandler(async (event) => {
           ? existing.column
           : await prisma.taskColumn.findUnique({
               where: { id: nextColumnId },
-              select: { id: true, name: true }
+              select: { id: true, name: true },
             })
 
       await moveTaskToIndex(
         taskId,
         nextColumnId,
-        typeof body.order === 'number' ? body.order : existing.order
+        typeof body.order === 'number' ? body.order : existing.order,
       )
 
       if (nextColumnId !== existing.columnId && nextColumn) {
-        await logTaskActivity({
-          taskId,
-          userId: user.id,
+        await log({
           type: 'MOVED',
           message: `moved this card from ${existing.column.name} to ${nextColumn.name}`,
           metadata: {
             fromColumnId: existing.columnId,
-            toColumnId: nextColumnId
-          }
+            toColumnId: nextColumnId,
+          },
         })
       }
     } else {
       const data: Record<string, unknown> = {}
       if (body.title !== undefined) data.title = body.title
       if (body.description !== undefined) data.description = body.description
-      if (body.priority !== undefined) {
-        const allowed = ['LOW', 'MEDIUM', 'HIGH', 'URGENT']
-        if (!allowed.includes(body.priority)) {
-          throw createError({ statusCode: 400, message: 'Invalid priority.' })
-        }
-        data.priority = body.priority
-      }
+      if (body.priority !== undefined) data.priority = body.priority
       if (body.completed === true) {
         data.status = 'DONE'
         data.completedAt = existing.completedAt ?? new Date()
@@ -128,10 +131,6 @@ export default defineEventHandler(async (event) => {
         data.completedAt = null
       }
       if (body.status !== undefined) {
-        const allowed = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED']
-        if (!allowed.includes(body.status)) {
-          throw createError({ statusCode: 400, message: 'Invalid status.' })
-        }
         data.status = body.status
         data.completedAt = body.status === 'DONE' ? (existing.completedAt ?? new Date()) : null
       }
@@ -141,17 +140,15 @@ export default defineEventHandler(async (event) => {
       if (Object.keys(data).length) {
         await prisma.task.update({
           where: { id: taskId },
-          data
+          data,
         })
       }
 
       if (typeof body.title === 'string' && body.title !== existing.title) {
-        await logTaskActivity({
-          taskId,
-          userId: user.id,
+        await log({
           type: 'TITLE_CHANGED',
           message: `changed the title to "${body.title}"`,
-          metadata: { from: existing.title, to: body.title }
+          metadata: { from: existing.title, to: body.title },
         })
       }
 
@@ -159,11 +156,9 @@ export default defineEventHandler(async (event) => {
         const next = body.description || null
         const previous = existing.description || null
         if (next !== previous) {
-          await logTaskActivity({
-            taskId,
-            userId: user.id,
+          await log({
             type: 'DESCRIPTION_CHANGED',
-            message: next ? 'updated the description' : 'cleared the description'
+            message: next ? 'updated the description' : 'cleared the description',
           })
         }
       }
@@ -175,36 +170,27 @@ export default defineEventHandler(async (event) => {
       }
 
       if (dateChanges.length) {
-        await logTaskActivity({
-          taskId,
-          userId: user.id,
+        await log({
           type: 'DATES_UPDATED',
           message: 'updated the due date',
           metadata: {
-            changes: dateChanges.map(({ field, from, to }) => ({ field, from, to }))
-          }
+            changes: dateChanges.map(({ field, from, to }) => ({ field, from, to })),
+          },
         })
       }
 
       if (body.coverColor !== undefined && body.coverColor !== existing.coverColor) {
-        await logTaskActivity({
-          taskId,
-          userId: user.id,
+        await log({
           type: 'COVER_CHANGED',
-          message: body.coverColor ? 'changed the cover' : 'removed the cover'
+          message: body.coverColor ? 'changed the cover' : 'removed the cover',
         })
       }
 
-      if (
-        typeof body.priority === 'string' &&
-        body.priority !== existing.priority
-      ) {
-        await logTaskActivity({
-          taskId,
-          userId: user.id,
+      if (typeof body.priority === 'string' && body.priority !== existing.priority) {
+        await log({
           type: 'PRIORITY_CHANGED',
           message: `changed the priority from ${String(existing.priority).toLowerCase()} to ${body.priority.toLowerCase()}`,
-          metadata: { from: existing.priority, to: body.priority }
+          metadata: { from: existing.priority, to: body.priority },
         })
       }
 
@@ -214,37 +200,31 @@ export default defineEventHandler(async (event) => {
         const toLabel = nextStatus.replaceAll('_', ' ').toLowerCase()
         const completed = nextStatus === 'DONE' && existing.status !== 'DONE'
         const reopened = existing.status === 'DONE' && nextStatus !== 'DONE'
-        await logTaskActivity({
-          taskId,
-          userId: user.id,
+        await log({
           type: completed ? 'COMPLETED' : reopened ? 'REOPENED' : 'STATUS_CHANGED',
           message: completed
             ? 'marked this card as complete'
             : reopened
               ? 'reopened this card'
               : `changed the status from ${fromLabel} to ${toLabel}`,
-          metadata: { from: existing.status, to: nextStatus }
+          metadata: { from: existing.status, to: nextStatus },
         })
       }
 
       if (Array.isArray(body.memberIds)) {
         const members = await syncTaskMembers(taskId, body.memberIds)
         for (const member of members.added) {
-          await logTaskActivity({
-            taskId,
-            userId: user.id,
+          await log({
             type: 'MEMBER_ADDED',
             message: `added ${member.name} to this card`,
-            metadata: { memberId: member.id }
+            metadata: { memberId: member.id },
           })
         }
         for (const member of members.removed) {
-          await logTaskActivity({
-            taskId,
-            userId: user.id,
+          await log({
             type: 'MEMBER_REMOVED',
             message: `removed ${member.name} from this card`,
-            metadata: { memberId: member.id }
+            metadata: { memberId: member.id },
           })
         }
       }
@@ -252,21 +232,17 @@ export default defineEventHandler(async (event) => {
       if (Array.isArray(body.labelIds)) {
         const labels = await syncTaskLabels(taskId, existing.projectId, body.labelIds)
         for (const label of labels.added) {
-          await logTaskActivity({
-            taskId,
-            userId: user.id,
+          await log({
             type: 'LABEL_ADDED',
             message: `added the label "${label.name}"`,
-            metadata: { labelId: label.id }
+            metadata: { labelId: label.id },
           })
         }
         for (const label of labels.removed) {
-          await logTaskActivity({
-            taskId,
-            userId: user.id,
+          await log({
             type: 'LABEL_REMOVED',
             message: `removed the label "${label.name}"`,
-            metadata: { labelId: label.id }
+            metadata: { labelId: label.id },
           })
         }
       }
@@ -276,13 +252,7 @@ export default defineEventHandler(async (event) => {
 
     return {
       data: { task: serializeTask(task) },
-      message: 'Task updated successfully'
+      message: 'Task updated successfully',
     }
-  } catch (error: any) {
-    console.error('Failed to update task:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

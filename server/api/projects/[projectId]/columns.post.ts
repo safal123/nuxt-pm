@@ -1,22 +1,24 @@
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+import { projectColumnCreateSchema } from '~/server/utils/schemas'
+
+export default defineApi({
+  body: projectColumnCreateSchema,
+  handler: async ({ user, event, body }) => {
     const projectId = getRouterParam(event, 'projectId') as string
-    const { name } = await readBody(event)
+    const project = await validateProjectAccess(projectId, user.id)
+    const column = await createProjectColumn(projectId, body.name)
 
-    await validateProjectAccess(projectId, user.id)
-    const column = await createProjectColumn(projectId, name)
+    await logActivity({
+      workspaceId: project.workspaceId,
+      projectId,
+      userId: user.id,
+      type: 'COLUMN_CREATED',
+      message: `created the list "${column.name}"`,
+    })
 
-    setResponseStatus(event, 201)
     return {
       data: { column: { ...column, tasks: [], completedCount: 0 } },
-      message: 'Column created successfully'
+      message: 'Column created successfully',
+      status: 201,
     }
-  } catch (error: any) {
-    console.error('Failed to create column:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

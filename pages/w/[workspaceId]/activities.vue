@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { whenDate } from "@/utils/date";
-import type { TaskAssignee, TaskActivityType, WorkspaceActivity } from "@/types";
+import { api } from "~/lib/api";
+import type { TaskAssignee, ActivityType, WorkspaceActivity } from "@/types";
 import { Button } from "@/components/ui/button";
 import { activityTypeChip, whenChip } from "@/utils/table-chips";
 import {
@@ -60,17 +61,11 @@ const fetchActivities = async () => {
   }
   loading.value = true;
   try {
-    const headers = import.meta.server
-      ? useRequestHeaders(["cookie"])
-      : undefined;
-    const result = await $fetch<{
-      data: {
-        activities: WorkspaceActivity[]
-        projects: { id: string; name: string }[]
-        tasks: { id: string; title: string; projectId: string }[]
-      }
+    const result = await api<{
+      activities: WorkspaceActivity[]
+      projects: { id: string; name: string }[]
+      tasks: { id: string; title: string; projectId: string }[]
     }>(`/api/workspaces/${workspaceId}/activities`, {
-      headers,
       query: {
         projectId: projectId.value,
         taskId: taskId.value,
@@ -80,9 +75,9 @@ const fetchActivities = async () => {
             : kind.value,
       },
     });
-    activities.value = result?.data?.activities ?? [];
-    projects.value = result?.data?.projects ?? [];
-    tasks.value = result?.data?.tasks ?? [];
+    activities.value = result.activities ?? [];
+    projects.value = result.projects ?? [];
+    tasks.value = result.tasks ?? [];
   } catch (error) {
     console.error(error);
     activities.value = [];
@@ -133,7 +128,7 @@ const initials = (person: TaskAssignee) => {
   return name.slice(0, 2).toUpperCase() || "?";
 };
 
-const typeLabel = (type: TaskActivityType | string) =>
+const typeLabel = (type: ActivityType | string) =>
   String(type).replace(/_/g, " ").toLowerCase();
 
 const onProject = (value: unknown) => {
@@ -178,7 +173,7 @@ const openActivity = (item: WorkspaceActivity) => {
           <SelectContent>
             <SelectGroup>
               <SelectItem :value="ALL">All activity</SelectItem>
-              <SelectItem value="task">Cards</SelectItem>
+              <SelectItem value="task">Board</SelectItem>
               <SelectItem value="email">Emails</SelectItem>
             </SelectGroup>
           </SelectContent>
@@ -270,7 +265,7 @@ const openActivity = (item: WorkspaceActivity) => {
               </div>
             </TableCell>
             <TableCell class="max-w-[220px] truncate text-sm text-foreground">
-              {{ item.email?.subject || item.task?.title || "—" }}
+              {{ item.email?.subject || item.task?.title || item.project?.name || "—" }}
             </TableCell>
             <TableCell class="max-w-[180px] truncate text-sm text-muted-foreground">
               {{ item.project?.name || "Workspace" }}

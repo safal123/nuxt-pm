@@ -2,6 +2,7 @@
 import { format, formatDistanceToNow, isPast, isToday, isTomorrow, parseISO } from "date-fns";
 import { CalendarIcon, MessageSquareIcon } from "lucide-vue-next";
 import type { Task, TaskAssignee } from "@/types";
+import { api } from "~/lib/api";
 import { priorityChip, priorityLabel } from "@/utils/task-priority";
 import { statusChip, statusLabel } from "@/utils/task-status";
 import { Button } from "@/components/ui/button";
@@ -80,13 +81,12 @@ const fetchTasks = async (options?: { silent?: boolean }) => {
   }
   if (!options?.silent) loading.value = true;
   try {
-    const result = await $fetch<{
-      data: { tasks: Task[]; total: number };
-    }>(`/api/projects/${projectId}/tasks`, {
-      query: { page: page.value, limit: PAGE_SIZE },
-    });
-    tasks.value = result?.data?.tasks ?? [];
-    total.value = result?.data?.total ?? 0;
+    const result = await api<{ tasks: Task[]; total: number }>(
+      `/api/projects/${projectId}/tasks`,
+      { query: { page: page.value, limit: PAGE_SIZE } },
+    );
+    tasks.value = result.tasks ?? [];
+    total.value = result.total ?? 0;
     const maxPage = Math.max(1, Math.ceil(total.value / PAGE_SIZE) || 1);
     if (page.value > maxPage) {
       page.value = maxPage;

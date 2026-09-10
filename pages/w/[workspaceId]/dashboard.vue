@@ -263,7 +263,7 @@ const openActivity = (item: (typeof activity.value)[number]) => {
           <div>
             <h2 class="text-base font-semibold text-foreground">Activity</h2>
             <p class="mt-0.5 text-sm text-muted-foreground">
-              Latest card changes in this workspace.
+              Latest changes in this workspace.
             </p>
           </div>
           <Button variant="ghost" size="sm" as-child>
@@ -288,7 +288,7 @@ const openActivity = (item: (typeof activity.value)[number]) => {
             v-else-if="!activity.length"
             class="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground"
           >
-            Card changes will show up here.
+            Changes will show up here.
           </div>
           <button
             v-for="item in activity"
@@ -356,7 +356,7 @@ const openActivity = (item: (typeof activity.value)[number]) => {
               </TableEmpty>
               <TableEmpty v-else-if="!activity.length" :colspan="5">
                 <span class="text-muted-foreground">
-                  Card changes will show up here.
+                  Changes will show up here.
                 </span>
               </TableEmpty>
               <TableRow

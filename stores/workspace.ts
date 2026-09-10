@@ -1,20 +1,6 @@
 import { defineStore } from 'pinia'
 import type { ArchivedList, Member, Project, Task, Workspace, WorkspaceSetting } from '~/types'
-
-interface WorkspacesResponse {
-  data: { workspaces: Workspace[] }
-  message?: string
-}
-
-interface MembersResponse {
-  data: { members: Member[] }
-  message?: string
-}
-
-interface MemberResponse {
-  data: { member: Member }
-  message?: string
-}
+import { api } from '~/lib/api'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
   const workspaces = ref<Workspace[]>([])
@@ -40,20 +26,39 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const fetchWorkspaces = async () => {
     loading.value = true
     try {
-      const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
-      const result = await $fetch<WorkspacesResponse>('/api/workspaces', { headers })
+      const { workspaces: next } = await api<{ workspaces: Workspace[] }>('/api/workspaces')
       const user = useUserStore().user
-      workspaces.value = result?.data.workspaces ?? []
+      workspaces.value = next ?? []
       activeWorkspaceId.value =
         user?.activeWorkspaceId ?? workspaces.value[0]?.id ?? null
       activeWorkspace.value = workspaces.value.find(w => w.id === activeWorkspaceId.value) || null
       if (activeWorkspaceId.value) await fetchMembers(activeWorkspaceId.value)
       return workspaces.value
-    } catch (error) {
-      console.error(error)
     } finally {
       loading.value = false
     }
+  }
+
+  const createWorkspace = async (payload: { name: string; description?: string | null }) => {
+    const { workspace } = await api<{ workspace: Workspace }>('/api/workspaces', {
+      method: 'POST',
+      body: payload,
+    })
+    await fetchWorkspaces()
+    return workspace
+  }
+
+  const createProject = async (payload: {
+    workspaceId: string
+    name: string
+    description?: string | null
+  }) => {
+    const { project } = await api<{ project: Project }>('/api/projects', {
+      method: 'POST',
+      body: payload,
+    })
+    await fetchWorkspaces()
+    return project
   }
 
   const setActiveWorkspace = async (workspaceId: string) => {
@@ -63,21 +68,18 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   }
 
   const fetchMembers = async (workspaceId: string) => {
-    try {
-      const result = await $fetch<MembersResponse>(`/api/workspaces/${workspaceId}/members`)
-      members.value = result?.data?.members ?? []
-    } catch (error) {
-      console.error('Failed to load workspace members:', error)
-    }
+    const { members: next } = await api<{ members: Member[] }>(
+      `/api/workspaces/${workspaceId}/members`,
+    )
+    members.value = next ?? []
   }
 
   const addMember = async (email: string) => {
     if (!activeWorkspaceId.value) return null
-    const result = await $fetch<MemberResponse>(
+    const { member } = await api<{ member: Member }>(
       `/api/workspaces/${activeWorkspaceId.value}/members`,
-      { method: 'POST', body: { email } }
+      { method: 'POST', body: { email } },
     )
-    const member = result?.data?.member
     if (member && !members.value.some((item) => item.id === member.id)) {
       members.value.push(member)
     }
@@ -86,19 +88,19 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
   const createInvite = async (email?: string) => {
     if (!activeWorkspaceId.value) return null
-    const result = await $fetch<{
-      data: { invite: { url: string; expiresAt: string; email: string | null; emailed?: boolean } }
+    const { invite } = await api<{
+      invite: { url: string; expiresAt: string; email: string | null; emailed?: boolean }
     }>(`/api/workspaces/${activeWorkspaceId.value}/invites`, {
       method: 'POST',
-      body: email ? { email } : {}
+      body: email ? { email } : {},
     })
-    return result?.data?.invite ?? null
+    return invite ?? null
   }
 
   const removeMember = async (userId: string) => {
     if (!activeWorkspaceId.value) return
-    await $fetch(`/api/workspaces/${activeWorkspaceId.value}/members/${userId}`, {
-      method: 'DELETE'
+    await api(`/api/workspaces/${activeWorkspaceId.value}/members/${userId}`, {
+      method: 'DELETE',
     })
     members.value = members.value.filter((member) => member.id !== userId)
   }
@@ -131,11 +133,10 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     projectId: string,
     payload: { name?: string; description?: string | null; archived?: boolean }
   ) => {
-    const result = await $fetch<{ data: { project: Project } }>(
+    const { project } = await api<{ project: Project }>(
       `/api/projects/${projectId}`,
-      { method: 'PATCH', body: payload }
+      { method: 'PATCH', body: payload },
     )
-    const project = result?.data?.project
     if (project) applyProjectUpdate(project)
     if (payload.archived !== undefined) await fetchArchive({ silent: true })
     return project ?? null
@@ -145,27 +146,23 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     if (!activeWorkspaceId.value) return
     if (!options?.silent) archiveLoading.value = true
     try {
-      const result = await $fetch<{
-        data: {
-          lists: ArchivedList[]
-          cards: (Task & { projectName?: string })[]
-          projects: Project[]
-        }
+      const result = await api<{
+        lists: ArchivedList[]
+        cards: (Task & { projectName?: string })[]
+        projects: Project[]
       }>(`/api/workspaces/${activeWorkspaceId.value}/archived`)
-      archivedLists.value = result?.data?.lists ?? []
-      archivedCards.value = result?.data?.cards ?? []
-      archivedProjects.value = result?.data?.projects ?? []
-    } catch (error) {
-      console.error('Failed to load archive:', error)
+      archivedLists.value = result.lists ?? []
+      archivedCards.value = result.cards ?? []
+      archivedProjects.value = result.projects ?? []
     } finally {
       archiveLoading.value = false
     }
   }
 
   const restoreList = async (columnId: string) => {
-    await $fetch(`/api/columns/${columnId}`, {
+    await api(`/api/columns/${columnId}`, {
       method: 'PATCH',
-      body: { archived: false }
+      body: { archived: false },
     })
     archivedLists.value = archivedLists.value.filter((item) => item.id !== columnId)
     const board = useBoardStore()
@@ -173,17 +170,17 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   }
 
   const deleteArchivedList = async (columnId: string) => {
-    await $fetch(`/api/columns/${columnId}`, { method: 'DELETE' })
+    await api(`/api/columns/${columnId}`, { method: 'DELETE' })
     archivedLists.value = archivedLists.value.filter((item) => item.id !== columnId)
   }
 
   const deleteArchivedCard = async (taskId: string) => {
-    await $fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+    await api(`/api/tasks/${taskId}`, { method: 'DELETE' })
     archivedCards.value = archivedCards.value.filter((item) => item.id !== taskId)
   }
 
   const deleteArchivedProject = async (projectId: string) => {
-    await $fetch(`/api/projects/${projectId}`, { method: 'DELETE' })
+    await api(`/api/projects/${projectId}`, { method: 'DELETE' })
     archivedProjects.value = archivedProjects.value.filter((item) => item.id !== projectId)
     for (const workspace of workspaces.value) {
       if (!workspace.projects) continue
@@ -219,11 +216,11 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       ...patch,
     })
     try {
-      const result = await $fetch<{ data: { settings: WorkspaceSetting } }>(
+      const { settings } = await api<{ settings: WorkspaceSetting }>(
         `/api/workspaces/${workspaceId}/settings`,
-        { method: 'PATCH', body: patch }
+        { method: 'PATCH', body: patch },
       )
-      if (result?.data?.settings) applySettings(workspaceId, result.data.settings)
+      if (settings) applySettings(workspaceId, settings)
     } catch (error) {
       if (previous) applySettings(workspaceId, previous)
       throw error
@@ -241,6 +238,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     archivedCards,
     archivedProjects,
     fetchWorkspaces,
+    createWorkspace,
+    createProject,
     setActiveWorkspace,
     fetchMembers,
     addMember,

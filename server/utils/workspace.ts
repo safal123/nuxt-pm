@@ -1,24 +1,19 @@
 import prisma from '~/lib/prisma'
+import { workspaceAccessWhere } from '~/server/utils/access'
 
-/**
- * Throws a 404 `createError` if `userId` (local User.id) does not have access to
- * `workspaceId`, either as its creator or as a member.
- */
-export const validateWorkspace = async (workspaceId: string, userId: string) => {
+/** 404 unless the user created this workspace or is a member. */
+export const validateWorkspaceAccess = async (workspaceId: string, userId: string) => {
   const workspace = await prisma.workspace.findFirst({
     where: {
       id: workspaceId,
-      OR: [
-        { createdBy: userId },
-        { members: { some: { userId } } }
-      ]
-    }
+      ...workspaceAccessWhere(userId),
+    },
   })
 
   if (!workspace) {
     throw createError({
       statusCode: 404,
-      message: 'Workspace not found or you do not have access.'
+      message: 'Workspace not found or you do not have access.',
     })
   }
 
@@ -45,25 +40,6 @@ export const ensureWorkspaceSettings = async (workspaceId: string) => {
   })
 }
 
-export const createProject = async (options: {
-  workspaceId: string
-  name: string
-  description: string
-  createdBy: string
-}) => {
-  return prisma.project.create({
-    data: {
-      ...options,
-      members: {
-        create: {
-          userId: options.createdBy,
-          role: 'OWNER'
-        }
-      }
-    }
-  })
-}
-
 export const ensureDefaultWorkspace = async (user: {
   id: string
   name: string | null
@@ -73,22 +49,14 @@ export const ensureDefaultWorkspace = async (user: {
     const active = await prisma.workspace.findFirst({
       where: {
         id: user.activeWorkspaceId,
-        OR: [
-          { createdBy: user.id },
-          { members: { some: { userId: user.id } } },
-        ],
+        ...workspaceAccessWhere(user.id),
       },
     })
     if (active) return { user, workspace: active }
   }
 
   let workspace = await prisma.workspace.findFirst({
-    where: {
-      OR: [
-        { createdBy: user.id },
-        { members: { some: { userId: user.id } } },
-      ],
-    },
+    where: workspaceAccessWhere(user.id),
     orderBy: { createdAt: 'asc' },
   })
 

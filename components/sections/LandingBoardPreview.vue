@@ -25,7 +25,7 @@ const columns = [
     count: 1,
     cards: [
       {
-        title: "Clerk session on SSR",
+        title: "Auth session on SSR",
         priority: "URGENT",
         due: "Today",
         dueTone: "rose",

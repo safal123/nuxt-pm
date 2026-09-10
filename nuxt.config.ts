@@ -4,7 +4,6 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
   modules: [
-    '@clerk/nuxt',
     'shadcn-nuxt',
     '@nuxtjs/tailwindcss',
     '@prisma/nuxt',
@@ -47,7 +46,7 @@ export default defineNuxtConfig({
   ],
   vite: {
     server: {
-      allowedHosts: ['736c-2403-4800-2590-b578-1d7b-41b4-2dc7-cbe9.ngrok-free.app']
+      allowedHosts: ['https://82ec-2403-4800-2590-b591-c14a-3d28-b356-27b6.ngrok-free.app']
     }
   }
 })

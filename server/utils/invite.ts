@@ -1,8 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto'
 import prisma from '~/lib/prisma'
+import { addWorkspaceMember } from '~/server/utils/member'
 
 const DEFAULT_TTL_MS = 72 * 60 * 60 * 1000
 
+/** Only the SHA-256 hash is stored; the raw token lives in the invite URL. */
 export const hashInviteToken = (token: string) =>
   createHash('sha256').update(token).digest('hex')
 
@@ -17,6 +19,7 @@ export const createWorkspaceInvite = async (input: {
   const email = input.email?.trim().toLowerCase() || null
   const expiresAt = new Date(Date.now() + DEFAULT_TTL_MS)
 
+  // Link invites are unique per workspace — expire any still-open one first.
   if (!email) {
     await prisma.workspaceInvite.updateMany({
       where: {

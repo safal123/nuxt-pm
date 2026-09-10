@@ -9,7 +9,7 @@ await initialize();
 <template>
   <SidebarProvider>
     <Sidebar>
-      <SidebarHeader class="border-b px-4 py-2">
+      <SidebarHeader class="border-b">
         <WorkspaceSelector
           :workspaces="workspaceStore.workspaces"
           :active-workspace-id="userStore.user?.activeWorkspaceId || ''"
@@ -25,8 +25,8 @@ await initialize();
         />
       </SidebarContent>
 
-      <SidebarFooter class="border-t p-4">
-        <AppUserButton />
+      <SidebarFooter class="border-t">
+        <AppUserButton variant="sidebar" />
       </SidebarFooter>
     </Sidebar>
 
@@ -63,22 +63,9 @@ await initialize();
 
       <WorkspaceModals />
 
-      <ClerkLoading>
-        <div class="flex flex-1 flex-col gap-4 p-4 md:p-6">
-          <div class="grid gap-4 md:grid-cols-3">
-            <Skeleton class="h-[120px] rounded-xl" />
-            <Skeleton class="h-[120px] rounded-xl" />
-            <Skeleton class="h-[120px] rounded-xl" />
-          </div>
-          <Skeleton class="h-[400px] rounded-xl" />
-        </div>
-      </ClerkLoading>
-
-      <ClerkLoaded>
-        <main class="min-w-0 flex-1 overflow-hidden p-4 md:p-6">
-          <slot />
-        </main>
-      </ClerkLoaded>
+      <main class="min-w-0 flex-1 overflow-hidden p-4 md:p-6">
+        <slot />
+      </main>
     </SidebarInset>
   </SidebarProvider>
 </template>

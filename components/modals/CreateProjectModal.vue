@@ -38,21 +38,11 @@ async function onSubmit(values: any) {
   creating.value = true;
 
   try {
-    const result = await $fetch<{ data: { project: { id: string } } }>(
-      "/api/projects",
-      {
-        method: "POST",
-        body: {
-          name: values.name.trim(),
-          workspaceId: store.modalProps.workspaceId,
-          description: values.description?.trim() || undefined,
-        },
-      },
-    );
-
-    await workspaceStore.fetchWorkspaces();
-
-    const project = result?.data?.project;
+    const project = await workspaceStore.createProject({
+      name: values.name.trim(),
+      workspaceId: store.modalProps.workspaceId,
+      description: values.description?.trim() || undefined,
+    });
     if (project) {
       await userStore.updateUser({ activeProjectId: project.id });
       const workspaceId = String(store.modalProps.workspaceId || "");

@@ -1,10 +1,6 @@
 import { defineStore } from 'pinia'
 import type { User } from '~/types'
-
-interface UserResponse {
-  data: { user: User | null }
-  message?: string
-}
+import { api } from '~/lib/api'
 
 export const useUserStore = defineStore('user', () => {
   const user = ref<User | null>(null)
@@ -15,18 +11,12 @@ export const useUserStore = defineStore('user', () => {
     loading.value = true
     error.value = null
     try {
-      const headers = import.meta.server
-        ? useRequestHeaders(["cookie"])
-        : undefined
-      const result = await $fetch<UserResponse>("/api/users", { headers })
-      if (result?.data.user) {
-        user.value = result.data.user
-      }
-      return result?.data.user ?? null
+      const { user: next } = await api<{ user: User }>('/api/users')
+      user.value = next
+      return next
     } catch (err: any) {
-      error.value = err.message || "Failed to fetch user data"
-      console.error("Error fetching user:", err)
-      return null
+      error.value = err.message || 'Failed to fetch user data'
+      throw err
     } finally {
       loading.value = false
     }
@@ -36,20 +26,15 @@ export const useUserStore = defineStore('user', () => {
     loading.value = true
     error.value = null
     try {
-      const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
-      const result = await $fetch<UserResponse>('/api/users', {
+      const { user: next } = await api<{ user: User }>('/api/users', {
         method: 'PUT',
         body: newData,
-        headers
       })
-      if (result?.data.user) {
-        user.value = result.data.user
-      }
-      return result?.data.user
+      user.value = next
+      return next
     } catch (err: any) {
       error.value = err.message || 'Failed to update user'
-      console.error('Error updating user:', err)
-      return null
+      throw err
     } finally {
       loading.value = false
     }
@@ -64,10 +49,8 @@ export const useUserStore = defineStore('user', () => {
     user,
     loading,
     error,
-
-    // Actions
     me,
     updateUser,
-    clearUser
+    clearUser,
   }
 })

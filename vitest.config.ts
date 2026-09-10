@@ -11,18 +11,6 @@ export default defineVitestConfig({
     environmentOptions: {
       nuxt: {
         domEnvironment: "happy-dom",
-        overrides: {
-          runtimeConfig: {
-            public: {
-              clerk: {
-                // The Clerk plugin throws on boot without a key. This is a
-                // well-formed dev key for a domain that does not exist, so no
-                // test can reach a real Clerk instance.
-                publishableKey: "pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk",
-              },
-            },
-          },
-        },
       },
     },
     clearMocks: true,

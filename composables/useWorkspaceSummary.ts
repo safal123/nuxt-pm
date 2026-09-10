@@ -1,4 +1,5 @@
 import type { WorkspaceActivity } from "~/types";
+import { api } from "~/lib/api";
 
 export type WorkspaceSummaryStats = {
   liveProjects: number;
@@ -29,18 +30,13 @@ export const useWorkspaceSummary = (
       if (!id) {
         return { stats: emptyStats, activity: [] as WorkspaceSummaryActivity[] };
       }
-      const headers = import.meta.server
-        ? useRequestHeaders(["cookie"])
-        : undefined;
-      const result = await $fetch<{
-        data: {
-          stats: WorkspaceSummaryStats;
-          activity: WorkspaceSummaryActivity[];
-        };
-      }>(`/api/workspaces/${id}/summary`, { headers });
+      const result = await api<{
+        stats: WorkspaceSummaryStats;
+        activity: WorkspaceSummaryActivity[];
+      }>(`/api/workspaces/${id}/summary`);
       return {
-        stats: result?.data?.stats ?? emptyStats,
-        activity: result?.data?.activity ?? [],
+        stats: result.stats ?? emptyStats,
+        activity: result.activity ?? [],
       };
     },
     { watch: [() => toValue(workspaceId)] },

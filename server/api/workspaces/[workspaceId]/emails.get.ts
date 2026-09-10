@@ -1,45 +1,35 @@
 import prisma from '~/lib/prisma'
+import { emailsQuerySchema } from '~/server/utils/schemas'
 import { EMAIL_TEMPLATES, emailTemplateLabel } from '~/utils/email-templates'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  query: emailsQuerySchema,
+  handler: async ({ user, event, query }) => {
     const workspaceId = getRouterParam(event, 'workspaceId') as string
-    const query = getQuery(event)
-    const projectId =
-      typeof query.projectId === 'string' && query.projectId !== 'all'
-        ? query.projectId
-        : undefined
-    const template =
-      typeof query.template === 'string' && query.template !== 'all'
-        ? query.template
-        : undefined
-    const box = query.box === 'inbox' ? 'inbox' : 'sent'
+    const { projectId, template, box } = query
 
-    await validateWorkspace(workspaceId, user.id)
+    await validateWorkspaceAccess(workspaceId, user.id)
 
     const [projects, emails] = await Promise.all([
       prisma.project.findMany({
         where: { workspaceId },
         select: { id: true, name: true },
-        orderBy: { name: 'asc' }
+        orderBy: { name: 'asc' },
       }),
       prisma.emailLog.findMany({
         where: {
           workspaceId,
-          ...(box === 'inbox'
-            ? { toEmail: user.email }
-            : { createdBy: user.id }),
+          ...(box === 'inbox' ? { toEmail: user.email } : { createdBy: user.id }),
           ...(projectId ? { projectId } : {}),
-          ...(template ? { template } : {})
+          ...(template ? { template } : {}),
         },
         orderBy: { createdAt: 'desc' },
         take: 200,
         include: {
           project: { select: { id: true, name: true } },
-          creator: { select: { name: true, email: true } }
-        }
-      })
+          creator: { select: { name: true, email: true } },
+        },
+      }),
     ])
 
     return {
@@ -61,16 +51,10 @@ export default defineEventHandler(async (event) => {
           error: email.error,
           projectId: email.projectId,
           projectName: email.project?.name ?? null,
-          createdAt: email.createdAt
-        }))
+          createdAt: email.createdAt,
+        })),
       },
-      message: 'Emails fetched successfully'
+      message: 'Emails fetched successfully',
     }
-  } catch (error: any) {
-    console.error('Failed to fetch emails:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Failed to fetch emails'
-    })
-  }
+  },
 })

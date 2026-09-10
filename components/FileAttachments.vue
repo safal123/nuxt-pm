@@ -9,6 +9,7 @@ import {
 } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 import type { Attachment } from "@/types";
+import { api } from "~/lib/api";
 import {
   MAX_CARD_FILES,
   MAX_CARD_FILE_BYTES,
@@ -42,11 +43,11 @@ const attachments = computed(() => props.files ?? fetchedFiles.value);
 
 const loadAttachments = async () => {
   if (props.files || !props.attachableType || !props.attachableId) return;
-  const result = await $fetch<{ data: { attachments: Attachment[] } }>(
+  const { attachments: next } = await api<{ attachments: Attachment[] }>(
     "/api/attachments",
     { query: { attachableType: props.attachableType, attachableId: props.attachableId } },
   );
-  fetchedFiles.value = result?.data?.attachments ?? [];
+  fetchedFiles.value = next ?? [];
 };
 
 watch(
@@ -123,7 +124,7 @@ const removeAttachment = async (attachment: Attachment) => {
   if (!canRemoveAttachment(attachment)) return;
   removingAttachmentId.value = attachment.id;
   try {
-    await $fetch(`/api/attachments/${attachment.id}`, { method: "DELETE" });
+    await api(`/api/attachments/${attachment.id}`, { method: "DELETE" });
     emit("changed");
     await loadAttachments();
   } catch (error: any) {

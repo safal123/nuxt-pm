@@ -2,6 +2,7 @@
 import { User2Icon, UserPlusIcon, XIcon } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 import type { Member } from "@/types";
+import { api } from "~/lib/api";
 
 const props = defineProps<{
   workspaceId: string;
@@ -27,10 +28,10 @@ const load = async () => {
   loading.value = true;
   try {
     if (props.workspaceId) await workspaceStore.fetchMembers(props.workspaceId);
-    const result = await $fetch<{ data: { members: Member[] } }>(
+    const { members: next } = await api<{ members: Member[] }>(
       `/api/projects/${props.projectId}/members`,
     );
-    members.value = result?.data?.members ?? [];
+    members.value = next ?? [];
   } catch (error) {
     console.error(error);
   } finally {
@@ -47,11 +48,11 @@ const available = computed(() =>
 const addMember = async (person: Member) => {
   addingId.value = person.id;
   try {
-    const result = await $fetch<{ data: { member: Member } }>(
+    const { member } = await api<{ member: Member }>(
       `/api/projects/${props.projectId}/members`,
       { method: "POST", body: { userId: person.id } },
     );
-    if (result?.data?.member) members.value.push(result.data.member);
+    if (member) members.value.push(member);
     if (boardStore.projectId === props.projectId) {
       await boardStore.fetchProjectMembers(props.projectId);
     }
@@ -67,7 +68,7 @@ const removeMember = async (person: Member) => {
   if (person.isOwner) return;
   removingId.value = person.id;
   try {
-    await $fetch(`/api/projects/${props.projectId}/members/${person.id}`, {
+    await api(`/api/projects/${props.projectId}/members/${person.id}`, {
       method: "DELETE",
     });
     members.value = members.value.filter((member) => member.id !== person.id);

@@ -1,80 +1,33 @@
 import prisma from '~/lib/prisma'
-import { H3Event } from 'h3'
-import { clerkClient } from '@clerk/nuxt/server'
-import type { EmailAddress, User as ClerkUser } from '@clerk/backend'
+import type { H3Event } from 'h3'
+import { auth } from '~/lib/auth'
+import { ensureDefaultWorkspace } from '~/server/utils/workspace'
 
-export const getUserFromClerkId = async (clerkId: string) => {
-  return prisma.user.findUnique({
-    where: { clerkId },
-  })
-}
-
-const fieldsFromClerk = (clerkUser: ClerkUser) => {
-  const email =
-    clerkUser.emailAddresses.find(
-      (item: EmailAddress) => item.id === clerkUser.primaryEmailAddressId,
-    )?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress
-
-  if (!email) {
-    throw createError({
-      statusCode: 400,
-      message: 'Clerk user does not have an email address',
-    })
-  }
-
-  const name =
-    [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null
-
-  return {
-    email,
-    name,
-    clerkObject: JSON.parse(JSON.stringify(clerkUser)),
-  }
-}
-
-/** Returns the local user for this Clerk account, creating one if needed. */
-export const ensureLocalUserFromClerk = async (
-  event: H3Event,
-  clerkId: string,
-) => {
-  const existing = await getUserFromClerkId(clerkId)
-  if (existing) return existing
-
-  const clerkUser = await clerkClient(event).users.getUser(clerkId)
-  const { email, name, clerkObject } = fieldsFromClerk(clerkUser)
-
-  const byEmail = await prisma.user.findUnique({ where: { email } })
-  if (byEmail) {
-    return prisma.user.update({
-      where: { id: byEmail.id },
-      data: {
-        clerkId,
-        name: name ?? byEmail.name,
-        clerkObject,
-      },
-    })
-  }
-
-  return prisma.user.create({
-    data: {
-      clerkId,
-      email,
-      name,
-      clerkObject,
-    },
-  })
-}
-
+/**
+ * Resolves the signed-in user for a request.
+ *
+ * Better Auth owns the `users` row, so there is nothing to sync here — but a
+ * brand new account still needs a workspace before it can use the app, and that
+ * is created lazily on the first authenticated request.
+ */
 export const validateAndGetUser = async (event: H3Event) => {
-  const clerkId = event.context.auth?.userId
-  if (!clerkId) {
+  const session = await auth.api.getSession({ headers: event.headers })
+  if (!session?.user) {
     throw createError({
       statusCode: 401,
       message: 'Unauthorized',
     })
   }
 
-  const user = await ensureLocalUserFromClerk(event, clerkId)
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } })
+  if (!user) {
+    // Session cookie outlived its user row.
+    throw createError({
+      statusCode: 401,
+      message: 'Unauthorized',
+    })
+  }
+
   const { user: withWorkspace } = await ensureDefaultWorkspace(user)
   return withWorkspace
 }

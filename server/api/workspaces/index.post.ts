@@ -1,10 +1,9 @@
 import prisma from '~/lib/prisma'
+import { workspaceCreateSchema } from '~/server/utils/schemas'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
-    const body = await readBody(event)
-
+export default defineApi({
+  body: workspaceCreateSchema,
+  handler: async ({ user, body }) => {
     const workspace = await prisma.workspace.create({
       data: {
         name: body.name,
@@ -13,25 +12,19 @@ export default defineEventHandler(async (event) => {
         members: {
           create: {
             userId: user.id,
-            role: 'OWNER'
-          }
+            role: 'OWNER',
+          },
         },
         settings: {
-          create: {}
-        }
-      }
+          create: {},
+        },
+      },
     })
 
-    setResponseStatus(event, 201)
     return {
       data: { workspace },
-      message: 'Workspace created successfully'
+      message: 'Workspace created successfully',
+      status: 201,
     }
-  } catch (error: any) {
-    console.error('Failed to create workspace:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

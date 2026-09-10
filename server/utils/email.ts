@@ -8,6 +8,7 @@ import {
   customEmailHtml,
 } from '~/utils/email-templates'
 
+/** Resend's shared sandbox sender — production must set a verified RESEND_FROM. */
 const TEST_FROM = 'Northstar <onboarding@resend.dev>'
 
 const resolveFromAddress = () => {

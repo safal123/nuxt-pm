@@ -23,14 +23,15 @@ export interface Workspace {
 
 export interface User {
   id: string
-  clerkId: string
   email: string
+  emailVerified: boolean
   name: string | null
+  image: string | null
+  imageUrl?: string | null
   activeWorkspaceId: string | null
   activeProjectId: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  clerkObject?: any
 }
 
 export interface Project {
@@ -85,7 +86,7 @@ export interface TaskLabel {
   color: string
 }
 
-export type TaskActivityType =
+export type ActivityType =
   | 'CREATED'
   | 'TITLE_CHANGED'
   | 'DESCRIPTION_CHANGED'
@@ -107,19 +108,20 @@ export type TaskActivityType =
   | 'UNLIKED'
   | 'ARCHIVED'
   | 'RESTORED'
+  | 'COLUMN_CREATED'
   | 'EMAIL_SENT'
   | 'EMAIL_FAILED'
 
-export interface TaskActivity {
+export interface Activity {
   id: string
-  type: TaskActivityType
+  type: ActivityType
   message: string
   metadata: Record<string, unknown> | null
   createdAt: Date | string
   user: TaskAssignee
 }
 
-export interface WorkspaceActivity extends TaskActivity {
+export interface WorkspaceActivity extends Activity {
   task: { id: string; title: string } | null
   project: { id: string; name: string } | null
   email?: {
@@ -158,7 +160,7 @@ export interface Task {
   members: TaskAssignee[]
   comments?: TaskComment[]
   attachments?: Attachment[]
-  activities?: TaskActivity[]
+  activities?: Activity[]
   commentCount: number
   attachmentCount: number
   likeCount: number

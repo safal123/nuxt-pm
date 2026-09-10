@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { api } from '~/lib/api'
+
 const route = useRoute()
 const token = computed(() => String(route.params.token || ''))
 const { isSignedIn } = useAuth()
@@ -29,17 +31,14 @@ const loadInvite = async () => {
   loading.value = true
   errorMessage.value = ''
   try {
-    const result = await $fetch<{
-      data: {
-        workspaceName: string
-        email: string | null
-        expiresAt: string
-        valid: boolean
-        expired: boolean
-        used: boolean
-      }
+    invite.value = await api<{
+      workspaceName: string
+      email: string | null
+      expiresAt: string
+      valid: boolean
+      expired: boolean
+      used: boolean
     }>(`/api/invites/${token.value}`)
-    invite.value = result.data
   } catch (error: any) {
     invite.value = null
     errorMessage.value = error?.data?.message || 'This invite is not valid.'
@@ -54,7 +53,7 @@ const join = async () => {
   joining.value = true
   errorMessage.value = ''
   try {
-    await $fetch(`/api/invites/${token.value}/accept`, { method: 'POST' })
+    await api(`/api/invites/${token.value}/accept`, { method: 'POST' })
     await userStore.me()
     await workspaceStore.fetchWorkspaces()
     const workspaceId = userStore.user?.activeWorkspaceId

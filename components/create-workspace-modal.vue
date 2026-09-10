@@ -1,20 +1,30 @@
 <script setup lang="ts">
 import { PlusIcon } from "lucide-vue-next";
+import { toast } from "vue-sonner";
 
+const workspaceStore = useWorkspaceStore();
+const userStore = useUserStore();
 const name = ref("");
+const creating = ref(false);
 
 const createWorkspace = async () => {
+  const trimmed = name.value.trim();
+  if (!trimmed || creating.value) return;
+  creating.value = true;
   try {
-    const { data, status } = await useFetch("/api/workspaces", {
-      method: "POST",
-      body: {
-        name: name.value,
-        description: "My Awesome Workspace Description",
-      },
+    const workspace = await workspaceStore.createWorkspace({ name: trimmed });
+    await userStore.updateUser({ activeWorkspaceId: workspace.id });
+    await workspaceStore.setActiveWorkspace(workspace.id);
+    name.value = "";
+    toast.success("Workspace created");
+    await navigateTo({
+      name: "workspace-dashboard",
+      params: { workspaceId: workspace.id },
     });
-    console.log(data);
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    toast.error(error?.data?.message || "Could not create that workspace.");
+  } finally {
+    creating.value = false;
   }
 };
 </script>
@@ -36,20 +46,21 @@ const createWorkspace = async () => {
           label="Workspace Name"
           placeholder="My Awesome Workspace"
           v-model="name"
+          :disabled="creating"
         />
       </div>
     </template>
     <template #footer>
       <div class="flex gap-4">
         <DialogClose as-child>
-          <Button size="sm" variant="destructive"> Cancel </Button>
+          <Button size="sm" variant="destructive" :disabled="creating"> Cancel </Button>
         </DialogClose>
         <Button
           size="sm"
-          :disabled="status === 'pending'"
+          :disabled="creating || !name.trim()"
           @click.prevent="createWorkspace"
         >
-          {{ status === "pending" ? "Creating..." : "Create" }}
+          {{ creating ? "Creating..." : "Create" }}
         </Button>
       </div>
     </template>

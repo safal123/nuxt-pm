@@ -1,55 +1,16 @@
 import { randomUUID } from 'node:crypto'
 import prisma from '~/lib/prisma'
+import { workspaceEmailSchema } from '~/server/utils/schemas'
 
-const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  body: workspaceEmailSchema,
+  handler: async ({ user, event, body }) => {
     const workspaceId = getRouterParam(event, 'workspaceId') as string
-    const body = await readBody(event)
+    await validateWorkspaceAccess(workspaceId, user.id)
 
-    await validateWorkspace(workspaceId, user.id)
-
-    const to = typeof body?.to === 'string' ? body.to.trim().toLowerCase() : ''
-    const subject = typeof body?.subject === 'string' ? body.subject.trim() : ''
-    const kicker = typeof body?.kicker === 'string' ? body.kicker.trim() : 'Update'
-    const title = typeof body?.title === 'string' ? body.title.trim() : ''
-    const message = typeof body?.body === 'string' ? body.body.trim() : ''
-    const actionLabel = typeof body?.actionLabel === 'string' ? body.actionLabel.trim() : ''
-    const actionUrl = typeof body?.actionUrl === 'string' ? body.actionUrl.trim() : ''
-    const projectId = typeof body?.projectId === 'string' && !['all', 'none', ''].includes(body.projectId)
-      ? body.projectId
-      : null
-
-    if (!isEmail(to)) {
-      throw createError({ statusCode: 400, message: 'Enter a valid email address.' })
-    }
-    if (!subject) {
-      throw createError({ statusCode: 400, message: 'Subject is required.' })
-    }
-    if (!title) {
-      throw createError({ statusCode: 400, message: 'Title is required.' })
-    }
-    if (!message) {
-      throw createError({ statusCode: 400, message: 'Message is required.' })
-    }
-    if ((actionLabel && !actionUrl) || (!actionLabel && actionUrl)) {
-      throw createError({
-        statusCode: 400,
-        message: 'Button label and URL are both required if you add a button.',
-      })
-    }
-    if (actionUrl && !/^https?:\/\//i.test(actionUrl)) {
-      throw createError({
-        statusCode: 400,
-        message: 'Button URL must start with http:// or https://.',
-      })
-    }
-
-    if (projectId) {
+    if (body.projectId) {
       const project = await prisma.project.findFirst({
-        where: { id: projectId, workspaceId },
+        where: { id: body.projectId, workspaceId },
         select: { id: true },
       })
       if (!project) {
@@ -58,15 +19,15 @@ export default defineEventHandler(async (event) => {
     }
 
     const { data, error } = await sendCustomEmail({
-      to,
-      subject,
-      kicker,
-      title,
-      body: message,
-      actionLabel: actionLabel || undefined,
-      actionUrl: actionUrl || undefined,
+      to: body.to,
+      subject: body.subject,
+      kicker: body.kicker,
+      title: body.title,
+      body: body.body,
+      actionLabel: body.actionLabel,
+      actionUrl: body.actionUrl,
       workspaceId,
-      projectId,
+      projectId: body.projectId,
       createdBy: user.id,
     })
 
@@ -81,11 +42,5 @@ export default defineEventHandler(async (event) => {
       data: { id: data?.id ?? randomUUID() },
       message: 'Email sent',
     }
-  } catch (error: any) {
-    console.error('Failed to send custom email:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Failed to send email',
-    })
-  }
+  },
 })

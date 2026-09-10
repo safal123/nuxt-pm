@@ -1,5 +1,6 @@
-export default defineEventHandler(async (event) => {
-  try {
+export default defineApi({
+  auth: false,
+  handler: async ({ event }) => {
     const token = getRouterParam(event, 'token') as string
     const { invite, valid, expired, used } = await getInviteByToken(token)
 
@@ -10,15 +11,9 @@ export default defineEventHandler(async (event) => {
         expiresAt: invite.expiresAt,
         valid,
         expired,
-        used
+        used,
       },
-      message: valid ? 'Invite is valid' : 'Invite is not valid'
+      message: valid ? 'Invite is valid' : 'Invite is not valid',
     }
-  } catch (error: any) {
-    console.error('Failed to load invite:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

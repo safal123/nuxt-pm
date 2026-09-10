@@ -5,7 +5,7 @@ import { z } from 'zod'
 import prisma from '~/lib/prisma'
 import { ATTACHABLE_TYPES, validateAttachableAccess } from '~/server/utils/attachment'
 import { validateAndGetUser } from '~/server/utils/user'
-import { logTaskActivity } from '~/server/utils/task'
+import { logActivity } from '~/server/utils/activity'
 import { MAX_CARD_FILES, MAX_CARD_FILE_SIZE } from '~/utils/upload-limits'
 
 const f = createUploadthing()
@@ -30,11 +30,14 @@ export const uploadRouter = {
     .middleware(async ({ event, input }) => {
       try {
         const user = await validateAndGetUser(event)
-        await validateAttachableAccess(input.attachableType, input.attachableId, user.id)
+        const access = await validateAttachableAccess(input.attachableType, input.attachableId, user.id)
         return {
           userId: user.id,
           attachableType: input.attachableType,
-          attachableId: input.attachableId
+          attachableId: input.attachableId,
+          workspaceId: access.workspaceId,
+          projectId: access.projectId,
+          taskId: access.taskId,
         }
       } catch (error: any) {
         throw new UploadThingError(error?.message || 'Unauthorized')
@@ -54,17 +57,43 @@ export const uploadRouter = {
         }
       })
 
-      if (metadata.attachableType === 'Task') {
-        await logTaskActivity({
-          taskId: metadata.attachableId,
-          userId: metadata.userId,
-          type: 'ATTACHMENT_ADDED',
-          message: `attached ${file.name}`,
-          metadata: { name: file.name, url: file.ufsUrl }
-        })
-      }
+      await logActivity({
+        workspaceId: metadata.workspaceId,
+        projectId: metadata.projectId,
+        taskId: metadata.taskId,
+        userId: metadata.userId,
+        type: 'ATTACHMENT_ADDED',
+        message: `attached ${file.name}`,
+        metadata: { name: file.name, url: file.ufsUrl },
+      })
 
       return { uploadedBy: metadata.userId }
+    }),
+
+  avatar: f(
+    {
+      image: {
+        maxFileSize: '2MB',
+        maxFileCount: 1,
+      },
+    },
+    { awaitServerData: true }
+  )
+    .middleware(async ({ event }) => {
+      try {
+        const user = await validateAndGetUser(event)
+        return { userId: user.id }
+      } catch (error: any) {
+        throw new UploadThingError(error?.message || 'Unauthorized')
+      }
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      await prisma.user.update({
+        where: { id: metadata.userId },
+        data: { image: file.ufsUrl },
+      })
+
+      return { image: file.ufsUrl }
     })
 } satisfies FileRouter
 

@@ -1,11 +1,9 @@
 import prisma from '~/lib/prisma'
 import { BOARD_COMPLETED_LIMIT } from '~/utils/board'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  handler: async ({ user, event }) => {
     const projectId = getRouterParam(event, 'projectId') as string
-
     await validateProjectAccess(projectId, user.id)
 
     const columnCount = await prisma.taskColumn.count({ where: { projectId } })
@@ -20,9 +18,9 @@ export default defineEventHandler(async (event) => {
         tasks: {
           where: { archivedAt: null, status: { not: 'DONE' } },
           orderBy: { order: 'asc' },
-          include: taskBoardInclude(user.id)
-        }
-      }
+          include: taskBoardInclude(user.id),
+        },
+      },
     })
 
     const columnIds = columns.map((column) => column.id)
@@ -34,9 +32,9 @@ export default defineEventHandler(async (event) => {
               projectId,
               archivedAt: null,
               status: 'DONE',
-              columnId: { in: columnIds }
+              columnId: { in: columnIds },
             },
-            _count: { _all: true }
+            _count: { _all: true },
           })
         : Promise.resolve([] as { columnId: string; _count: { _all: number } }[]),
       Promise.all(
@@ -45,19 +43,19 @@ export default defineEventHandler(async (event) => {
             where: { columnId: column.id, archivedAt: null, status: 'DONE' },
             orderBy: [{ completedAt: 'desc' }, { id: 'desc' }],
             take: BOARD_COMPLETED_LIMIT,
-            include: taskBoardInclude(user.id)
-          })
-        )
-      )
+            include: taskBoardInclude(user.id),
+          }),
+        ),
+      ),
     ])
 
     const countByColumn = new Map(
-      completedCounts.map((row) => [row.columnId, row._count._all])
+      completedCounts.map((row) => [row.columnId, row._count._all]),
     )
 
     const boardTasks = [
       ...columns.flatMap((column) => column.tasks),
-      ...completedByColumn.flat()
+      ...completedByColumn.flat(),
     ]
     await mergeTaskAttachmentCounts(boardTasks)
 
@@ -68,16 +66,10 @@ export default defineEventHandler(async (event) => {
           completedCount: countByColumn.get(column.id) ?? 0,
           tasks: [...column.tasks, ...completedByColumn[index]]
             .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
-            .map((task) => serializeTask(task, { compact: true }))
-        }))
+            .map((task) => serializeTask(task, { compact: true })),
+        })),
       },
-      message: 'Board fetched successfully'
+      message: 'Board fetched successfully',
     }
-  } catch (error: any) {
-    console.error('Failed to fetch board:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

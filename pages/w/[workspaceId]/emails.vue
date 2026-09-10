@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { whenDate } from "@/utils/date";
+import { api } from "~/lib/api";
 import type { EmailLogItem } from "@/types";
 import { EMAIL_TEMPLATES, sampleEmailHtml } from "@/utils/email-templates";
 import { emailStatusChip, emailTemplateChip, whenChip } from "@/utils/table-chips";
@@ -63,24 +64,18 @@ const fetchEmails = async () => {
   }
   loading.value = true;
   try {
-    const headers = import.meta.server
-      ? useRequestHeaders(["cookie"])
-      : undefined;
-    const result = await $fetch<{
-      data: {
-        emails: EmailLogItem[]
-        projects: { id: string; name: string }[]
-      }
+    const result = await api<{
+      emails: EmailLogItem[]
+      projects: { id: string; name: string }[]
     }>(`/api/workspaces/${workspaceId}/emails`, {
-      headers,
       query: {
         box: box.value,
         projectId: projectId.value,
         template: templateId.value,
       },
     });
-    emails.value = result?.data?.emails ?? [];
-    projects.value = result?.data?.projects ?? [];
+    emails.value = result.emails ?? [];
+    projects.value = result.projects ?? [];
   } catch (error) {
     console.error(error);
     emails.value = [];

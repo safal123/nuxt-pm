@@ -1,12 +1,11 @@
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  handler: async ({ user, event }) => {
     const token = getRouterParam(event, 'token') as string
 
     const result = await acceptWorkspaceInvite(token, {
       id: user.id,
       email: user.email,
-      name: user.name
+      name: user.name,
     })
 
     if (!result.alreadyMember) {
@@ -21,7 +20,7 @@ export default defineEventHandler(async (event) => {
           workspaceId: result.workspaceId,
           workspaceName: result.workspaceName,
           dashboardUrl,
-          createdBy: user.id
+          createdBy: user.id,
         })
 
         if (result.inviterId !== user.id && result.inviterEmail !== result.memberEmail) {
@@ -34,7 +33,7 @@ export default defineEventHandler(async (event) => {
             workspaceId: result.workspaceId,
             workspaceName: result.workspaceName,
             dashboardUrl,
-            createdBy: user.id
+            createdBy: user.id,
           })
         }
       } catch (networkError) {
@@ -46,17 +45,11 @@ export default defineEventHandler(async (event) => {
       data: {
         workspaceId: result.workspaceId,
         workspaceName: result.workspaceName,
-        alreadyMember: result.alreadyMember
+        alreadyMember: result.alreadyMember,
       },
       message: result.alreadyMember
         ? 'You are already a member of this workspace'
-        : 'Joined workspace successfully'
+        : 'Joined workspace successfully',
     }
-  } catch (error: any) {
-    console.error('Failed to accept invite:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

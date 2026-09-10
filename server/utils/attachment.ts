@@ -1,20 +1,14 @@
 import prisma from '~/lib/prisma'
+import { personSelect } from '~/server/utils/person'
 import { validateTaskAccess } from '~/server/utils/task'
 import { validateProjectAccess } from '~/server/utils/project'
-import { validateWorkspace } from '~/server/utils/workspace'
+import { validateWorkspaceAccess } from '~/server/utils/workspace'
 
 export const ATTACHABLE_TYPES = ['Task', 'Project', 'Workspace', 'Comment'] as const
 export type AttachableType = (typeof ATTACHABLE_TYPES)[number]
 
-const uploaderSelect = {
-  id: true,
-  name: true,
-  email: true,
-  clerkObject: true
-} as const
-
 export const attachmentUploaderInclude = {
-  uploader: { select: uploaderSelect }
+  uploader: { select: personSelect }
 } as const
 
 export const isAttachableType = (value: string): value is AttachableType =>
@@ -64,8 +58,8 @@ export const mergeTaskAttachmentCounts = async <T extends { id: string; _count?:
 }
 
 /**
- * Confirms the user can reach the parent record. Returns an owner id used
- * for delete permission (uploader or owner).
+ * Confirms the user can reach the parent record. Returns delete-permission
+ * owner plus workspace/project/task ids for activity logging.
  */
 export const validateAttachableAccess = async (
   attachableType: string,
@@ -81,17 +75,38 @@ export const validateAttachableAccess = async (
 
   if (attachableType === 'Task') {
     const task = await validateTaskAccess(attachableId, userId)
-    return { attachableType, attachableId, ownerId: task.createdBy }
+    return {
+      attachableType,
+      attachableId,
+      ownerId: task.createdBy,
+      workspaceId: task.project.workspaceId,
+      projectId: task.projectId,
+      taskId: task.id,
+    }
   }
 
   if (attachableType === 'Project') {
     const project = await validateProjectAccess(attachableId, userId)
-    return { attachableType, attachableId, ownerId: project.createdBy }
+    return {
+      attachableType,
+      attachableId,
+      ownerId: project.createdBy,
+      workspaceId: project.workspaceId,
+      projectId: project.id,
+      taskId: null,
+    }
   }
 
   if (attachableType === 'Workspace') {
-    const workspace = await validateWorkspace(attachableId, userId)
-    return { attachableType, attachableId, ownerId: workspace.createdBy }
+    const workspace = await validateWorkspaceAccess(attachableId, userId)
+    return {
+      attachableType,
+      attachableId,
+      ownerId: workspace.createdBy,
+      workspaceId: workspace.id,
+      projectId: null,
+      taskId: null,
+    }
   }
 
   const comment = await prisma.taskComment.findUnique({
@@ -104,5 +119,12 @@ export const validateAttachableAccess = async (
     })
   }
   const task = await validateTaskAccess(comment.taskId, userId)
-  return { attachableType, attachableId, ownerId: comment.userId || task.createdBy }
+  return {
+    attachableType,
+    attachableId,
+    ownerId: comment.userId || task.createdBy,
+    workspaceId: task.project.workspaceId,
+    projectId: task.projectId,
+    taskId: task.id,
+  }
 }

@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client'
 import prisma from '~/lib/prisma'
+import { taskListQuerySchema } from '~/server/utils/schemas'
 import { TASK_STATUS_IDS } from '~/utils/task-status'
 import { BOARD_COMPLETED_LIMIT } from '~/utils/board'
 
@@ -20,30 +21,22 @@ const parseCompletedCursor = (cursor: string) => {
   return { completedAt, id }
 }
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  query: taskListQuerySchema,
+  handler: async ({ user, event, query }) => {
     const projectId = getRouterParam(event, 'projectId') as string
-    const query = getQuery(event)
-
     await validateProjectAccess(projectId, user.id)
 
-    const status =
-      typeof query.status === 'string' && query.status
-        ? query.status
-        : undefined
+    const status = query.status || undefined
     if (status && !TASK_STATUS_IDS.includes(status as (typeof TASK_STATUS_IDS)[number])) {
       throw createError({ statusCode: 400, message: 'Invalid status.' })
     }
 
-    const columnId =
-      typeof query.columnId === 'string' && query.columnId
-        ? query.columnId
-        : undefined
+    const columnId = query.columnId || undefined
     if (columnId) {
       const column = await prisma.taskColumn.findFirst({
         where: { id: columnId, projectId },
-        select: { id: true }
+        select: { id: true },
       })
       if (!column) {
         throw createError({ statusCode: 404, message: 'Column not found.' })
@@ -52,12 +45,9 @@ export default defineEventHandler(async (event) => {
 
     const limit = parsePositiveInt(query.limit, BOARD_COMPLETED_LIMIT, 50)
     const page = parsePositiveInt(query.page, 1, 10_000)
-    const cursor =
-      typeof query.cursor === 'string' && query.cursor
-        ? parseCompletedCursor(query.cursor)
-        : null
+    const cursor = query.cursor ? parseCompletedCursor(query.cursor) : null
 
-    if (typeof query.cursor === 'string' && query.cursor && !cursor) {
+    if (query.cursor && !cursor) {
       throw createError({ statusCode: 400, message: 'Invalid cursor.' })
     }
 
@@ -65,7 +55,7 @@ export default defineEventHandler(async (event) => {
       projectId,
       archivedAt: null,
       ...(status ? { status } : {}),
-      ...(columnId ? { columnId } : {})
+      ...(columnId ? { columnId } : {}),
     }
 
     const listWhere: Prisma.TaskWhereInput = cursor
@@ -76,17 +66,17 @@ export default defineEventHandler(async (event) => {
               ? {
                   OR: [
                     { completedAt: { lt: cursor.completedAt } },
-                    { completedAt: cursor.completedAt, id: { lt: cursor.id } }
-                  ]
+                    { completedAt: cursor.completedAt, id: { lt: cursor.id } },
+                  ],
                 }
-              : { id: { lt: cursor.id } }
-          ]
+              : { id: { lt: cursor.id } },
+          ],
         }
       : where
 
     const include = {
       ...taskBoardInclude(user.id),
-      column: { select: { name: true } }
+      column: { select: { name: true } },
     }
 
     const [total, tasks] = await Promise.all([
@@ -97,10 +87,8 @@ export default defineEventHandler(async (event) => {
         orderBy: cursor || status === 'DONE'
           ? [{ completedAt: 'desc' }, { id: 'desc' }]
           : [{ createdAt: 'desc' }],
-        ...(cursor
-          ? { take: limit }
-          : { skip: (page - 1) * limit, take: limit })
-      })
+        ...(cursor ? { take: limit } : { skip: (page - 1) * limit, take: limit }),
+      }),
     ])
 
     await mergeTaskAttachmentCounts(tasks)
@@ -111,15 +99,9 @@ export default defineEventHandler(async (event) => {
         total,
         page,
         limit,
-        hasMore: cursor ? tasks.length === limit : page * limit < total
+        hasMore: cursor ? tasks.length === limit : page * limit < total,
       },
-      message: 'Tasks fetched successfully'
+      message: 'Tasks fetched successfully',
     }
-  } catch (error: any) {
-    console.error('Failed to list tasks:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+  },
 })

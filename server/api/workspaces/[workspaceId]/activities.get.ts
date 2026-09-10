@@ -1,67 +1,49 @@
 import prisma from '~/lib/prisma'
+import { personSelect, serializePerson } from '~/server/utils/person'
+import { serializeFeedActivity } from '~/server/utils/activity'
+import { activitiesQuerySchema } from '~/server/utils/schemas'
 import { emailTemplateLabel } from '~/utils/email-templates'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  query: activitiesQuerySchema,
+  handler: async ({ user, event, query }) => {
     const workspaceId = getRouterParam(event, 'workspaceId') as string
-    const query = getQuery(event)
-    const projectId = typeof query.projectId === 'string' && query.projectId !== 'all'
-      ? query.projectId
-      : undefined
-    const taskId = typeof query.taskId === 'string' && query.taskId !== 'all'
-      ? query.taskId
-      : undefined
-    const kind = typeof query.kind === 'string' ? query.kind : 'all'
+    const { projectId, taskId, kind } = query
 
-    await validateWorkspace(workspaceId, user.id)
-
-    const personSelect = {
-      id: true,
-      name: true,
-      email: true,
-      clerkObject: true
-    } as const
+    await validateWorkspaceAccess(workspaceId, user.id)
 
     const includeEmails = kind !== 'task' && !taskId
-    const includeTasks = kind !== 'email'
+    const includeApp = kind !== 'email'
 
-    const [projects, tasks, taskActivities, emails] = await Promise.all([
+    const [projects, tasks, appActivities, emails] = await Promise.all([
       prisma.project.findMany({
         where: { workspaceId },
         select: { id: true, name: true },
-        orderBy: { name: 'asc' }
+        orderBy: { name: 'asc' },
       }),
       prisma.task.findMany({
         where: {
           project: { workspaceId },
-          ...(projectId ? { projectId } : {})
+          ...(projectId ? { projectId } : {}),
         },
         select: { id: true, title: true, projectId: true },
         orderBy: { title: 'asc' },
-        take: 300
+        take: 300,
       }),
-      includeTasks
-        ? prisma.taskActivity.findMany({
+      includeApp
+        ? prisma.activity.findMany({
             where: {
-              task: {
-                project: { workspaceId, ...(projectId ? { id: projectId } : {}) },
-                ...(taskId ? { id: taskId } : {})
-              }
+              workspaceId,
+              ...(projectId ? { projectId } : {}),
+              ...(taskId ? { taskId } : {}),
             },
             orderBy: { createdAt: 'desc' },
             take: 200,
             include: {
               user: { select: personSelect },
-              task: {
-                select: {
-                  id: true,
-                  title: true,
-                  projectId: true,
-                  project: { select: { id: true, name: true } }
-                }
-              }
-            }
+              task: { select: { id: true, title: true } },
+              project: { select: { id: true, name: true } },
+            },
           })
         : Promise.resolve([]),
       includeEmails
@@ -69,31 +51,21 @@ export default defineEventHandler(async (event) => {
             where: {
               workspaceId,
               createdBy: user.id,
-              ...(projectId ? { projectId } : {})
+              ...(projectId ? { projectId } : {}),
             },
             orderBy: { createdAt: 'desc' },
             take: 200,
             include: {
               creator: { select: personSelect },
-              project: { select: { id: true, name: true } }
-            }
+              project: { select: { id: true, name: true } },
+            },
           })
-        : Promise.resolve([])
+        : Promise.resolve([]),
     ])
 
-    const taskRows = taskActivities.map((activity) => ({
-      id: activity.id,
-      type: activity.type,
-      message: activity.message,
-      metadata: activity.metadata ?? null,
-      createdAt: activity.createdAt,
-      user: serializePerson(activity.user),
-      task: { id: activity.task.id, title: activity.task.title },
-      project: {
-        id: activity.task.project.id,
-        name: activity.task.project.name
-      },
-      email: null
+    const appRows = appActivities.map((activity) => ({
+      ...serializeFeedActivity(activity),
+      email: null,
     }))
 
     const emailRows = emails.map((email) => {
@@ -109,7 +81,7 @@ export default defineEventHandler(async (event) => {
           toEmail: email.toEmail,
           subject: email.subject,
           template: email.template,
-          status: email.status
+          status: email.status,
         },
         createdAt: email.createdAt,
         user: email.creator
@@ -118,7 +90,7 @@ export default defineEventHandler(async (event) => {
               id: 'system',
               name: 'System',
               email: email.fromEmail || '',
-              imageUrl: null
+              imageUrl: null,
             },
         task: null,
         project: email.project
@@ -131,28 +103,18 @@ export default defineEventHandler(async (event) => {
           templateLabel: label,
           status: email.status,
           html: email.html,
-          error: email.error
-        }
+          error: email.error,
+        },
       }
     })
 
-    const activities = [...taskRows, ...emailRows]
+    const activities = [...appRows, ...emailRows]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 200)
 
     return {
-      data: {
-        projects,
-        tasks,
-        activities
-      },
-      message: 'Activities fetched successfully'
+      data: { projects, tasks, activities },
+      message: 'Activities fetched successfully',
     }
-  } catch (error: any) {
-    console.error('Failed to fetch activities:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Failed to fetch activities'
-    })
-  }
+  },
 })

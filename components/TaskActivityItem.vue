@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { formatDistanceToNow } from "date-fns";
-import type { TaskActivity, TaskAssignee } from "@/types";
+import type { Activity, TaskAssignee } from "@/types";
 
 const props = defineProps<{
-  activity: TaskActivity;
+  activity: Activity;
 }>();
 
 const initials = (person: TaskAssignee) => {

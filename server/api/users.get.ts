@@ -1,37 +1,8 @@
-import prisma from '~/lib/prisma'
+import { serializeAppUser } from '~/server/utils/person'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
-
-    const workspaces = await prisma.workspace.findMany({
-      where: {
-        members: {
-          some: {
-            userId: user.id
-          }
-        }
-      },
-      include: {
-        members: true,
-        projects: true
-      }
-    })
-
-    return {
-      data: {
-        workspaces,
-        user: {
-          ...user,
-          clerkObject: undefined
-        }
-      },
-      message: 'User fetched successfully'
-    }
-  } catch (error: any) {
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Internal server error'
-    })
-  }
+export default defineApi({
+  handler: async ({ user }) => ({
+    data: { user: serializeAppUser(user) },
+    message: 'User fetched successfully',
+  }),
 })

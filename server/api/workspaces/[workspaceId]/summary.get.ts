@@ -1,52 +1,40 @@
 import prisma from '~/lib/prisma'
+import { serializeFeedActivity } from '~/server/utils/activity'
+import { personSelect } from '~/server/utils/person'
 
-export default defineEventHandler(async (event) => {
-  try {
-    const user = await validateAndGetUser(event)
+export default defineApi({
+  handler: async ({ user, event }) => {
     const workspaceId = getRouterParam(event, 'workspaceId') as string
-
-    await validateWorkspace(workspaceId, user.id)
-
-    const personSelect = {
-      id: true,
-      name: true,
-      email: true,
-      clerkObject: true
-    } as const
+    await validateWorkspaceAccess(workspaceId, user.id)
 
     const liveProject = { workspaceId, archivedAt: null }
     const liveTask = {
       archivedAt: null,
-      project: liveProject
+      project: liveProject,
     }
 
     const [liveProjects, archivedProjects, openTasks, doneTasks, activities] =
       await Promise.all([
         prisma.project.count({ where: liveProject }),
         prisma.project.count({
-          where: { workspaceId, archivedAt: { not: null } }
+          where: { workspaceId, archivedAt: { not: null } },
         }),
         prisma.task.count({
-          where: { ...liveTask, status: { not: 'DONE' } }
+          where: { ...liveTask, status: { not: 'DONE' } },
         }),
         prisma.task.count({
-          where: { ...liveTask, status: 'DONE' }
+          where: { ...liveTask, status: 'DONE' },
         }),
-        prisma.taskActivity.findMany({
-          where: { task: { project: { workspaceId } } },
+        prisma.activity.findMany({
+          where: { workspaceId },
           orderBy: { createdAt: 'desc' },
           take: 12,
           include: {
             user: { select: personSelect },
-            task: {
-              select: {
-                id: true,
-                title: true,
-                project: { select: { id: true, name: true } }
-              }
-            }
-          }
-        })
+            task: { select: { id: true, title: true } },
+            project: { select: { id: true, name: true } },
+          },
+        }),
       ])
 
     return {
@@ -55,28 +43,11 @@ export default defineEventHandler(async (event) => {
           liveProjects,
           archivedProjects,
           openTasks,
-          doneTasks
+          doneTasks,
         },
-        activity: activities.map((activity) => ({
-          id: activity.id,
-          type: activity.type,
-          message: activity.message,
-          createdAt: activity.createdAt,
-          user: serializePerson(activity.user),
-          task: { id: activity.task.id, title: activity.task.title },
-          project: {
-            id: activity.task.project.id,
-            name: activity.task.project.name
-          }
-        }))
+        activity: activities.map(serializeFeedActivity),
       },
-      message: 'Workspace summary fetched'
+      message: 'Workspace summary fetched',
     }
-  } catch (error: any) {
-    console.error('Failed to fetch workspace summary:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Failed to fetch workspace summary'
-    })
-  }
+  },
 })

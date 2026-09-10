@@ -56,11 +56,6 @@ export const useWorkspaceLayout = () => {
     });
 
   const initialize = async () => {
-    if (!userStore.user) await userStore.me();
-    if (!workspaceStore.workspaces.length) {
-      await workspaceStore.fetchWorkspaces();
-    }
-
     if (
       workspaceId.value &&
       workspaceStore.workspaces.some(
