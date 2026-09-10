@@ -34,6 +34,71 @@ export interface User {
   updatedAt?: Date | string
 }
 
+export type BillingPlan = "free" | "team" | "business"
+export type BillingInterval = "month" | "year"
+
+export type BillingSubscription = {
+  plan: BillingPlan
+  status: string
+  interval: BillingInterval | null
+  seats: number
+  currentPeriodEnd: Date | string | null
+  cancelAtPeriodEnd: boolean
+  limits: {
+    workspaces: number | null
+    projects: number | null
+    members: number | null
+  }
+  usage: {
+    workspaces: number
+    projects: number
+    members: number
+  }
+}
+
+export type BillingCheckoutResponse = {
+  url: string | null
+  alreadyActive?: boolean
+  updated?: boolean
+}
+
+export type BillingInvoice = {
+  id: string
+  number: string | null
+  status: string
+  description: string | null
+  amountDue: number
+  amountPaid: number
+  currency: string
+  createdAt: Date | string
+  periodEnd: Date | string | null
+  hostedInvoiceUrl: string | null
+  invoicePdf: string | null
+  upcoming?: boolean
+}
+
+export type BillingEventItem = {
+  id: string
+  type: string
+  message: string
+  amount: number | null
+  currency: string | null
+  createdAt: Date | string
+  metadata: Record<string, unknown> | null
+}
+
+export type BillingOverview = BillingSubscription & {
+  invoices: BillingInvoice[]
+  upcoming: BillingInvoice | null
+  events: BillingEventItem[]
+  canManage: boolean
+  totalPaid: number
+  remainingValue: number
+  amountDue: number
+  daysRemaining: number
+  currency: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -133,6 +198,34 @@ export interface WorkspaceActivity extends Activity {
     html: string | null
     error: string | null
   } | null
+}
+
+export type ActivityKindFilter = 'all' | 'task' | 'email'
+
+export type ActivityFilters = {
+  projectId: string
+  taskId: string
+  kind: ActivityKindFilter
+}
+
+export type ActivityProjectOption = {
+  id: string
+  name: string
+}
+
+export type ActivityTaskOption = {
+  id: string
+  title: string
+  projectId: string
+}
+
+export type WorkspaceActivitiesResponse = {
+  activities: WorkspaceActivity[]
+  projects: ActivityProjectOption[]
+  tasks: ActivityTaskOption[]
+  total: number
+  page: number
+  limit: number
 }
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED'

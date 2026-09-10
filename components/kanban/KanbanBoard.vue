@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const boardStore = useBoardStore();
 const overlayEl = ref<HTMLElement | null>(null);
+const scrollerEl = ref<HTMLElement | null>(null);
 const {
   isFiltered,
   canDrag,
@@ -48,6 +49,8 @@ watch(
 );
 
 const DRAG_THRESHOLD = 6;
+const SCROLL_EDGE = 88;
+const SCROLL_MAX_SPEED = 18;
 
 let pending = false;
 let dragging = false;
@@ -58,6 +61,7 @@ let offsetY = 0;
 let pendingTask: Task | null = null;
 let pendingSize = { width: 0, height: 0 };
 let raf = 0;
+let scrollRaf = 0;
 let latestX = 0;
 let latestY = 0;
 let pointerX = 0;
@@ -130,6 +134,38 @@ const beginDrag = () => {
   document.body.style.userSelect = "none";
   document.body.style.cursor = "grabbing";
   nextTick(() => applyOverlay(latestX, latestY));
+  if (!scrollRaf) scrollRaf = requestAnimationFrame(autoScroll);
+};
+
+const edgeScrollSpeed = () => {
+  const scroller = scrollerEl.value;
+  if (!scroller) return 0;
+  const rect = scroller.getBoundingClientRect();
+  const max = scroller.scrollWidth - scroller.clientWidth;
+  if (max <= 0) return 0;
+
+  if (pointerX < rect.left + SCROLL_EDGE && scroller.scrollLeft > 0) {
+    const t = Math.min(1, (rect.left + SCROLL_EDGE - pointerX) / SCROLL_EDGE);
+    return -Math.ceil(t * t * SCROLL_MAX_SPEED);
+  }
+  if (pointerX > rect.right - SCROLL_EDGE && scroller.scrollLeft < max) {
+    const t = Math.min(1, (pointerX - (rect.right - SCROLL_EDGE)) / SCROLL_EDGE);
+    return Math.ceil(t * t * SCROLL_MAX_SPEED);
+  }
+  return 0;
+};
+
+const autoScroll = () => {
+  if (!dragging) {
+    scrollRaf = 0;
+    return;
+  }
+  const speed = edgeScrollSpeed();
+  if (speed) {
+    scrollerEl.value?.scrollBy({ left: speed });
+    updateDropTarget(pointerX, pointerY);
+  }
+  scrollRaf = requestAnimationFrame(autoScroll);
 };
 
 const onPointerMove = (event: PointerEvent) => {
@@ -155,6 +191,12 @@ const onPointerMove = (event: PointerEvent) => {
   }
 };
 
+const stopAutoScroll = () => {
+  if (!scrollRaf) return;
+  cancelAnimationFrame(scrollRaf);
+  scrollRaf = 0;
+};
+
 const cleanupListeners = () => {
   window.removeEventListener("pointermove", onPointerMove);
   window.removeEventListener("pointerup", onPointerUp);
@@ -163,6 +205,7 @@ const cleanupListeners = () => {
 
 const onPointerUp = () => {
   cleanupListeners();
+  stopAutoScroll();
   if (raf) {
     cancelAnimationFrame(raf);
     raf = 0;
@@ -222,6 +265,7 @@ const onCardPointerDown = (event: PointerEvent, task: Task) => {
 
 onBeforeUnmount(() => {
   cleanupListeners();
+  stopAutoScroll();
   document.body.style.userSelect = "";
   document.body.style.cursor = "";
 });
@@ -284,7 +328,8 @@ const { view } = useProjectView();
     </div>
     <div
       v-else
-      class="flex gap-4 overflow-x-auto items-start pb-2 w-full min-w-0"
+      ref="scrollerEl"
+      class="flex gap-4 overflow-x-auto overscroll-x-contain items-start pb-2 w-full min-w-0"
     >
       <KanbanColumn
         v-for="(column, index) in boardStore.columns"

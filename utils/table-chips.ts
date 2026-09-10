@@ -67,6 +67,33 @@ export const emailTemplateChip = (template: string) =>
 export const emailStatusChip = (status: string) =>
   chipClass(status === 'sent' ? 'emerald' : 'rose', 'capitalize')
 
+const INVOICE_TONES: Record<string, Tone> = {
+  paid: 'emerald',
+  open: 'amber',
+  draft: 'sky',
+  upcoming: 'sky',
+  void: 'slate',
+  uncollectible: 'rose',
+}
+
+export const invoiceStatusChip = (status: string) =>
+  chipClass(INVOICE_TONES[status] ?? 'slate', 'capitalize')
+
+const BILLING_EVENT_TONES: Record<string, Tone> = {
+  checkout_started: 'sky',
+  checkout_completed: 'teal',
+  subscribed: 'emerald',
+  plan_changed: 'violet',
+  invoice_paid: 'emerald',
+  invoice_failed: 'rose',
+  canceled: 'orange',
+  portal_opened: 'slate',
+  seats_updated: 'amber',
+}
+
+export const billingEventChip = (type: string) =>
+  chipClass(BILLING_EVENT_TONES[type] ?? 'slate')
+
 const ARCHIVE_TONES: Record<string, Tone> = {
   list: 'sky',
   card: 'violet',

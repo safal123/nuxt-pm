@@ -1,15 +1,22 @@
 <script setup lang="ts">
+import { toast } from "vue-sonner";
 import { CheckIcon } from "lucide-vue-next";
+import { PLAN_PRICES } from "@/utils/plans";
 
 const { isSignedIn } = useAuth();
+const { acting, startCheckout } = useBilling();
 const interval = ref("yearly");
 const startHref = computed(() => (isSignedIn.value ? "/w" : "/sign-up"));
+const stripeInterval = computed(() =>
+  interval.value === "yearly" ? "year" : "month",
+);
 
 const plans = computed(() => {
   const yearly = interval.value === "yearly";
 
   return [
     {
+      id: "free" as const,
       name: "Free",
       description: "A single workspace to try the board, archive, and activity.",
       price: 0,
@@ -27,12 +34,13 @@ const plans = computed(() => {
       ],
     },
     {
+      id: "team" as const,
       name: "Team",
       description: "Unlimited projects and email you can actually track.",
-      price: yearly ? 12 : 16,
+      price: yearly ? PLAN_PRICES.team.year : PLAN_PRICES.team.month,
       suffix: "per member / month",
       billed: yearly ? "Billed yearly" : "Billed monthly",
-      cta: isSignedIn.value ? "Open dashboard" : "Start Team",
+      cta: isSignedIn.value ? "Upgrade to Team" : "Start Team",
       featured: true,
       features: [
         "Everything in Free",
@@ -45,12 +53,13 @@ const plans = computed(() => {
       ],
     },
     {
+      id: "business" as const,
       name: "Business",
       description: "Several teams, one company — every workspace in Northstar.",
-      price: yearly ? 24 : 32,
+      price: yearly ? PLAN_PRICES.business.year : PLAN_PRICES.business.month,
       suffix: "per member / month",
       billed: yearly ? "Billed yearly" : "Billed monthly",
-      cta: isSignedIn.value ? "Open dashboard" : "Start Business",
+      cta: isSignedIn.value ? "Upgrade to Business" : "Start Business",
       featured: false,
       features: [
         "Everything in Team",
@@ -63,6 +72,23 @@ const plans = computed(() => {
     },
   ];
 });
+
+const onCta = async (planId: "free" | "team" | "business") => {
+  if (planId === "free" || !isSignedIn.value) {
+    await navigateTo(startHref.value);
+    return;
+  }
+  try {
+    const result = await startCheckout(planId, stripeInterval.value);
+    if (result.alreadyActive) {
+      toast.message(`You are already on ${planId}.`);
+    } else if (result.updated) {
+      toast.success(`Updated to ${planId}.`);
+    }
+  } catch (error: any) {
+    toast.error(error?.data?.message || "Could not start checkout.");
+  }
+};
 
 const faqs = [
   {
@@ -97,7 +123,11 @@ const faqs = [
       <div class="mt-10 flex flex-col items-center gap-3">
         <Tabs
           :model-value="interval"
-          @update:model-value="interval = $event"
+          @update:model-value="
+            (value) => {
+              if (value === 'monthly' || value === 'yearly') interval = value;
+            }
+          "
         >
           <TabsList>
             <TabsTrigger value="monthly">Monthly</TabsTrigger>
@@ -140,11 +170,12 @@ const faqs = [
           </p>
 
           <Button
-            as-child
             class="mt-6 w-full"
             :variant="plan.featured ? 'default' : 'outline'"
+            :disabled="acting"
+            @click="onCta(plan.id)"
           >
-            <NuxtLink :to="startHref">{{ plan.cta }}</NuxtLink>
+            {{ acting && plan.id !== "free" ? "Redirecting…" : plan.cta }}
           </Button>
 
           <ul class="mt-8 space-y-3 text-sm leading-6 text-foreground">

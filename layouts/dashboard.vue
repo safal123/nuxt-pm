@@ -2,8 +2,10 @@
 const workspaceStore = useWorkspaceStore();
 const userStore = useUserStore();
 const { isTinted, pageTitle, initialize } = useWorkspaceLayout();
+const { consume } = useBillingReturn();
 
 await initialize();
+await consume();
 </script>
 
 <template>

@@ -1,5 +1,6 @@
 import prisma from '~/lib/prisma'
 import { personSelect, serializeMember } from '~/server/utils/person'
+import { assertCanAddMember, syncSeatQuantity } from '~/server/utils/billing'
 
 export const listWorkspaceMembers = async (workspaceId: string) => {
   const workspace = await prisma.workspace.findUniqueOrThrow({
@@ -79,6 +80,8 @@ export const addWorkspaceMember = async (
     }
   }
 
+  await assertCanAddMember(workspaceId)
+
   await prisma.workspaceMember.create({
     data: { userId, workspaceId, role }
   })
@@ -87,6 +90,17 @@ export const addWorkspaceMember = async (
     where: { id: userId },
     select: personSelect
   })
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { createdBy: true },
+  })
+  if (workspace) {
+    void syncSeatQuantity(workspace.createdBy).catch((error) => {
+      console.error(error)
+    })
+  }
+
   return {
     member: serializeMember(user, { role }),
     alreadyMember: false
@@ -150,6 +164,10 @@ export const removeWorkspaceMember = async (
         ]
       : [])
   ])
+
+  void syncSeatQuantity(workspace.createdBy).catch((error) => {
+    console.error(error)
+  })
 }
 
 export const addProjectMember = async (projectId: string, userId: string) => {

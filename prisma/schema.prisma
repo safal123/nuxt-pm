@@ -36,11 +36,50 @@ model User {
   activities         Activity[]
   createdLabels      Label[]
   sentEmails         EmailLog[]        @relation("CreatedEmails")
+  subscription       Subscription?
+  billingEvents      BillingEvent[]
 
   activeWorkspace Workspace? @relation("ActiveWorkspace", fields: [activeWorkspaceId], references: [id])
   activeProject   Project?   @relation("ActiveProject", fields: [activeProjectId], references: [id])
 
   @@map("users")
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique @map("user_id")
+  stripeCustomerId     String    @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
+  stripePriceId        String?   @map("stripe_price_id")
+  plan                 String    @default("free")
+  status               String    @default("inactive")
+  interval             String?
+  seats                Int       @default(1)
+  currentPeriodEnd     DateTime? @map("current_period_end")
+  cancelAtPeriodEnd    Boolean   @default(false) @map("cancel_at_period_end")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model BillingEvent {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  type          String
+  message       String   @db.Text
+  amount        Int?
+  currency      String?
+  stripeEventId String?  @unique @map("stripe_event_id")
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("billing_events")
 }
 
 model Workspace {

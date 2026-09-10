@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useHead({
   title: "Northstar — Boards, activity, and email in one workspace",
-  htmlAttrs: { class: "scroll-smooth" },
+  htmlAttrs: { class: { "scroll-smooth": true } },
   meta: [
     {
       name: "description",

@@ -35,6 +35,7 @@ export const useWorkspaceLayout = () => {
     if (path.includes("/archived")) return "Archive";
     if (path.includes("/activities")) return "Activities";
     if (path.includes("/emails")) return "Emails";
+    if (path.includes("/billing")) return "Billing";
     if (path.includes("/settings")) return "Settings";
     const projectId = route.params.projectId;
     if (projectId) {

@@ -156,6 +156,62 @@
 
     --dropzone-color: oklch(35% calc(0.058 * var(--ws-chroma)) var(--ws-hue));
   }
+
+  /*
+   * OS-dark users paint with dark tokens before <html class="dark"> exists.
+   * Body uses bg-background, so html background-color alone still flashed white.
+   */
+  @media (prefers-color-scheme: dark) {
+    html:not(.light) {
+      color-scheme: dark;
+      --background: 220 16% 16%;
+      --foreground: 210 20% 96%;
+      --muted: 220 14% 22%;
+      --muted-foreground: 215 16% 72%;
+      --popover: 220 16% 18%;
+      --popover-foreground: 210 20% 96%;
+      --card: 220 16% 19%;
+      --card-foreground: 210 20% 96%;
+      --border: 220 12% 28%;
+      --input: 220 12% 28%;
+      --primary: 263.4 70% 58%;
+      --primary-foreground: 210 40% 98%;
+      --secondary: 220 14% 22%;
+      --secondary-foreground: 210 20% 96%;
+      --accent: 220 14% 24%;
+      --accent-foreground: 210 20% 96%;
+      --destructive: 0 55% 48%;
+      --destructive-foreground: 210 40% 98%;
+      --ring: 263.4 70% 58%;
+      --sidebar-background: 220 16% 14%;
+      --sidebar-foreground: 210 20% 94%;
+      --sidebar-primary: 263.4 70% 58%;
+      --sidebar-primary-foreground: 0 0% 100%;
+      --sidebar-accent: 220 14% 20%;
+      --sidebar-accent-foreground: 210 20% 94%;
+      --sidebar-active: 250 28% 25%;
+      --sidebar-active-hover: 254 34% 30%;
+      --sidebar-border: 220 12% 26%;
+      --sidebar-ring: 263.4 70% 58%;
+      --dropzone: 253.5 37% 21%;
+      --dropzone-border: 263.4 70% 50.4%;
+      --shadow-drag: 0 18px 40px rgba(0, 0, 0, 0.45);
+      --card-color: oklch(29.5% calc(0.047 * var(--ws-chroma)) var(--ws-hue));
+      --popover-color: oklch(29.5% calc(0.047 * var(--ws-chroma)) var(--ws-hue));
+      --background-color: oklch(25.5% calc(0.042 * var(--ws-chroma)) var(--ws-hue));
+      --muted-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
+      --secondary-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
+      --accent-color: oklch(37.5% calc(0.062 * var(--ws-chroma)) var(--ws-hue));
+      --border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
+      --input-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
+      --sidebar-background-color: oklch(22% calc(0.035 * var(--ws-chroma)) var(--ws-hue));
+      --sidebar-accent-color: oklch(30% calc(0.05 * var(--ws-chroma)) var(--ws-hue));
+      --sidebar-active-color: oklch(38% calc(0.062 * var(--ws-chroma)) var(--ws-hue));
+      --sidebar-active-hover-color: oklch(43% calc(0.07 * var(--ws-chroma)) var(--ws-hue));
+      --sidebar-border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
+      --dropzone-color: oklch(35% calc(0.058 * var(--ws-chroma)) var(--ws-hue));
+    }
+  }
 }
 
 @layer base {
@@ -163,13 +219,16 @@
     @apply border-border;
   }
 
-  html {
-    @apply bg-background;
+  html.light {
     color-scheme: light;
   }
 
   html.dark {
     color-scheme: dark;
+  }
+
+  html {
+    @apply bg-background;
   }
 
   body {

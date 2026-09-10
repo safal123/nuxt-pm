@@ -38,7 +38,7 @@ export default defineApi({
               ...(taskId ? { taskId } : {}),
             },
             orderBy: { createdAt: 'desc' },
-            take: 200,
+            take: 500,
             include: {
               user: { select: personSelect },
               task: { select: { id: true, title: true } },
@@ -54,7 +54,7 @@ export default defineApi({
               ...(projectId ? { projectId } : {}),
             },
             orderBy: { createdAt: 'desc' },
-            take: 200,
+            take: 500,
             include: {
               creator: { select: personSelect },
               project: { select: { id: true, name: true } },
@@ -108,12 +108,23 @@ export default defineApi({
       }
     })
 
-    const activities = [...appRows, ...emailRows]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 200)
+    const activities = [...appRows, ...emailRows].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+    const total = activities.length
+    const lastPage = Math.max(1, Math.ceil(total / query.limit) || 1)
+    const page = Math.min(query.page, lastPage)
+    const start = (page - 1) * query.limit
 
     return {
-      data: { projects, tasks, activities },
+      data: {
+        projects,
+        tasks,
+        activities: activities.slice(start, start + query.limit),
+        total,
+        page,
+        limit: query.limit,
+      },
       message: 'Activities fetched successfully',
     }
   },

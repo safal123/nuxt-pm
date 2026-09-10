@@ -133,6 +133,8 @@ export const activitiesQuerySchema = z.object({
   projectId: optionalId,
   taskId: optionalId,
   kind: z.string().optional().default('all'),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(50).optional().default(12),
 })
 
 export const emailsQuerySchema = z.object({
@@ -232,6 +234,19 @@ export const attachmentsQuerySchema = z.object({
     errorMap: () => ({ message: 'attachableType and attachableId are required.' }),
   }),
   attachableId: idSchema,
+})
+
+export const billingCheckoutSchema = z.object({
+  plan: z.enum(['team', 'business']),
+  interval: z.enum(['month', 'year']).default('month'),
+})
+
+export const billingSyncSchema = z.object({
+  sessionId: z.string().trim().min(1, 'sessionId is required'),
+})
+
+export const billingQuerySchema = z.object({
+  workspaceId: optionalId,
 })
 
 export const taskStatusSchema = z

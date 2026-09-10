@@ -2,13 +2,27 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
+  experimental: {
+    // Pinia actions call `api()` after `await`; without this the Nuxt
+    // instance is gone and cookie forwarding / composables fail.
+    asyncContext: true,
+  },
   css: ['~/assets/css/main.css'],
   modules: [
     'shadcn-nuxt',
     '@nuxtjs/tailwindcss',
+    '@nuxtjs/color-mode',
     '@pinia/nuxt',
     '@uploadthing/nuxt',
   ],
+  colorMode: {
+    classSuffix: '',
+    preference: 'system',
+    fallback: 'light',
+    storageKey: 'nuxt-color-mode',
+    storage: 'cookie',
+    disableTransition: true,
+  },
   uploadthing: {
     routerPath: '~/server/uploadthing.ts',
   },
@@ -18,17 +32,17 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/png', href: '/images/logo.png' },
         { rel: 'apple-touch-icon', href: '/images/logo.png' },
       ],
-      script: [
-        {
-          innerHTML: `(function(){try{var r=localStorage.getItem('nuxt-color-mode');var s='auto';if(r){try{s=JSON.parse(r)}catch(e){s=r}}var d=s==='dark'||((!s||s==='auto')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',!!d);}catch(e){}})();`,
-        },
-      ],
     },
   },
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL,
     resendApiKey: process.env.RESEND_API_KEY,
     resendFrom: process.env.RESEND_FROM,
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    public: {
+      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    },
   },
   shadcn: {
     /**

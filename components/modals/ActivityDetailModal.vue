@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { format, formatDistanceToNow, parseISO } from "date-fns";
-import type { TaskAssignee, WorkspaceActivity } from "@/types";
+import type { WorkspaceActivity } from "@/types";
+import { activityTypeLabel, personInitials } from "@/utils/activity";
 
 const props = defineProps<{
   activity: WorkspaceActivity | null;
@@ -17,16 +18,6 @@ const close = () => emit("close");
 const onOpen = (value: boolean) => {
   if (!value) close();
 };
-
-const initials = (person: TaskAssignee) => {
-  const name = person.name || person.email || "";
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  return name.slice(0, 2).toUpperCase() || "?";
-};
-
-const typeLabel = (type: string) =>
-  type.replace(/_/g, " ").toLowerCase();
 
 const pretty = (value: unknown) => {
   if (value == null || value === "") return null;
@@ -120,7 +111,7 @@ const commentText = computed(() => {
               :src="activity.user.imageUrl"
               class="h-full w-full object-cover"
             />
-            <span v-else>{{ initials(activity.user) }}</span>
+            <span v-else>{{ personInitials(activity.user) }}</span>
           </div>
           <div class="min-w-0">
             <p class="text-sm font-semibold text-foreground">
@@ -142,7 +133,7 @@ const commentText = computed(() => {
               <span
                 class="inline-flex rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium capitalize text-muted-foreground"
               >
-                {{ typeLabel(activity.type) }}
+                {{ activityTypeLabel(activity.type) }}
               </span>
             </dd>
           </div>

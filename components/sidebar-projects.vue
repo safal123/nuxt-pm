@@ -248,6 +248,19 @@ const editProject = async (project: Project) => {
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem
+        :class="navItemClass(route.path.includes('/billing'))"
+      >
+        <SidebarMenuButton v-if="workspaceId" as-child>
+          <NuxtLink
+            :to="{ name: 'workspace-billing', params: { workspaceId } }"
+            class="w-full cursor-pointer flex items-center gap-2 p-2"
+          >
+            <CreditCardIcon class="h-4 w-4 text-sidebar-foreground" />
+            <span>Billing</span>
+          </NuxtLink>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+      <SidebarMenuItem
         :class="navItemClass(route.path.includes('/archived'))"
       >
         <SidebarMenuButton v-if="workspaceId" as-child>

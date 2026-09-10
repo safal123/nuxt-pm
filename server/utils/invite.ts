@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import prisma from '~/lib/prisma'
 import { addWorkspaceMember } from '~/server/utils/member'
+import { assertCanAddMember } from '~/server/utils/billing'
 
 const DEFAULT_TTL_MS = 72 * 60 * 60 * 1000
 
@@ -18,6 +19,8 @@ export const createWorkspaceInvite = async (input: {
   const tokenHash = hashInviteToken(token)
   const email = input.email?.trim().toLowerCase() || null
   const expiresAt = new Date(Date.now() + DEFAULT_TTL_MS)
+
+  await assertCanAddMember(input.workspaceId)
 
   // Link invites are unique per workspace — expire any still-open one first.
   if (!email) {
