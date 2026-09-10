@@ -54,6 +54,10 @@ let pendingSize = { width: 0, height: 0 };
 let raf = 0;
 let latestX = 0;
 let latestY = 0;
+let pointerX = 0;
+let pointerY = 0;
+let lastDropColumnId = "";
+let lastDropIndex = -1;
 
 const applyOverlay = (x: number, y: number) => {
   if (!overlayEl.value) return;
@@ -73,37 +77,42 @@ const updateDropTarget = (x: number, y: number) => {
   const slots = [...column.querySelectorAll<HTMLElement>("[data-task-slot]")];
   const draggingId = boardStore.draggingTask?.id;
 
+  let nextIndex: number | null = null;
+
   if (overSlot?.dataset.taskId) {
     const overIndex = slots.findIndex(
       (slot) => slot.dataset.taskId === overSlot.dataset.taskId,
     );
     if (overIndex === -1) return;
-    boardStore.moveDraggingTo(columnId, overIndex);
-    return;
+    nextIndex = overIndex;
+  } else if (!slots.length) {
+    nextIndex = 0;
+  } else {
+    const last = slots[slots.length - 1];
+    if (y > last.getBoundingClientRect().bottom) {
+      const draggedHere = slots.some(
+        (slot) => slot.dataset.taskId === draggingId,
+      );
+      nextIndex = draggedHere ? slots.length - 1 : slots.length;
+    }
   }
 
-  if (!slots.length) {
-    boardStore.moveDraggingTo(columnId, 0);
-    return;
-  }
-
-  const last = slots[slots.length - 1];
-  if (y > last.getBoundingClientRect().bottom) {
-    const draggedHere = slots.some(
-      (slot) => slot.dataset.taskId === draggingId,
-    );
-    boardStore.moveDraggingTo(
-      columnId,
-      draggedHere ? slots.length - 1 : slots.length,
-    );
-  }
+  if (nextIndex === null) return;
+  if (columnId === lastDropColumnId && nextIndex === lastDropIndex) return;
+  lastDropColumnId = columnId;
+  lastDropIndex = nextIndex;
+  boardStore.moveDraggingTo(columnId, nextIndex);
 };
 
 const beginDrag = () => {
   if (!pendingTask) return;
   dragging = true;
+  lastDropColumnId = "";
+  lastDropIndex = -1;
   latestX = startX - offsetX;
   latestY = startY - offsetY;
+  pointerX = startX;
+  pointerY = startY;
   boardStore.startDrag(pendingTask, pendingSize);
   document.body.style.userSelect = "none";
   document.body.style.cursor = "grabbing";
@@ -121,15 +130,16 @@ const onPointerMove = (event: PointerEvent) => {
 
   latestX = event.clientX - offsetX;
   latestY = event.clientY - offsetY;
+  pointerX = event.clientX;
+  pointerY = event.clientY;
 
   if (!raf) {
     raf = requestAnimationFrame(() => {
       applyOverlay(latestX, latestY);
+      updateDropTarget(pointerX, pointerY);
       raf = 0;
     });
   }
-
-  updateDropTarget(event.clientX, event.clientY);
 };
 
 const cleanupListeners = () => {
@@ -138,7 +148,7 @@ const cleanupListeners = () => {
   window.removeEventListener("pointercancel", onPointerUp);
 };
 
-const onPointerUp = async () => {
+const onPointerUp = () => {
   cleanupListeners();
   if (raf) {
     cancelAnimationFrame(raf);
@@ -151,10 +161,12 @@ const onPointerUp = async () => {
   const wasDragging = dragging;
 
   if (dragging) {
-    await boardStore.commitDrag();
+    updateDropTarget(pointerX, pointerY);
+    boardStore.commitDrag();
+  } else {
+    boardStore.endDrag();
   }
 
-  boardStore.endDrag();
   pending = false;
   dragging = false;
   pendingTask = null;

@@ -12,6 +12,9 @@ export const useBoardStore = defineStore('board', () => {
   const dragSize = ref({ width: 0, height: 0 })
   const originColumnId = ref<string | null>(null)
   const originIndex = ref(0)
+  let dragSnapshot: { id: string; completedCount: number; tasks: Task[] }[] | null =
+    null
+  let persistId = 0
 
   const findTaskLocation = (taskId: string) => {
     for (const column of columns.value) {
@@ -82,7 +85,6 @@ export const useBoardStore = defineStore('board', () => {
       const clamped = Math.max(0, Math.min(index, toColumn.tasks.length - 1))
       if (from.index === clamped) return
       arrayMove(toColumn.tasks, from.index, clamped)
-      reindex(toColumn)
       return
     }
 
@@ -94,8 +96,6 @@ export const useBoardStore = defineStore('board', () => {
     }
     const clamped = Math.max(0, Math.min(index, toColumn.tasks.length))
     toColumn.tasks.splice(clamped, 0, moved)
-    reindex(from.column)
-    reindex(toColumn)
   }
 
   const findTask = (taskId: string) => {
@@ -134,40 +134,85 @@ export const useBoardStore = defineStore('board', () => {
     }
   }
 
+  const takeDragSnapshot = () => {
+    dragSnapshot = columns.value.map((column) => ({
+      id: column.id,
+      completedCount: column.completedCount ?? 0,
+      tasks: column.tasks.slice(),
+    }))
+  }
+
+  const restoreDragSnapshot = () => {
+    if (!dragSnapshot) return
+    for (const column of columns.value) {
+      const saved = dragSnapshot.find((item) => item.id === column.id)
+      if (!saved) continue
+      column.completedCount = saved.completedCount
+      column.tasks = saved.tasks.slice()
+      for (const task of column.tasks) {
+        task.columnId = column.id
+      }
+      reindex(column)
+    }
+    dragSnapshot = null
+  }
+
   const startDrag = (task: Task, size: { width: number; height: number }) => {
+    persistId += 1
     const location = findTaskLocation(task.id)
+    takeDragSnapshot()
     draggingTask.value = task
     dragSize.value = size
     originColumnId.value = location?.column.id ?? task.columnId
     originIndex.value = location?.index ?? 0
   }
 
-  const cancelDrag = () => {
-    if (!draggingTask.value || !originColumnId.value) return
-    moveDraggingTo(originColumnId.value, originIndex.value)
+  const persistMove = async (taskId: string, columnId: string, order: number) => {
+    const id = persistId
+    try {
+      await api(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        body: { columnId, order },
+      })
+      if (id === persistId) dragSnapshot = null
+    } catch (error) {
+      console.error('Failed to move task:', error)
+      if (id === persistId) restoreDragSnapshot()
+    }
   }
 
-  const commitDrag = async () => {
+  const commitDrag = () => {
     const task = draggingTask.value
     if (!task) return
 
     const location = findTaskLocation(task.id)
-    if (!location) return
+    if (!location) {
+      endDrag()
+      dragSnapshot = null
+      return
+    }
 
     const unchanged =
       location.column.id === originColumnId.value &&
       location.index === originIndex.value
-    if (unchanged) return
+    const columnId = location.column.id
+    const order = location.index
+    const originId = originColumnId.value
 
-    try {
-      await api(`/api/tasks/${task.id}`, {
-        method: 'PATCH',
-        body: { columnId: location.column.id, order: location.index }
-      })
-    } catch (error) {
-      console.error('Failed to move task:', error)
-      cancelDrag()
+    reindex(location.column)
+    if (originId && originId !== columnId) {
+      const origin = columns.value.find((column) => column.id === originId)
+      if (origin) reindex(origin)
     }
+
+    endDrag()
+
+    if (unchanged) {
+      dragSnapshot = null
+      return
+    }
+
+    void persistMove(task.id, columnId, order)
   }
 
   const selectedTask = ref<Task | null>(null)
@@ -515,7 +560,6 @@ export const useBoardStore = defineStore('board', () => {
     toggleLike,
     startDrag,
     moveDraggingTo,
-    cancelDrag,
     commitDrag,
     endDrag,
     openTask,
