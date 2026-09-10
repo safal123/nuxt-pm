@@ -13,7 +13,7 @@ const overlayEl = ref<HTMLElement | null>(null);
 const archiveTask = async (taskId: string) => {
   try {
     await boardStore.archiveTask(taskId);
-    await useWorkspaceStore().fetchArchive({ silent: true });
+    await useWorkspaceStore().fetchArchive({ silent: true, force: true });
   } catch (error: any) {
     toast.error("Could not archive card", {
       description: error?.data?.message || "Please try again.",
@@ -24,7 +24,7 @@ const archiveTask = async (taskId: string) => {
 const archiveList = async (columnId: string) => {
   try {
     await boardStore.archiveColumn(columnId);
-    await useWorkspaceStore().fetchArchive({ silent: true });
+    await useWorkspaceStore().fetchArchive({ silent: true, force: true });
     toast.success("List archived");
   } catch (error: any) {
     toast.error("Could not archive list", {

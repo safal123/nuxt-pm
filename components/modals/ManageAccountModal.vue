@@ -73,7 +73,7 @@ async function onSaveProfile(values: any) {
   }
 
   await fetchSession();
-  await userStore.me();
+  await userStore.me({ force: true });
   toast.success("Profile updated");
 }
 
@@ -84,7 +84,7 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const { startUpload, isUploading } = useUploadThing("avatar", {
   onClientUploadComplete: async () => {
     await fetchSession();
-    await userStore.me();
+    await userStore.me({ force: true });
     toast.success("Photo updated");
   },
   onUploadError: (error: Error) => {

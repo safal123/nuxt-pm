@@ -54,8 +54,8 @@ const join = async () => {
   errorMessage.value = ''
   try {
     await api(`/api/invites/${token.value}/accept`, { method: 'POST' })
-    await userStore.me()
-    await workspaceStore.fetchWorkspaces()
+    await userStore.me({ force: true })
+    await workspaceStore.fetchWorkspaces({ force: true })
     const workspaceId = userStore.user?.activeWorkspaceId
     await navigateTo(
       workspaceId

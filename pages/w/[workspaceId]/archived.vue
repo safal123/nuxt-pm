@@ -105,7 +105,7 @@ const restore = async (row: ArchiveRow) => {
       toast.success("List restored");
     } else if (row.kind === "card" && row.card) {
       await boardStore.restoreTask(row.card.id);
-      await workspaceStore.fetchArchive({ silent: true });
+      await workspaceStore.fetchArchive({ silent: true, force: true });
       toast.success("Card restored");
     } else if (row.kind === "project" && row.project) {
       await workspaceStore.updateProject(row.project.id, { archived: false });

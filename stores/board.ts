@@ -2,11 +2,24 @@ import { defineStore } from 'pinia'
 import type { Task, TaskColumn } from '~/types'
 import { BOARD_COMPLETED_LIMIT } from '~/utils/board'
 import { api } from '~/lib/api'
+import { CACHE_TTL, invalidateWorkspacePages, isFresh, type FetchOptions } from '~/lib/query'
+
+type BoardCacheEntry = {
+  columns: TaskColumn[]
+  labels: Task['labels']
+  members: Task['members']
+  fetchedAt: number
+}
 
 export const useBoardStore = defineStore('board', () => {
   const projectId = ref<string | null>(null)
   const columns = ref<TaskColumn[]>([])
   const loading = ref(false)
+  const workspaceMembers = ref<Task['members']>([])
+  const projectMembers = ref<Task['members']>([])
+  const projectLabels = ref<Task['labels']>([])
+  const boardCache = new Map<string, BoardCacheEntry>()
+  const boardInflight = new Map<string, Promise<void>>()
 
   const draggingTask = ref<Task | null>(null)
   const dragSize = ref({ width: 0, height: 0 })
@@ -106,19 +119,64 @@ export const useBoardStore = defineStore('board', () => {
     return undefined
   }
 
-  const fetchBoard = async (id: string) => {
-    loading.value = true
+  const applyBoard = (id: string, entry: BoardCacheEntry) => {
     projectId.value = id
+    columns.value = entry.columns
+    projectLabels.value = entry.labels
+    projectMembers.value = entry.members
+  }
+
+  const rememberBoard = (id: string) => {
+    boardCache.set(id, {
+      columns: columns.value,
+      labels: projectLabels.value,
+      members: projectMembers.value,
+      fetchedAt: Date.now(),
+    })
+  }
+
+  const fetchBoard = async (id: string, options?: FetchOptions) => {
+    if (!options?.force) {
+      const hit = boardCache.get(id)
+      if (hit && isFresh(hit.fetchedAt, CACHE_TTL.board)) {
+        applyBoard(id, hit)
+        return
+      }
+      if (hit) applyBoard(id, hit)
+    }
+
+    const pending = boardInflight.get(id)
+    if (pending && !options?.force) return pending
+
+    const cached = boardCache.has(id)
+    const request = (async () => {
+      if (!cached || options?.force) loading.value = true
+      projectId.value = id
+      try {
+        const [board, labels, members] = await Promise.all([
+          api<{ columns: TaskColumn[] }>(`/api/projects/${id}/board`),
+          api<{ labels: Task['labels'] }>(`/api/projects/${id}/labels`),
+          api<{ members: Task['members'] }>(`/api/projects/${id}/members`),
+        ])
+        if (projectId.value !== id) return
+        columns.value = (board.columns ?? []).map((column) => ({
+          ...column,
+          completedCount: column.completedCount ?? 0,
+          tasks: column.tasks ?? []
+        }))
+        projectLabels.value = labels.labels ?? []
+        projectMembers.value = members.members ?? []
+        rememberBoard(id)
+      } finally {
+        loading.value = false
+      }
+    })()
+
+    boardInflight.set(id, request)
     try {
-      const { columns: next } = await api<{ columns: TaskColumn[] }>(`/api/projects/${id}/board`)
-      columns.value = (next ?? []).map((column) => ({
-        ...column,
-        completedCount: column.completedCount ?? 0,
-        tasks: column.tasks ?? []
-      }))
-      await Promise.all([fetchLabels(id), fetchProjectMembers(id)])
+      await request
     } finally {
-      loading.value = false
+      boardInflight.delete(id)
     }
   }
 
@@ -132,6 +190,7 @@ export const useBoardStore = defineStore('board', () => {
     if (task && column) {
       column.tasks.push({ ...task, labels: task.labels || [] })
     }
+    invalidateWorkspacePages(useWorkspaceStore().activeWorkspaceId)
   }
 
   const takeDragSnapshot = () => {
@@ -217,9 +276,6 @@ export const useBoardStore = defineStore('board', () => {
 
   const selectedTask = ref<Task | null>(null)
   const selectedTaskLoading = ref(false)
-  const workspaceMembers = ref<Task['members']>([])
-  const projectMembers = ref<Task['members']>([])
-  const projectLabels = ref<Task['labels']>([])
   const listVersion = ref(0)
 
   const removeTaskFromBoard = (taskId: string) => {
@@ -320,32 +376,53 @@ export const useBoardStore = defineStore('board', () => {
 
   const fetchWorkspaceMembers = async (workspaceId: string) => {
     try {
-      const { members } = await api<{ members: Task['members'] }>(
-        `/api/workspaces/${workspaceId}/members`
-      )
-      workspaceMembers.value = members ?? []
+      const workspaceStore = useWorkspaceStore()
+      await workspaceStore.fetchMembers(workspaceId)
+      workspaceMembers.value = workspaceStore.members
     } catch (error) {
       console.error('Failed to load members:', error)
     }
   }
 
-  const fetchProjectMembers = async (id: string) => {
+  const fetchProjectMembers = async (id: string, options?: FetchOptions) => {
+    if (
+      !options?.force &&
+      projectId.value === id &&
+      isFresh(boardCache.get(id)?.fetchedAt, CACHE_TTL.board)
+    ) {
+      const hit = boardCache.get(id)
+      if (hit) projectMembers.value = hit.members
+      return
+    }
     try {
       const { members } = await api<{ members: Task['members'] }>(
         `/api/projects/${id}/members`
       )
       projectMembers.value = members ?? []
+      const hit = boardCache.get(id)
+      if (hit) hit.members = projectMembers.value
     } catch (error) {
       console.error('Failed to load project members:', error)
     }
   }
 
-  const fetchLabels = async (id: string) => {
+  const fetchLabels = async (id: string, options?: FetchOptions) => {
+    if (
+      !options?.force &&
+      projectId.value === id &&
+      isFresh(boardCache.get(id)?.fetchedAt, CACHE_TTL.board)
+    ) {
+      const hit = boardCache.get(id)
+      if (hit) projectLabels.value = hit.labels
+      return
+    }
     try {
       const { labels } = await api<{ labels: Task['labels'] }>(
         `/api/projects/${id}/labels`
       )
       projectLabels.value = labels ?? []
+      const hit = boardCache.get(id)
+      if (hit) hit.labels = projectLabels.value
     } catch (error) {
       console.error('Failed to load labels:', error)
     }
@@ -408,6 +485,7 @@ export const useBoardStore = defineStore('board', () => {
       body: { archived: true }
     })
     removeTaskFromBoard(taskId)
+    invalidateWorkspacePages(useWorkspaceStore().activeWorkspaceId)
   }
 
   const restoreTask = async (taskId: string) => {
@@ -415,7 +493,8 @@ export const useBoardStore = defineStore('board', () => {
       method: 'PATCH',
       body: { archived: false }
     })
-    if (updated && projectId.value) await fetchBoard(projectId.value)
+    if (updated && projectId.value) await fetchBoard(projectId.value, { force: true })
+    invalidateWorkspacePages(useWorkspaceStore().activeWorkspaceId)
     return updated
   }
 
@@ -458,6 +537,7 @@ export const useBoardStore = defineStore('board', () => {
           completedCount: column.completedCount ?? 0
         })
       }
+      invalidateWorkspacePages(useWorkspaceStore().activeWorkspaceId)
     } catch (error) {
       console.error('Failed to create column:', error)
     }
@@ -530,10 +610,22 @@ export const useBoardStore = defineStore('board', () => {
         method: 'PATCH',
         body: { archived: true }
       })
+      invalidateWorkspacePages(useWorkspaceStore().activeWorkspaceId)
     } catch (error) {
       columns.value.splice(index, 0, removed)
       throw error
     }
+  }
+
+  const reset = () => {
+    projectId.value = null
+    columns.value = []
+    workspaceMembers.value = []
+    projectMembers.value = []
+    projectLabels.value = []
+    selectedTask.value = null
+    boardCache.clear()
+    boardInflight.clear()
   }
 
   return {
@@ -571,6 +663,7 @@ export const useBoardStore = defineStore('board', () => {
     fetchWorkspaceMembers,
     fetchProjectMembers,
     fetchLabels,
-    createLabel
+    createLabel,
+    reset,
   }
 })

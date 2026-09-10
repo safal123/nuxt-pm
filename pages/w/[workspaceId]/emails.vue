@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { whenDate } from "@/utils/date";
 import { api } from "~/lib/api";
+import { pageKeys } from "~/lib/query";
 import type { EmailLogItem } from "@/types";
 import { EMAIL_TEMPLATES, sampleEmailHtml } from "@/utils/email-templates";
 import { emailStatusChip, emailTemplateChip, whenChip } from "@/utils/table-chips";
@@ -44,10 +45,7 @@ const PAGE_SIZE = 12;
 const ALL = "all";
 
 const workspaceStore = useWorkspaceStore();
-const loading = ref(true);
 const view = ref<"inbox" | "sent" | "templates">("inbox");
-const emails = ref<EmailLogItem[]>([]);
-const projects = ref<{ id: string; name: string }[]>([]);
 const projectId = ref(ALL);
 const templateId = ref(ALL);
 const page = ref(1);
@@ -55,36 +53,41 @@ const selected = ref<EmailLogItem | null>(null);
 const composeOpen = ref(false);
 const composeStarter = ref<"custom" | "welcome" | "project" | "notice">("custom");
 const box = computed(() => (view.value === "inbox" ? "inbox" : "sent"));
+const workspaceId = computed(() => workspaceStore.activeWorkspaceId || "");
 
-const fetchEmails = async () => {
-  const workspaceId = workspaceStore.activeWorkspaceId;
-  if (!workspaceId) {
-    loading.value = false;
-    return;
-  }
-  loading.value = true;
-  try {
+const emptyEmails = {
+  emails: [] as EmailLogItem[],
+  projects: [] as { id: string; name: string }[],
+};
+
+const { data, status, refresh } = await useAsyncData(
+  pageKeys.emails(workspaceId.value),
+  async () => {
+    if (!workspaceId.value) return emptyEmails;
     const result = await api<{
       emails: EmailLogItem[]
       projects: { id: string; name: string }[]
-    }>(`/api/workspaces/${workspaceId}/emails`, {
+    }>(`/api/workspaces/${workspaceId.value}/emails`, {
       query: {
         box: box.value,
         projectId: projectId.value,
         template: templateId.value,
       },
     });
-    emails.value = result.emails ?? [];
-    projects.value = result.projects ?? [];
-  } catch (error) {
-    console.error(error);
-    emails.value = [];
-  } finally {
-    loading.value = false;
-  }
-};
+    return {
+      emails: result.emails ?? [],
+      projects: result.projects ?? [],
+    };
+  },
+  {
+    watch: [workspaceId, box, projectId, templateId],
+    default: () => emptyEmails,
+  },
+);
 
-await fetchEmails();
+const emails = computed(() => data.value?.emails ?? []);
+const projects = computed(() => data.value?.projects ?? []);
+const loading = computed(() => status.value === "pending");
 
 watch(
   () => workspaceStore.activeWorkspaceId,
@@ -94,9 +97,8 @@ watch(
   },
 );
 
-watch([projectId, templateId, box, () => workspaceStore.activeWorkspaceId], () => {
+watch([projectId, templateId, box, workspaceId], () => {
   page.value = 1;
-  fetchEmails();
 });
 
 const paged = computed(() => {
@@ -368,7 +370,7 @@ const openCompose = (starter: "custom" | "welcome" | "project" | "notice" = "cus
       :starter="composeStarter"
       :projects="projects"
       @close="composeOpen = false"
-      @sent="fetchEmails"
+      @sent="refresh"
     />
   </div>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { whenDate } from "@/utils/date";
 import { api } from "~/lib/api";
+import { pageKeys } from "~/lib/query";
 import type { TaskAssignee, ActivityType, WorkspaceActivity } from "@/types";
 import { Button } from "@/components/ui/button";
 import { activityTypeChip, whenChip } from "@/utils/table-chips";
@@ -42,10 +43,6 @@ const PAGE_SIZE = 12;
 const ALL = "all";
 
 const workspaceStore = useWorkspaceStore();
-const loading = ref(true);
-const activities = ref<WorkspaceActivity[]>([]);
-const projects = ref<{ id: string; name: string }[]>([]);
-const tasks = ref<{ id: string; title: string; projectId: string }[]>([]);
 const projectId = ref(ALL);
 const taskId = ref(ALL);
 const kind = ref("all");
@@ -53,40 +50,48 @@ const page = ref(1);
 
 const { showEmailsInActivity } = useAppSettings();
 
-const fetchActivities = async () => {
-  const workspaceId = workspaceStore.activeWorkspaceId;
-  if (!workspaceId) {
-    loading.value = false;
-    return;
-  }
-  loading.value = true;
-  try {
+const workspaceId = computed(() => workspaceStore.activeWorkspaceId || "");
+const kindQuery = computed(() =>
+  kind.value === "all" && !showEmailsInActivity.value ? "task" : kind.value,
+);
+
+const emptyActivities = {
+  activities: [] as WorkspaceActivity[],
+  projects: [] as { id: string; name: string }[],
+  tasks: [] as { id: string; title: string; projectId: string }[],
+};
+
+const { data, status } = await useAsyncData(
+  pageKeys.activities(workspaceId.value),
+  async () => {
+    if (!workspaceId.value) return emptyActivities;
     const result = await api<{
       activities: WorkspaceActivity[]
       projects: { id: string; name: string }[]
       tasks: { id: string; title: string; projectId: string }[]
-    }>(`/api/workspaces/${workspaceId}/activities`, {
+    }>(`/api/workspaces/${workspaceId.value}/activities`, {
       query: {
         projectId: projectId.value,
         taskId: taskId.value,
-        kind:
-          kind.value === "all" && !showEmailsInActivity.value
-            ? "task"
-            : kind.value,
+        kind: kindQuery.value,
       },
     });
-    activities.value = result.activities ?? [];
-    projects.value = result.projects ?? [];
-    tasks.value = result.tasks ?? [];
-  } catch (error) {
-    console.error(error);
-    activities.value = [];
-  } finally {
-    loading.value = false;
-  }
-};
+    return {
+      activities: result.activities ?? [],
+      projects: result.projects ?? [],
+      tasks: result.tasks ?? [],
+    };
+  },
+  {
+    watch: [workspaceId, projectId, taskId, kindQuery],
+    default: () => emptyActivities,
+  },
+);
 
-await fetchActivities();
+const activities = computed(() => data.value?.activities ?? []);
+const projects = computed(() => data.value?.projects ?? []);
+const tasks = computed(() => data.value?.tasks ?? []);
+const loading = computed(() => status.value === "pending");
 
 watch(
   () => workspaceStore.activeWorkspaceId,
@@ -97,9 +102,8 @@ watch(
   },
 );
 
-watch([projectId, taskId, kind, () => workspaceStore.activeWorkspaceId], () => {
+watch([projectId, taskId, kind, workspaceId], () => {
   page.value = 1;
-  fetchActivities();
 });
 
 const paged = computed(() => {

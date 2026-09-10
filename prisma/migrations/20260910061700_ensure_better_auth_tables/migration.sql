@@ -1,7 +1,7 @@
-DROP INDEX IF EXISTS "users_clerkId_key";
+-- Better Auth tables (idempotent). Production may not have applied the
+-- Clerk → Better Auth migration, or that migration may have aborted before
+-- these CREATE TABLE statements ran.
 
-ALTER TABLE "users" DROP COLUMN IF EXISTS "clerkId";
-ALTER TABLE "users" DROP COLUMN IF EXISTS "clerkObject";
 ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "email_verified" BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "image" TEXT;
 
