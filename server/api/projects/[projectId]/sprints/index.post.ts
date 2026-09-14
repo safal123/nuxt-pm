@@ -95,6 +95,7 @@ export default defineApi({
       data: { sprint: serializeSprint({ ...sprint, doneCount: 0 }) },
       message: body.start ? 'Sprint started' : 'Sprint created',
       status: 201,
+      realtime: boardRealtime(projectId, { type: 'board.refresh' }),
     }
   },
 })

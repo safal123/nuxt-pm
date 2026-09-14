@@ -41,6 +41,10 @@ export default defineApi({
     return {
       data: { id: data?.id ?? randomUUID() },
       message: 'Email sent',
+      realtime: workspaceRealtime(workspaceId, {
+        type: 'email.sent',
+        id: data?.id ?? null,
+      }),
     }
   },
 })

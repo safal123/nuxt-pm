@@ -1,4 +1,5 @@
 import { getRequestHeader } from 'h3'
+import { REALTIME_CLIENT_HEADER, realtimeClientId } from '~/utils/realtime'
 
 type ApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -26,11 +27,15 @@ export async function api<T>(
     query?: Record<string, unknown>
   },
 ): Promise<T> {
+  const clientId = realtimeClientId()
   const result = await $fetch<{ data: T; message: string }>(path, {
     method: opts?.method,
     body: opts?.body as Record<string, unknown> | undefined,
     query: opts?.query,
-    headers: ssrCookieHeader(),
+    headers: {
+      ...ssrCookieHeader(),
+      ...(clientId ? { [REALTIME_CLIENT_HEADER]: clientId } : {}),
+    },
   })
 
   return result.data

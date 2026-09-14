@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import type { Task, TaskColumn } from '~/types'
 import { BOARD_COMPLETED_LIMIT } from '~/utils/board'
 import { api } from '~/lib/api'
+import { realtimeClientId, type BoardRealtimePayload } from '~/utils/realtime'
 
 export const useBoardStore = defineStore('board', () => {
   const projectId = ref<string | null>(null)
@@ -42,6 +43,15 @@ export const useBoardStore = defineStore('board', () => {
     else column.tasks.splice(index, 0, task)
   }
 
+  const bumpCompleted = (column: TaskColumn, fromDone: boolean, toDone: boolean) => {
+    if (!fromDone && toDone) {
+      column.completedCount = (column.completedCount ?? 0) + 1
+    }
+    if (fromDone && !toDone) {
+      column.completedCount = Math.max(0, (column.completedCount ?? 0) - 1)
+    }
+  }
+
   const syncBoardTask = (updated: Task) => {
     const sprintStore = useSprintStore()
     if (updated.archivedAt || !sprintStore.matchesView(updated)) {
@@ -50,27 +60,31 @@ export const useBoardStore = defineStore('board', () => {
       if (open) selectedTask.value = { ...updated }
       return
     }
-    const boardTask = findTask(updated.id)
-    const wasDone = boardTask?.status === 'DONE'
-    if (boardTask) Object.assign(boardTask, updated)
+
     const location = findTaskLocation(updated.id)
+    const wasDone = location?.column.tasks[location.index]?.status === 'DONE'
+    const isDone = updated.status === 'DONE'
+
     if (!location) {
       const column = columns.value.find((item) => item.id === updated.columnId)
       if (!column || updated.status === 'DONE' || updated.archivedAt) return
       insertTaskByOrder(column, updated)
-      column.completedCount = Math.max(0, (column.completedCount ?? 0) - 1)
       return
     }
-    const isDone = updated.status === 'DONE'
-    if (!wasDone && isDone) {
-      location.column.completedCount = (location.column.completedCount ?? 0) + 1
+
+    if (location.column.id !== updated.columnId) {
+      const [moved] = location.column.tasks.splice(location.index, 1)
+      Object.assign(moved, updated)
+      bumpCompleted(location.column, !!wasDone, false)
+      const dest = columns.value.find((item) => item.id === updated.columnId)
+      if (!dest) return
+      insertTaskByOrder(dest, moved)
+      bumpCompleted(dest, false, isDone)
+      return
     }
-    if (wasDone && !isDone) {
-      location.column.completedCount = Math.max(
-        0,
-        (location.column.completedCount ?? 0) - 1
-      )
-    }
+
+    Object.assign(location.column.tasks[location.index], updated)
+    bumpCompleted(location.column, !!wasDone, isDone)
   }
 
   /**
@@ -550,6 +564,106 @@ export const useBoardStore = defineStore('board', () => {
     }
   }
 
+  const applyRealtimeEvent = (payload: BoardRealtimePayload) => {
+    if (!payload?.type) return
+    if (payload.clientId && payload.clientId === realtimeClientId()) return
+    if (payload.type === "task.upsert" && draggingTask.value?.id === payload.task.id) {
+      return
+    }
+
+    if (payload.type === "task.upsert") {
+      const existing = findTask(payload.task.id)
+      const likedByMe = existing?.likedByMe ?? false
+      const next = { ...payload.task, likedByMe }
+      syncBoardTask(next)
+      for (const label of next.labels || []) {
+        if (!projectLabels.value.some((item) => item.id === label.id)) {
+          projectLabels.value.push(label)
+        }
+      }
+      if (selectedTask.value?.id === next.id) {
+        selectedTask.value = { ...selectedTask.value, ...next, likedByMe }
+      }
+      return
+    }
+
+    if (payload.type === "task.removed") {
+      removeTaskFromBoard(payload.taskId)
+      return
+    }
+
+    if (payload.type === "task.like") {
+      const task = findTask(payload.taskId)
+      if (task) task.likeCount = payload.likeCount
+      if (selectedTask.value?.id === payload.taskId) {
+        selectedTask.value = {
+          ...selectedTask.value,
+          likeCount: payload.likeCount,
+        }
+      }
+      return
+    }
+
+    if (payload.type === "column.upsert") {
+      const current = columns.value.find((item) => item.id === payload.column.id)
+      if (current) {
+        current.name = payload.column.name
+        current.order = payload.column.order
+        current.color = payload.column.color ?? null
+        return
+      }
+      columns.value.push({
+        id: payload.column.id,
+        name: payload.column.name,
+        order: payload.column.order,
+        color: payload.column.color ?? null,
+        projectId: payload.column.projectId,
+        tasks: payload.column.tasks ?? [],
+        completedCount: payload.column.completedCount ?? 0,
+      })
+      columns.value.sort((a, b) => a.order - b.order)
+      return
+    }
+
+    if (payload.type === "column.removed") {
+      columns.value = columns.value.filter((item) => item.id !== payload.columnId)
+      return
+    }
+
+    if (payload.type === "column.moved") {
+      const byId = new Map(columns.value.map((item) => [item.id, item]))
+      const next = payload.columnIds
+        .map((id) => byId.get(id))
+        .filter((item): item is TaskColumn => Boolean(item))
+      for (const column of columns.value) {
+        if (!payload.columnIds.includes(column.id)) next.push(column)
+      }
+      next.forEach((column, order) => {
+        column.order = order
+      })
+      columns.value = next
+      return
+    }
+
+    if (payload.type === "label.created") {
+      if (!projectLabels.value.some((item) => item.id === payload.label.id)) {
+        projectLabels.value.push(payload.label)
+      }
+      if (payload.task) {
+        const existing = findTask(payload.task.id)
+        const likedByMe = existing?.likedByMe ?? false
+        syncBoardTask({ ...payload.task, likedByMe })
+      }
+      return
+    }
+
+    if (payload.type === "board.refresh" && projectId.value) {
+      if (draggingTask.value) return
+      const id = projectId.value
+      void useSprintStore().fetchSprints(id).then(() => fetchBoard(id))
+    }
+  }
+
   return {
     projectId,
     columns,
@@ -585,6 +699,7 @@ export const useBoardStore = defineStore('board', () => {
     fetchWorkspaceMembers,
     fetchProjectMembers,
     fetchLabels,
-    createLabel
+    createLabel,
+    applyRealtimeEvent,
   }
 })

@@ -80,6 +80,7 @@ export default defineApi({
       data: { task: serializeTask(task) },
       message: 'Task created successfully',
       status: 201,
+      realtime: boardRealtime(projectId, { type: 'task.upsert', task: serializeTask(task) }),
     }
   },
 })

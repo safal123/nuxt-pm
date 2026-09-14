@@ -5,6 +5,7 @@ import {
   activityTypeLabel,
   defaultActivityFilters,
   isActivityKind,
+  isActivityUnread,
   personInitials,
 } from "~/utils/activity";
 
@@ -30,5 +31,30 @@ describe("activity helpers", () => {
     );
     expect(personInitials({ name: null, email: "lin@example.com" })).toBe("LI");
     expect(activityTypeLabel("EMAIL_SENT")).toBe("email sent");
+  });
+
+  it("treats only later teammate activity as unread", () => {
+    const seen = "2026-09-14T00:00:00.000Z";
+    expect(
+      isActivityUnread(
+        { createdAt: "2026-09-14T01:00:00.000Z", user: { id: "a" } },
+        seen,
+        "me",
+      ),
+    ).toBe(true);
+    expect(
+      isActivityUnread(
+        { createdAt: "2026-09-14T01:00:00.000Z", user: { id: "me" } },
+        seen,
+        "me",
+      ),
+    ).toBe(false);
+    expect(
+      isActivityUnread(
+        { createdAt: "2026-09-13T01:00:00.000Z", user: { id: "a" } },
+        seen,
+        "me",
+      ),
+    ).toBe(false);
   });
 });

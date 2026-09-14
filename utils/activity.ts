@@ -26,3 +26,16 @@ export const personInitials = (person: Pick<TaskAssignee, "name" | "email">) => 
 
 export const activityTypeLabel = (type: ActivityType | string) =>
   String(type).replace(/_/g, " ").toLowerCase();
+
+export const NOTIFICATION_SEEN_KEY = (workspaceId: string) =>
+  `ns-activity-seen:${workspaceId}`;
+
+export const isActivityUnread = (
+  activity: { createdAt: Date | string; user: { id: string } },
+  lastSeenAt: string | null,
+  userId?: string | null,
+) => {
+  if (userId && activity.user.id === userId) return false;
+  if (!lastSeenAt) return true;
+  return new Date(activity.createdAt).getTime() > new Date(lastSeenAt).getTime();
+};

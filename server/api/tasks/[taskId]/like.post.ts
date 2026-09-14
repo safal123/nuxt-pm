@@ -45,6 +45,7 @@ export default defineApi({
         likeCount,
       },
       message: existing ? 'Like removed' : 'Task liked',
+      realtime: boardRealtime(task.projectId, { type: 'task.like', taskId, likeCount }),
     }
   },
 })

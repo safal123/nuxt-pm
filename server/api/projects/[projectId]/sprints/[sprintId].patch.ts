@@ -171,6 +171,7 @@ export default defineApi({
           : body.status === 'ACTIVE'
             ? 'Sprint started'
             : 'Sprint updated',
+      realtime: boardRealtime(projectId, { type: 'board.refresh' }),
     }
   },
 })

@@ -7,6 +7,7 @@ export default defineApi({
     return {
       data: { column: deleted },
       message: 'List deleted permanently',
+      realtime: boardRealtime(deleted.projectId, { type: 'column.removed', columnId }),
     }
   },
 })

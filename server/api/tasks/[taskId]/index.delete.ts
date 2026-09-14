@@ -10,6 +10,7 @@ export default defineApi({
       return {
         data: { task: { id: taskId } },
         message: 'Task deleted permanently',
+        realtime: boardRealtime(task.projectId, { type: 'task.removed', taskId }),
       }
     }
 
@@ -30,6 +31,7 @@ export default defineApi({
     return {
       data: { task: { id: taskId, archivedAt: new Date() } },
       message: 'Task archived successfully',
+      realtime: boardRealtime(task.projectId, { type: 'task.removed', taskId }),
     }
   },
 })

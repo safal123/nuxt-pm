@@ -45,10 +45,20 @@ export default defineApi({
       })
     }
 
+    const createdLabel = { id: label.id, name: label.name, color: label.color }
+    const attached = body.taskId
+      ? serializeTask(await getTaskWithDetails(body.taskId, user.id))
+      : undefined
+
     return {
-      data: { label: { id: label.id, name: label.name, color: label.color } },
+      data: { label: createdLabel },
       message: 'Label created successfully',
       status: 201,
+      realtime: boardRealtime(projectId, {
+        type: 'label.created',
+        label: createdLabel,
+        ...(attached ? { task: attached } : {}),
+      }),
     }
   },
 })

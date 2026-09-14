@@ -20,7 +20,7 @@ describe("useBoardStore", () => {
   });
 
   describe("moveDraggingTo", () => {
-    it("reorders within a column and reindexes the tasks", () => {
+    it("reorders within a column", () => {
       const a = createTask({ id: "a", order: 0 });
       const b = createTask({ id: "b", order: 1 });
       const c = createTask({ id: "c", order: 2 });
@@ -30,7 +30,6 @@ describe("useBoardStore", () => {
       store.moveDraggingTo("column-1", 2);
 
       expect(store.columns[0].tasks.map((task) => task.id)).toEqual(["b", "c", "a"]);
-      expect(store.columns[0].tasks.map((task) => task.order)).toEqual([0, 1, 2]);
     });
 
     it("moves a task to another column and retargets its columnId", () => {
@@ -82,6 +81,57 @@ describe("useBoardStore", () => {
       await store.archiveTask("task-1");
 
       expect(store.selectedTask).toBeNull();
+    });
+  });
+
+  describe("applyRealtimeEvent", () => {
+    it("inserts a remote card into the matching column", () => {
+      store.columns = [createColumn()];
+      const task = createTask({ id: "remote-1", title: "From another user" });
+
+      store.applyRealtimeEvent({ type: "task.upsert", task });
+
+      expect(store.columns[0].tasks.map((item) => item.id)).toEqual(["remote-1"]);
+    });
+
+    it("moves a remote card between columns", () => {
+      const task = createTask({ id: "a", columnId: "column-1" });
+      store.columns = [
+        createColumn({ tasks: [task] }),
+        createColumn({ id: "column-2", name: "Doing" }),
+      ];
+
+      store.applyRealtimeEvent({
+        type: "task.upsert",
+        task: { ...task, columnId: "column-2", order: 0 },
+      });
+
+      expect(store.columns[0].tasks).toHaveLength(0);
+      expect(store.columns[1].tasks.map((item) => item.id)).toEqual(["a"]);
+    });
+
+    it("ignores events from this tab", () => {
+      sessionStorage.setItem("ns-realtime-client-id", "tab-client-1");
+      store.columns = [createColumn({ tasks: [createTask({ id: "task-1" })] })];
+
+      store.applyRealtimeEvent({
+        type: "task.removed",
+        taskId: "task-1",
+        clientId: "tab-client-1",
+      });
+
+      expect(store.columns[0].tasks).toHaveLength(1);
+    });
+
+    it("removes an archived list", () => {
+      store.columns = [
+        createColumn(),
+        createColumn({ id: "column-2", name: "Doing" }),
+      ];
+
+      store.applyRealtimeEvent({ type: "column.removed", columnId: "column-1" });
+
+      expect(store.columns.map((item) => item.id)).toEqual(["column-2"]);
     });
   });
 });

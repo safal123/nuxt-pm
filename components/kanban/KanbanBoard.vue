@@ -41,6 +41,7 @@ const archiveList = async (columnId: string) => {
 };
 
 const sprintStore = useSprintStore();
+useBoardRealtime(() => props.projectId);
 
 watch(
   () => props.projectId,

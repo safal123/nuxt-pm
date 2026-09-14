@@ -30,6 +30,10 @@ export default defineApi({
       data: { task: serializeTask(created) },
       message: 'Comment added',
       status: 201,
+      realtime: boardRealtime(task.projectId, {
+        type: 'task.upsert',
+        task: serializeTask(created),
+      }),
     }
   },
 })

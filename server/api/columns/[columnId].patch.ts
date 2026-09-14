@@ -4,13 +4,18 @@ export default defineApi({
   body: columnUpdateSchema,
   handler: async ({ user, event, body }) => {
     const columnId = getRouterParam(event, 'columnId') as string
-    await validateColumnAccess(columnId, user.id)
+    const existing = await validateColumnAccess(columnId, user.id)
+    const projectId = existing.projectId
 
     if (body.name !== undefined) {
       const column = await renameProjectColumn(columnId, body.name)
       return {
         data: { column },
         message: 'Column renamed successfully',
+        realtime: boardRealtime(projectId, {
+          type: 'column.upsert',
+          column: serializeColumn(column),
+        }),
       }
     }
 
@@ -19,6 +24,10 @@ export default defineApi({
       return {
         data: { columns },
         message: 'Column moved successfully',
+        realtime: boardRealtime(projectId, {
+          type: 'column.moved',
+          columnIds: columns.map((item) => item.id),
+        }),
       }
     }
 
@@ -27,6 +36,10 @@ export default defineApi({
       return {
         data: { column },
         message: 'Column color updated successfully',
+        realtime: boardRealtime(projectId, {
+          type: 'column.upsert',
+          column: serializeColumn(column),
+        }),
       }
     }
 
@@ -35,6 +48,7 @@ export default defineApi({
       return {
         data: { column },
         message: 'Column archived successfully',
+        realtime: boardRealtime(projectId, { type: 'column.removed', columnId }),
       }
     }
 
@@ -42,6 +56,7 @@ export default defineApi({
     return {
       data: { column },
       message: 'Column restored successfully',
+      realtime: boardRealtime(projectId, { type: 'board.refresh' }),
     }
   },
 })

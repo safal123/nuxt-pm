@@ -2,11 +2,16 @@ import type { H3Event } from 'h3'
 import type { z } from 'zod'
 import type { User } from '@prisma/client'
 import { validateAndGetUser } from '~/server/utils/user'
+import { publishRealtime } from '~/server/utils/ably'
+import { REALTIME_CLIENT_HEADER } from '~/utils/realtime'
+import type { RealtimePublish } from '~/utils/realtime'
 
 type ApiResult<T = unknown> = {
   data: T
   message: string
   status?: number
+  /** Any Ably channel(s). Use boardRealtime, workspaceRealtime, or userRealtime. */
+  realtime?: RealtimePublish | RealtimePublish[]
 }
 
 type InferSchema<T> = T extends z.ZodTypeAny ? z.infer<T> : undefined
@@ -73,16 +78,29 @@ export function defineApi<
         setResponseStatus(event, result.status)
       }
 
+      if (result.realtime) {
+        const clientId = getHeader(event, REALTIME_CLIENT_HEADER)
+        const messages = Array.isArray(result.realtime)
+          ? result.realtime
+          : [result.realtime]
+        await Promise.all(
+          messages.map((message) =>
+            publishRealtime(message.channel, message.event, clientId),
+          ),
+        )
+      }
+
       return { data: result.data, message: result.message }
     } catch (error: any) {
-      const statusCode = error.statusCode || 500
+      const ablyMessage = error?.data?.error?.message as string | undefined;
+      const statusCode = error.statusCode || 500;
       if (statusCode >= 500) {
-        console.error(error)
+        console.error(error);
       }
       throw createError({
         statusCode,
-        message: error.message || 'Internal server error',
-      })
+        message: ablyMessage || error.message || "Internal server error",
+      });
     }
   })
 }

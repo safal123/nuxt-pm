@@ -19,6 +19,10 @@ export default defineApi({
       data: { column: { ...column, tasks: [], completedCount: 0 } },
       message: 'Column created successfully',
       status: 201,
+      realtime: boardRealtime(projectId, {
+        type: 'column.upsert',
+        column: { ...serializeColumn(column), tasks: [], completedCount: 0 },
+      }),
     }
   },
 })

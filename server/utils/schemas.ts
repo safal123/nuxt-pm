@@ -289,6 +289,16 @@ export const billingQuerySchema = z.object({
   workspaceId: optionalId,
 })
 
+export const ablyTokenSchema = z.object({
+  clientId: z
+    .string()
+    .trim()
+    .min(8, 'clientId is required')
+    .max(64, 'clientId is too long'),
+  projectId: idSchema.optional(),
+  workspaceId: idSchema.optional(),
+})
+
 export const taskStatusSchema = z
   .string()
   .refine(

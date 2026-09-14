@@ -2,6 +2,7 @@
 import { whenDate } from "@/utils/date";
 import { api } from "~/lib/api";
 import type { EmailLogItem } from "@/types";
+import { workspaceChannel } from "~/utils/realtime";
 import { EMAIL_TEMPLATES, sampleEmailHtml } from "@/utils/email-templates";
 import {
   emailStatusChip,
@@ -91,6 +92,17 @@ const fetchEmails = async () => {
 };
 
 await fetchEmails();
+
+useRealtimeChannel(
+  () => workspaceChannel(workspaceStore.activeWorkspaceId || ""),
+  (payload) => {
+    const event = payload as { type?: string };
+    if (event.type === "email.sent") void fetchEmails();
+  },
+  () => ({
+    workspaceId: workspaceStore.activeWorkspaceId || undefined,
+  }),
+);
 
 watch(
   () => workspaceStore.activeWorkspaceId,

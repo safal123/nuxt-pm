@@ -11,7 +11,6 @@ import {
 } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { TASK_PRIORITIES } from "@/utils/task-priority";
 import type { BoardSort, DueFilter } from "~/utils/board-query";
 
@@ -88,9 +87,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
 </script>
 
 <template>
-  <div class="mb-3 space-y-2">
-    <div class="flex flex-col gap-2 lg:flex-row lg:items-center">
+  <div class="mb-4 overflow-hidden rounded-xl border border-border bg-card">
+    <div class="border-b border-border px-2 py-2 sm:px-3">
       <SprintSwitcher />
+    </div>
+
+    <div class="flex flex-col gap-2 px-2 py-2 sm:flex-row sm:items-center sm:px-3">
       <div ref="searchWrap" class="relative min-w-0 flex-1">
         <SearchIcon
           class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -98,7 +100,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
         <Input
           :model-value="query.search"
           placeholder="Search cards…"
-          class="h-9 pl-8 pr-16"
+          class="h-9 pl-8 pr-10 sm:pr-16"
           @update:model-value="setSearch(String($event))"
         />
         <kbd
@@ -108,59 +110,77 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
         </kbd>
       </div>
 
-      <div class="flex flex-wrap items-center gap-1.5">
+      <div class="flex shrink-0 items-center gap-1.5">
         <Button
           type="button"
           size="sm"
+          class="hidden h-9 lg:inline-flex"
           :variant="query.assignee === 'me' ? 'secondary' : 'outline'"
           @click="toggleAssignee('me')"
         >
           <UserIcon class="h-3.5 w-3.5" />
-          Assigned to me
+          Me
         </Button>
         <Button
           type="button"
           size="sm"
+          class="hidden h-9 lg:inline-flex"
           :variant="query.due === 'overdue' ? 'secondary' : 'outline'"
           @click="toggleDue('overdue')"
         >
           <CalendarClockIcon class="h-3.5 w-3.5" />
           Overdue
         </Button>
-        <Button
-          type="button"
-          size="sm"
-          :variant="query.completion === 'open' ? 'secondary' : 'outline'"
-          @click="toggleCompletion('open')"
-        >
-          <CircleDashedIcon class="h-3.5 w-3.5" />
-          Incomplete
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          :variant="query.completion === 'done' ? 'secondary' : 'outline'"
-          @click="toggleCompletion('done')"
-        >
-          <CheckCircle2Icon class="h-3.5 w-3.5" />
-          Completed
-        </Button>
 
         <Popover>
           <PopoverTrigger as-child>
-            <Button type="button" size="sm" variant="outline">
+            <Button type="button" size="sm" variant="outline" class="h-9">
               <ListFilterIcon class="h-3.5 w-3.5" />
-              More
+              <span class="hidden sm:inline">Filters</span>
               <span
                 v-if="filterCount"
-                class="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] text-background"
+                class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] text-background"
               >
                 {{ filterCount }}
               </span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent class="w-72 p-3" align="end">
+          <PopoverContent class="w-[min(18rem,calc(100vw-2rem))] p-3" align="end">
             <div class="space-y-3">
+              <div>
+                <p class="mb-1.5 text-xs font-medium text-muted-foreground">
+                  Quick
+                </p>
+                <div class="flex flex-wrap gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    :variant="query.assignee === 'me' ? 'secondary' : 'outline'"
+                    @click="toggleAssignee('me')"
+                  >
+                    Assigned to me
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    :variant="query.completion === 'open' ? 'secondary' : 'outline'"
+                    @click="toggleCompletion('open')"
+                  >
+                    <CircleDashedIcon class="h-3.5 w-3.5" />
+                    Incomplete
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    :variant="query.completion === 'done' ? 'secondary' : 'outline'"
+                    @click="toggleCompletion('done')"
+                  >
+                    <CheckCircle2Icon class="h-3.5 w-3.5" />
+                    Completed
+                  </Button>
+                </div>
+              </div>
+
               <div>
                 <p class="mb-1.5 text-xs font-medium text-muted-foreground">
                   Due date
@@ -244,9 +264,9 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
 
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
-            <Button type="button" size="sm" variant="outline">
+            <Button type="button" size="sm" variant="outline" class="h-9">
               <SlidersHorizontalIcon class="h-3.5 w-3.5" />
-              {{ sortLabel }}
+              <span class="hidden sm:inline">{{ sortLabel }}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent class="w-56" align="end">
@@ -272,7 +292,9 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+    <div
+      class="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-2 text-xs text-muted-foreground"
+    >
       <p>
         <template v-if="isFiltered">
           {{ matchCount }} of {{ totalCount }}
@@ -306,6 +328,5 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
         Clear
       </Button>
     </div>
-    <Separator />
   </div>
 </template>

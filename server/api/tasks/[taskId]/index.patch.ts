@@ -83,6 +83,9 @@ export default defineApi({
       return {
         data: { task: serializeTask(task) },
         message: body.archived ? 'Task archived successfully' : 'Task restored successfully',
+        realtime: body.archived
+          ? boardRealtime(existing.projectId, { type: 'task.removed', taskId })
+          : boardRealtime(existing.projectId, { type: 'board.refresh' }),
       }
     }
 
@@ -306,6 +309,10 @@ export default defineApi({
     return {
       data: { task: serializeTask(task) },
       message: 'Task updated successfully',
+      realtime: boardRealtime(existing.projectId, {
+        type: 'task.upsert',
+        task: serializeTask(task),
+      }),
     }
   },
 })

@@ -180,3 +180,19 @@ export const deleteArchivedColumn = async (columnId: string) => {
   await prisma.taskColumn.delete({ where: { id: columnId } })
   return column
 }
+
+export const serializeColumn = (column: {
+  id: string
+  name: string
+  order: number
+  color?: string | null
+  projectId: string
+  archivedAt?: Date | string | null
+}) => ({
+  id: column.id,
+  name: column.name,
+  order: column.order,
+  color: column.color ?? null,
+  projectId: column.projectId,
+  archivedAt: column.archivedAt ?? null,
+})

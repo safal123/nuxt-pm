@@ -40,8 +40,10 @@ export default defineNuxtConfig({
     resendFrom: process.env.RESEND_FROM,
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    ablyApiKey: process.env.ABLY_API_KEY,
     public: {
       stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+      ablyEnabled: Boolean(process.env.ABLY_API_KEY || process.env.NUXT_ABLY_API_KEY),
     },
   },
   shadcn: {

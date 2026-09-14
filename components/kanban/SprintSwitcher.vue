@@ -33,6 +33,23 @@ const currentHint = computed(() => {
   );
 });
 
+const statusMeta = computed(() => {
+  if (sprintStore.view === "backlog") {
+    return { label: "Backlog", live: false };
+  }
+  const sprint = sprintStore.selectedSprint;
+  if (!sprint) {
+    return {
+      label: sprintStore.sprints.length ? "Backlog" : "All",
+      live: false,
+    };
+  }
+  return {
+    label: sprintStatusLabel(sprint.status),
+    live: sprint.status === "ACTIVE",
+  };
+});
+
 const selectView = async (next: SprintView) => {
   if (sprintStore.view === next) return;
   sprintStore.setView(next);
@@ -41,22 +58,45 @@ const selectView = async (next: SprintView) => {
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-1.5">
+  <div class="flex min-w-0 items-center gap-2">
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
-        <Button type="button" size="sm" variant="outline" class="max-w-full">
-          <TimerIcon class="h-3.5 w-3.5" />
-          <span class="truncate">{{ currentLabel }}</span>
+        <Button
+          type="button"
+          variant="outline"
+          class="h-9 min-w-0 flex-1 justify-start gap-2 px-2 sm:max-w-sm sm:flex-none"
+        >
           <span
-            v-if="currentHint"
-            class="hidden text-xs font-normal text-muted-foreground sm:inline"
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
           >
-            · {{ currentHint }}
+            <TimerIcon class="h-3.5 w-3.5" />
           </span>
-          <ChevronDownIcon class="h-3.5 w-3.5 text-muted-foreground" />
+          <span class="min-w-0 flex-1 text-left">
+            <span class="block truncate text-sm font-medium leading-4">
+              {{ currentLabel }}
+            </span>
+            <span
+              class="mt-0.5 hidden truncate text-[11px] font-normal leading-none text-muted-foreground sm:block"
+            >
+              {{ currentHint }}
+            </span>
+          </span>
+          <span
+            class="hidden shrink-0 items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground sm:inline-flex"
+          >
+            <span
+              class="h-1.5 w-1.5 rounded-full"
+              :class="statusMeta.live ? 'bg-primary' : 'bg-muted-foreground/40'"
+            />
+            {{ statusMeta.label }}
+          </span>
+          <ChevronDownIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" class="w-64">
+      <DropdownMenuContent
+        align="start"
+        class="w-[min(18rem,calc(100vw-2rem))] max-h-[min(22rem,70vh)] overflow-y-auto"
+      >
         <DropdownMenuLabel>Sprint</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem @select="selectView('current')">
@@ -139,33 +179,50 @@ const selectView = async (next: SprintView) => {
       </DropdownMenuContent>
     </DropdownMenu>
 
-    <Button
-      v-if="sprintStore.editableSprint"
-      type="button"
-      size="sm"
-      variant="outline"
-      @click="sprintStore.editOpen = true"
-    >
-      <CalendarIcon class="h-3.5 w-3.5" />
-      Dates
-    </Button>
-    <Button
-      v-if="sprintStore.current"
-      type="button"
-      size="sm"
-      variant="outline"
-      @click="sprintStore.completeOpen = true"
-    >
-      Complete
-    </Button>
-    <Button
-      v-else
-      type="button"
-      size="sm"
-      @click="sprintStore.startOpen = true"
-    >
-      <PlayIcon class="h-3.5 w-3.5" />
-      Start sprint
-    </Button>
+    <div class="flex shrink-0 items-center gap-1">
+      <Tooltip v-if="sprintStore.editableSprint">
+        <TooltipTrigger as-child>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            class="h-9"
+            aria-label="Edit sprint dates"
+            @click="sprintStore.editOpen = true"
+          >
+            <CalendarIcon class="h-3.5 w-3.5" />
+            <span class="hidden sm:inline">Dates</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Edit dates</TooltipContent>
+      </Tooltip>
+      <Tooltip v-if="sprintStore.current">
+        <TooltipTrigger as-child>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            class="h-9"
+            aria-label="Complete sprint"
+            @click="sprintStore.completeOpen = true"
+          >
+            Complete
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Complete sprint</TooltipContent>
+      </Tooltip>
+      <Button
+        v-else
+        type="button"
+        size="sm"
+        class="h-9"
+        aria-label="Start sprint"
+        @click="sprintStore.startOpen = true"
+      >
+        <PlayIcon class="h-3.5 w-3.5" />
+        <span class="hidden sm:inline">Start sprint</span>
+        <span class="sm:hidden">Start</span>
+      </Button>
+    </div>
   </div>
 </template>

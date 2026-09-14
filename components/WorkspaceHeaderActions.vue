@@ -5,12 +5,14 @@ import {
   PlusIcon,
   UsersIcon,
 } from "lucide-vue-next";
+import NotificationBell from "~/components/notifications/NotificationBell.vue";
 
 const { openMembers, openInvite, openCreateProject } = useWorkspaceLayout();
 </script>
 
 <template>
   <div class="flex shrink-0 items-center gap-1.5">
+    <NotificationBell />
     <ThemeToggle />
 
     <div class="hidden items-center gap-1.5 md:flex">
