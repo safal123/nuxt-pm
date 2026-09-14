@@ -13,7 +13,7 @@ import {
 } from "lucide-vue-next";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { toast } from "vue-sonner";
-import type { TaskAssignee, TaskLabel, TaskPriority, TaskStatus } from "@/types";
+import type { TaskAssignee, TaskLabel, TaskPriority, TaskStatus, WorkspaceActivity } from "@/types";
 import { statusChip, statusLabel } from "@/utils/task-status";
 import { isHistoricSprint } from "~/utils/sprints";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,6 +41,7 @@ const boardStore = useBoardStore();
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceStore();
 const sprintStore = useSprintStore();
+const { openTimeline } = useActivityTimeline();
 
 const task = computed(() => boardStore.selectedTask);
 const open = computed({
@@ -280,7 +281,33 @@ const comments = computed(() =>
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   ),
 );
-const activityFeed = computed(() => task.value?.activities ?? []);
+const projectName = computed(() => {
+  const id = task.value?.projectId;
+  return (
+    workspaceStore.getActiveWorkspace?.projects?.find(
+      (project) => project.id === id,
+    )?.name || "Project"
+  );
+});
+const cardTimeline = computed<WorkspaceActivity[]>(() =>
+  (task.value?.activities ?? []).map((item) => ({
+    ...item,
+    task: task.value ? { id: task.value.id, title: task.value.title } : null,
+    project: task.value
+      ? { id: task.value.projectId, name: projectName.value }
+      : null,
+    email: null,
+  })),
+);
+
+const openCardTimeline = () => {
+  if (!task.value) return;
+  openTimeline({
+    kind: "task",
+    id: task.value.id,
+    name: task.value.title,
+  });
+};
 
 const commentWhen = (value: Date | string) => {
   const date = typeof value === "string" ? new Date(value) : value;
@@ -727,19 +754,23 @@ const ignoreSelectOutside = (event: Event) => {
         </div>
 
         <div v-else-if="activeTab === 'activity'">
-          <p class="text-sm text-muted-foreground mb-4">
-            A log of every change made on this card.
-          </p>
-          <div class="space-y-4">
-            <TaskActivityItem
-              v-for="activity in activityFeed"
-              :key="activity.id"
-              :activity="activity"
-            />
-            <p v-if="!activityFeed.length" class="text-sm text-muted-foreground">
-              No activity yet.
+          <div class="mb-4 flex items-start justify-between gap-3">
+            <p class="text-sm text-muted-foreground">
+              Every change on this card, newest first.
             </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              class="h-8 shrink-0"
+              :disabled="!task"
+              @click="openCardTimeline"
+            >
+              <HistoryIcon class="h-3.5 w-3.5" />
+              Timeline
+            </Button>
           </div>
+          <ActivityTimeline :activities="cardTimeline" compact :selectable="false" />
         </div>
         </div>
       </Tabs>

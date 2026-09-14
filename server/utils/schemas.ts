@@ -134,7 +134,7 @@ export const activitiesQuerySchema = z.object({
   taskId: optionalId,
   kind: z.string().optional().default('all'),
   page: z.coerce.number().int().min(1).optional().default(1),
-  limit: z.coerce.number().int().min(1).max(50).optional().default(12),
+  limit: z.coerce.number().int().min(1).max(200).optional().default(12),
 })
 
 export const emailsQuerySchema = z.object({

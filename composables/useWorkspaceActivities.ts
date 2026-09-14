@@ -8,6 +8,7 @@ import {
   ACTIVITY_PAGE_SIZE,
   ALL,
   defaultActivityFilters,
+  emptyActivitySummary,
   isActivityKind,
 } from "~/utils/activity";
 
@@ -22,6 +23,7 @@ export const useWorkspaceActivities = async () => {
   const projects = ref<WorkspaceActivitiesResponse["projects"]>([]);
   const tasks = ref<WorkspaceActivitiesResponse["tasks"]>([]);
   const total = ref(0);
+  const summary = ref(emptyActivitySummary());
   const loading = ref(true);
   const error = ref<string | null>(null);
 
@@ -46,6 +48,7 @@ export const useWorkspaceActivities = async () => {
       loading.value = false;
       activities.value = [];
       total.value = 0;
+      summary.value = emptyActivitySummary();
       return;
     }
 
@@ -70,6 +73,7 @@ export const useWorkspaceActivities = async () => {
       projects.value = result.projects ?? [];
       tasks.value = result.tasks ?? [];
       total.value = result.total ?? 0;
+      summary.value = result.summary ?? emptyActivitySummary();
       if (result.page && result.page !== page.value) {
         skipNextFetch = true;
         page.value = result.page;
@@ -80,6 +84,7 @@ export const useWorkspaceActivities = async () => {
         err?.data?.message || err?.message || "Could not load activity.";
       activities.value = [];
       total.value = 0;
+      summary.value = emptyActivitySummary();
     } finally {
       if (id === requestId) loading.value = false;
     }
@@ -155,6 +160,7 @@ export const useWorkspaceActivities = async () => {
     projects,
     tasks,
     total,
+    summary,
     loading,
     error,
     rangeLabel,

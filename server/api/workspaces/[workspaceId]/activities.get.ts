@@ -2,6 +2,7 @@ import prisma from '~/lib/prisma'
 import { personSelect, serializePerson } from '~/server/utils/person'
 import { serializeFeedActivity } from '~/server/utils/activity'
 import { activitiesQuerySchema } from '~/server/utils/schemas'
+import { summarizeActivities } from '~/utils/activity'
 import { emailTemplateLabel } from '~/utils/email-templates'
 
 export default defineApi({
@@ -124,6 +125,7 @@ export default defineApi({
         total,
         page,
         limit: query.limit,
+        summary: summarizeActivities(activities),
       },
       message: 'Activities fetched successfully',
     }

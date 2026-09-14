@@ -146,6 +146,8 @@ export interface Member {
   imageUrl: string | null
   role?: string
   isOwner?: boolean
+  joinedAt?: Date | string | null
+  createdAt?: Date | string | null
 }
 
 export type TaskAssignee = Member
@@ -253,6 +255,23 @@ export type ActivityTaskOption = {
   projectId: string
 }
 
+export type ActivitySummary = {
+  total: number
+  today: number
+  thisWeek: number
+  comments: number
+  emails: number
+  people: number
+}
+
+export type ActivityTimelineKind = 'project' | 'task'
+
+export type ActivityTimelineTarget = {
+  kind: ActivityTimelineKind
+  id: string
+  name: string
+}
+
 export type WorkspaceActivitiesResponse = {
   activities: WorkspaceActivity[]
   projects: ActivityProjectOption[]
@@ -260,9 +279,31 @@ export type WorkspaceActivitiesResponse = {
   total: number
   page: number
   limit: number
+  summary: ActivitySummary
 }
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED'
+
+export type MemberProfileTask = {
+  id: string
+  title: string
+  status: TaskStatus
+  projectId: string
+  projectName: string
+}
+
+export type MemberProfile = {
+  member: Member
+  stats: {
+    projects: number
+    assigned: number
+    open: number
+    done: number
+  }
+  projects: { id: string; name: string }[]
+  tasks: MemberProfileTask[]
+  activities: WorkspaceActivity[]
+}
 
 export interface Task {
   id: string

@@ -3,11 +3,16 @@
  * CSS. Unhead scripts land after stylesheets, which lets the light :root
  * tokens paint for a frame.
  *
+ * Color mode is stored in the `nuxt-color-mode` cookie. This script must read
+ * that cookie first — if it defaults to system and writes the cookie, the
+ * color-mode client plugin (unknown: true) overwrites the settings select
+ * on every refresh.
+ *
  * Also merge the resolved theme onto <html> from cookies so SSR HTML already
  * has class="dark" / color-scheme, and Unhead hydration cannot wipe a class
  * that was only added by the inline script.
  */
-const THEME_SCRIPT = `(function(){try{var k='nuxt-color-mode';var r=localStorage.getItem(k);var s='system';if(r){try{var p=JSON.parse(r);if(p==='light'||p==='dark'||p==='system')s=p;else if(p==='auto')s='system';else if(r==='light'||r==='dark'||r==='system'||r==='auto')s=r==='auto'?'system':r}catch(e){if(r==='light'||r==='dark'||r==='system'||r==='auto')s=r==='auto'?'system':r}}if(s!==r)try{localStorage.setItem(k,s)}catch(e){}}var d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var e=document.documentElement;e.classList.add(d?'dark':'light');e.classList.remove(d?'light':'dark');e.style.colorScheme=d?'dark':'light';document.cookie='ns-theme='+(d?'dark':'light')+'; path=/; max-age=31536000; samesite=lax';document.cookie=k+'='+s+'; path=/; max-age=31536000; samesite=lax'}catch(e){}})();`
+const THEME_SCRIPT = `(function(){try{var k='nuxt-color-mode';function u(v){if(!v)return'';try{var p=JSON.parse(v);if(typeof p==='string')v=p}catch(e){}return String(v).replace(/^"|"$/g,'')}function n(v){v=u(v);if(v==='light'||v==='dark'||v==='system')return v;return v==='auto'?'system':''}function c(name){var parts=('; '+document.cookie).split('; '+name+'=');if(parts.length<2)return'';var raw=parts.pop().split(';').shift()||'';try{return n(decodeURIComponent(raw))}catch(e){return n(raw)}}var s=c(k)||n(localStorage.getItem(k))||'system';try{localStorage.setItem(k,s)}catch(e){}var d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var e=document.documentElement;e.classList.add(d?'dark':'light');e.classList.remove(d?'light':'dark');e.style.colorScheme=d?'dark':'light';document.cookie='ns-theme='+(d?'dark':'light')+'; path=/; max-age=31536000; samesite=lax';document.cookie=k+'='+s+'; path=/; max-age=31536000; samesite=lax'}catch(e){}})();`
 
 const unwrapCookie = (value: string | undefined) => {
   if (!value) return ''

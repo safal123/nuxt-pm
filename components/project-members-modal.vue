@@ -112,12 +112,16 @@ const removeMember = async (person: Member) => {
               <img v-if="person.imageUrl" :src="person.imageUrl" class="h-full w-full object-cover" />
               <span v-else>{{ initials(person) }}</span>
             </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-foreground truncate">
+            <NuxtLink
+              :to="`/w/${workspaceId}/members/${person.id}`"
+              class="min-w-0 flex-1"
+              @click.stop
+            >
+              <p class="text-sm font-medium text-foreground truncate hover:underline">
                 {{ person.name || person.email }}
               </p>
               <p class="text-xs text-muted-foreground truncate">{{ person.email }}</p>
-            </div>
+            </NuxtLink>
             <span
               v-if="person.isOwner"
               class="text-[11px] font-semibold uppercase tracking-wide text-violet-700 bg-violet-50 dark:text-violet-300 dark:bg-violet-500/20 px-2 py-0.5 rounded"

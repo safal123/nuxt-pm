@@ -1,26 +1,13 @@
-import prisma from '~/lib/prisma'
 import { workspaceCreateSchema } from '~/server/utils/schemas'
-import { assertCanCreateWorkspace } from '~/server/utils/billing'
+import { createWorkspace } from '~/server/utils/workspace'
 
 export default defineApi({
   body: workspaceCreateSchema,
   handler: async ({ user, body }) => {
-    await assertCanCreateWorkspace(user.id)
-    const workspace = await prisma.workspace.create({
-      data: {
-        name: body.name,
-        description: body.description || null,
-        createdBy: user.id,
-        members: {
-          create: {
-            userId: user.id,
-            role: 'OWNER',
-          },
-        },
-        settings: {
-          create: {},
-        },
-      },
+    const workspace = await createWorkspace({
+      userId: user.id,
+      name: body.name,
+      description: body.description,
     })
 
     return {

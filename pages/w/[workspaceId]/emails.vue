@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import {
+  InboxIcon,
+  MailIcon,
+  MailXIcon,
+  SendIcon,
+} from "lucide-vue-next";
+import { startOfDay } from "date-fns";
+import { groupActivitiesByDate, personInitials } from "@/utils/activity";
 import { whenDate } from "@/utils/date";
 import { api } from "~/lib/api";
 import type { EmailLogItem } from "@/types";
 import { workspaceChannel } from "~/utils/realtime";
 import { EMAIL_TEMPLATES, sampleEmailHtml } from "@/utils/email-templates";
-import {
-  emailStatusChip,
-  emailTemplateChip,
-  whenChip,
-} from "@/utils/table-chips";
+import { emailStatusChip, emailTemplateChip } from "@/utils/table-chips";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -18,25 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableEmpty,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Pagination,
-  PaginationEllipsis,
-  PaginationFirst,
-  PaginationLast,
-  PaginationList,
-  PaginationListItem,
-  PaginationNext,
-  PaginationPrev,
-} from "@/components/ui/pagination";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 definePageMeta({
@@ -125,6 +111,12 @@ const paged = computed(() => {
   return emails.value.slice(start, start + PAGE_SIZE);
 });
 
+const groups = computed(() =>
+  groupActivitiesByDate(
+    paged.value.map((item) => ({ ...item, createdAt: item.createdAt })),
+  ),
+);
+
 watch(emails, (list) => {
   const lastPage = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   if (page.value > lastPage) page.value = lastPage;
@@ -135,6 +127,34 @@ const rangeLabel = computed(() => {
   const start = (page.value - 1) * PAGE_SIZE + 1;
   const end = Math.min(page.value * PAGE_SIZE, emails.value.length);
   return `${start}–${end} of ${emails.value.length}`;
+});
+
+const statItems = computed(() => {
+  const today = startOfDay(new Date()).getTime();
+  return [
+    {
+      label: view.value === "inbox" ? "Received" : "Sent",
+      value: emails.value.length,
+      icon: MailIcon,
+    },
+    {
+      label: "Delivered",
+      value: emails.value.filter((item) => item.status === "sent").length,
+      icon: SendIcon,
+    },
+    {
+      label: "Failed",
+      value: emails.value.filter((item) => item.status === "failed").length,
+      icon: MailXIcon,
+    },
+    {
+      label: "Today",
+      value: emails.value.filter(
+        (item) => new Date(item.createdAt).getTime() >= today,
+      ).length,
+      icon: InboxIcon,
+    },
+  ];
 });
 
 const when = whenDate;
@@ -193,15 +213,18 @@ const openCompose = (
   composeStarter.value = starter;
   composeOpen.value = true;
 };
+
+const counterpart = (item: EmailLogItem) =>
+  view.value === "inbox" ? item.fromName || item.fromEmail : item.toEmail;
 </script>
 
 <template>
-  <div class="h-full min-w-0">
+  <div class="h-full min-w-0 overflow-y-auto">
     <div
       class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
     >
       <div>
-        <h1 class="text-lg font-semibold tracking-tight text-foreground">
+        <h1 class="text-xl font-semibold tracking-tight text-foreground">
           Emails
         </h1>
         <p class="mt-1 text-sm text-muted-foreground">
@@ -215,7 +238,7 @@ const openCompose = (
         </p>
       </div>
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Button @click="openCompose('custom')"> Send email </Button>
+        <Button @click="openCompose('custom')">Send email</Button>
         <Tabs :model-value="view" @update:model-value="onView">
           <TabsList>
             <TabsTrigger value="inbox">Inbox</TabsTrigger>
@@ -226,10 +249,10 @@ const openCompose = (
       </div>
     </div>
 
-    <div v-if="view === 'inbox' || view === 'sent'" class="space-y-4">
-      <div
-        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end"
-      >
+    <template v-if="view === 'inbox' || view === 'sent'">
+      <PageStats :items="statItems" :loading="loading && !emails.length" />
+
+      <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
         <Select :model-value="projectId" @update:model-value="onProject">
           <SelectTrigger class="h-9 w-full sm:w-[200px]">
             <SelectValue placeholder="All projects" />
@@ -266,138 +289,137 @@ const openCompose = (
         </Select>
       </div>
 
-      <div class="overflow-hidden rounded-xl border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow class="hover:bg-transparent border-border">
-              <TableHead class="h-10">{{
-                view === "inbox" ? "From" : "To"
-              }}</TableHead>
-              <TableHead class="h-10">Template</TableHead>
-              <TableHead class="h-10">Subject</TableHead>
-              <TableHead class="h-10">Project</TableHead>
-              <TableHead class="h-10 w-[110px]">Status</TableHead>
-              <TableHead class="h-10 w-[140px]">When</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableEmpty v-if="loading && !emails.length" :colspan="6">
-              <span class="text-muted-foreground">Loading emails…</span>
-            </TableEmpty>
-            <TableEmpty v-else-if="!emails.length" :colspan="6">
-              <span class="text-muted-foreground">
-                {{
-                  view === "inbox"
-                    ? "Nothing here yet. Invites, notices, and emails teammates send you will show up here."
-                    : "No emails match these filters. Messages you send will show up here."
-                }}
-              </span>
-            </TableEmpty>
-            <TableRow
-              v-for="item in paged"
-              :key="item.id"
-              class="cursor-pointer"
-              @click="openEmail(item)"
-            >
-              <TableCell
-                class="max-w-[200px] truncate text-sm font-medium text-foreground"
-              >
-                {{
-                  view === "inbox"
-                    ? item.fromName || item.fromEmail
-                    : item.toEmail
-                }}
-              </TableCell>
-              <TableCell>
-                <span :class="emailTemplateChip(item.template)">
-                  {{ item.templateLabel }}
-                </span>
-              </TableCell>
-              <TableCell class="max-w-[240px] truncate text-sm text-foreground">
-                {{ item.subject }}
-              </TableCell>
-              <TableCell
-                class="max-w-[160px] truncate text-sm text-muted-foreground"
-              >
-                {{ item.projectName || "Workspace" }}
-              </TableCell>
-              <TableCell>
-                <span :class="emailStatusChip(item.status)">
-                  {{ item.status }}
-                </span>
-              </TableCell>
-              <TableCell
-                class="whitespace-nowrap"
-                :title="when(item.createdAt).title"
-              >
-                <span :class="whenChip(item.createdAt)">
-                  {{ when(item.createdAt).label }}
-                </span>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+      <div class="mt-4 overflow-hidden rounded-xl border border-border bg-card">
+        <div v-if="loading && !emails.length" class="divide-y divide-border">
+          <div
+            v-for="index in 5"
+            :key="index"
+            class="flex items-start gap-3 px-4 py-3.5"
+          >
+            <Skeleton class="h-9 w-9 shrink-0 rounded-full" />
+            <div class="min-w-0 flex-1 space-y-2">
+              <Skeleton class="h-4 w-2/3" />
+              <Skeleton class="h-3 w-1/3" />
+            </div>
+          </div>
+        </div>
 
         <div
-          v-if="emails.length"
-          class="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          v-else-if="!emails.length"
+          class="flex flex-col items-center px-4 py-16 text-center"
         >
-          <p class="text-sm text-muted-foreground">{{ rangeLabel }}</p>
-          <Pagination
-            v-if="emails.length > PAGE_SIZE"
-            v-slot="{ page: currentPage }"
-            :page="page"
-            :total="emails.length"
-            :items-per-page="PAGE_SIZE"
-            :sibling-count="1"
-            show-edges
-            @update:page="page = $event"
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
           >
-            <PaginationList v-slot="{ items }" class="flex items-center gap-1">
-              <PaginationFirst />
-              <PaginationPrev />
-              <template v-for="(item, index) in items" :key="index">
-                <PaginationListItem
-                  v-if="item.type === 'page'"
-                  :value="item.value"
-                  as-child
-                >
-                  <Button
-                    class="h-8 w-8 p-0"
-                    :variant="
-                      item.value === currentPage ? 'default' : 'outline'
-                    "
-                  >
-                    {{ item.value }}
-                  </Button>
-                </PaginationListItem>
-                <PaginationEllipsis v-else :index="index" />
-              </template>
-              <PaginationNext />
-              <PaginationLast />
-            </PaginationList>
-          </Pagination>
+            <MailIcon class="h-5 w-5" />
+          </div>
+          <p class="mt-3 text-sm font-medium text-foreground">No emails yet</p>
+          <p class="mt-1 max-w-sm text-sm text-muted-foreground">
+            {{
+              view === "inbox"
+                ? "Invites, notices, and messages teammates send you will show up here."
+                : "Messages you send from this workspace will show up here."
+            }}
+          </p>
         </div>
+
+        <div v-else>
+          <section
+            v-for="group in groups"
+            :key="group.key"
+            class="border-b border-border last:border-b-0"
+          >
+            <p
+              class="sticky top-0 z-10 border-b border-border bg-muted/50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              {{ group.label }}
+            </p>
+            <button
+              v-for="item in group.items"
+              :key="item.id"
+              type="button"
+              class="flex w-full items-start gap-3 px-4 py-3.5 text-left hover:bg-accent/50"
+              @click="openEmail(item)"
+            >
+              <div
+                class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-violet-100 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
+              >
+                {{ personInitials({ name: counterpart(item), email: item.toEmail }) }}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-3">
+                  <p class="min-w-0 text-sm font-medium text-foreground">
+                    {{ counterpart(item) }}
+                  </p>
+                  <span
+                    class="shrink-0 pt-0.5 text-xs tabular-nums text-muted-foreground"
+                    :title="when(item.createdAt).title"
+                  >
+                    {{ when(item.createdAt).label }}
+                  </span>
+                </div>
+                <p class="mt-0.5 truncate text-sm text-foreground">
+                  {{ item.subject }}
+                </p>
+                <div class="mt-1.5 flex flex-wrap items-center gap-2">
+                  <span :class="emailTemplateChip(item.template)">
+                    {{ item.templateLabel }}
+                  </span>
+                  <span :class="emailStatusChip(item.status)">
+                    {{ item.status }}
+                  </span>
+                  <span class="text-xs text-muted-foreground">
+                    {{ item.projectName || "Workspace" }}
+                  </span>
+                </div>
+              </div>
+            </button>
+          </section>
+        </div>
+
+        <TablePagination
+          :page="page"
+          :total="emails.length"
+          :page-size="PAGE_SIZE"
+          :range-label="rangeLabel"
+          @update:page="page = $event"
+        />
       </div>
-    </div>
+    </template>
 
     <div v-else class="grid gap-3 sm:grid-cols-2">
       <div
         v-for="item in EMAIL_TEMPLATES"
         :key="item.id"
-        class="rounded-xl border border-border bg-card p-4 text-left"
+        class="rounded-xl border border-border bg-card p-4"
       >
-        <p class="text-sm font-semibold text-foreground">{{ item.label }}</p>
-        <p class="mt-1 text-sm leading-6 text-muted-foreground">
-          {{ item.description }}
-        </p>
-        <div class="mt-3 flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" @click="previewTemplate(item.id)">
-            Preview
-          </Button>
-          <Button size="sm" @click="openCompose(starterFromTemplate(item.id))">
-            Use template
-          </Button>
+        <div class="flex items-start gap-3">
+          <div
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+          >
+            <MailIcon class="h-4 w-4" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="text-sm font-semibold text-foreground">{{ item.label }}</p>
+              <span :class="emailTemplateChip(item.id)">{{ item.id }}</span>
+            </div>
+            <p class="mt-1 text-sm leading-6 text-muted-foreground">
+              {{ item.description }}
+            </p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                @click="previewTemplate(item.id)"
+              >
+                Preview
+              </Button>
+              <Button size="sm" @click="openCompose(starterFromTemplate(item.id))">
+                Use template
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

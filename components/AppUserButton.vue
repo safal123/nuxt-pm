@@ -119,6 +119,19 @@ async function handleSignOut() {
 
         <DropdownMenuSeparator />
 
+        <DropdownMenuItem as-child>
+          <NuxtLink
+            :to="
+              userStore.user?.activeWorkspaceId && userStore.user?.id
+                ? `/w/${userStore.user.activeWorkspaceId}/members/${userStore.user.id}`
+                : '/profile'
+            "
+          >
+            <UserIcon />
+            View profile
+          </NuxtLink>
+        </DropdownMenuItem>
+
         <DialogTrigger as-child>
           <DropdownMenuItem>
             <UserIcon />

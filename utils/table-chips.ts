@@ -46,6 +46,7 @@ const ACTIVITY_TONES: Record<string, Tone> = {
   UNLIKED: 'slate',
   ARCHIVED: 'orange',
   RESTORED: 'teal',
+  COLUMN_CREATED: 'slate',
   SPRINT_CREATED: 'sky',
   SPRINT_STARTED: 'emerald',
   SPRINT_COMPLETED: 'violet',
@@ -57,6 +58,31 @@ const ACTIVITY_TONES: Record<string, Tone> = {
 
 export const activityTypeChip = (type: string) =>
   chipClass(ACTIVITY_TONES[type] ?? 'slate', 'capitalize')
+
+const NODE: Record<Tone, string> = {
+  slate:
+    'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  sky: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
+  violet:
+    'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300',
+  emerald:
+    'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+  amber:
+    'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  rose: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
+  teal: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300',
+  orange:
+    'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+  indigo:
+    'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
+}
+
+export const activityTypeNode = (type: string, size: 'md' | 'sm' = 'md') =>
+  [
+    'relative z-10 flex shrink-0 items-center justify-center rounded-full ring-4 ring-background',
+    size === 'sm' ? 'h-7 w-7' : 'h-8 w-8',
+    NODE[ACTIVITY_TONES[type] ?? 'slate'],
+  ].join(' ')
 
 const TEMPLATE_TONES: Record<string, Tone> = {
   'workspace-invite': 'violet',

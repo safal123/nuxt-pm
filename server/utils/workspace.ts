@@ -1,5 +1,25 @@
 import prisma from '~/lib/prisma'
 import { workspaceAccessWhere } from '~/server/utils/access'
+import { assertCanCreateWorkspace } from '~/server/utils/billing'
+
+export const createWorkspace = async (input: {
+  userId: string
+  name: string
+  description?: string | null
+}) => {
+  await assertCanCreateWorkspace(input.userId)
+  return prisma.workspace.create({
+    data: {
+      name: input.name,
+      description: input.description || null,
+      createdBy: input.userId,
+      members: {
+        create: { userId: input.userId, role: 'OWNER' },
+      },
+      settings: { create: {} },
+    },
+  })
+}
 
 /** 404 unless the user created this workspace or is a member. */
 export const validateWorkspaceAccess = async (workspaceId: string, userId: string) => {

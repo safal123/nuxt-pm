@@ -7,7 +7,7 @@ import {
 } from "lucide-vue-next";
 import NotificationBell from "~/components/notifications/NotificationBell.vue";
 
-const { openMembers, openInvite, openCreateProject } = useWorkspaceLayout();
+const { openInvite, openCreateProject, workspaceId } = useWorkspaceLayout();
 </script>
 
 <template>
@@ -16,9 +16,13 @@ const { openMembers, openInvite, openCreateProject } = useWorkspaceLayout();
     <ThemeToggle />
 
     <div class="hidden items-center gap-1.5 md:flex">
-      <Button variant="outline" size="sm" @click="openMembers">
-        <UsersIcon />
-        Members
+      <Button variant="outline" size="sm" as-child>
+        <NuxtLink
+          :to="{ name: 'workspace-members', params: { workspaceId } }"
+        >
+          <UsersIcon />
+          Members
+        </NuxtLink>
       </Button>
       <Button variant="outline" size="sm" @click="openInvite">
         <LinkIcon />
@@ -56,9 +60,13 @@ const { openMembers, openInvite, openCreateProject } = useWorkspaceLayout();
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" class="w-48">
-        <DropdownMenuItem @click="openMembers">
-          <UsersIcon />
-          Members
+        <DropdownMenuItem as-child>
+          <NuxtLink
+            :to="{ name: 'workspace-members', params: { workspaceId } }"
+          >
+            <UsersIcon />
+            Members
+          </NuxtLink>
         </DropdownMenuItem>
         <DropdownMenuItem @click="openInvite">
           <LinkIcon />

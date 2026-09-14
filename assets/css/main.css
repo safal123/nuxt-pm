@@ -50,6 +50,16 @@
     --dropzone-border: 255 92% 76%;
 
     --shadow-drag: 0 18px 40px rgba(15, 23, 42, 0.18);
+
+    --vis-tooltip-padding: none !important;
+    --vis-tooltip-background-color: none !important;
+    --vis-tooltip-border-color: none !important;
+    --vis-tooltip-text-color: none !important;
+    --vis-tooltip-shadow-color: none !important;
+    --vis-tooltip-backdrop-filter: none !important;
+    --vis-primary-color: var(--primary);
+    --vis-secondary-color: 160 81% 40%;
+    --vis-text-color: var(--muted-foreground);
   }
 
   .dark {
@@ -97,6 +107,10 @@
     --dropzone-border: 263.4 70% 50.4%;
 
     --shadow-drag: 0 18px 40px rgba(0, 0, 0, 0.45);
+
+    --vis-primary-color: var(--primary);
+    --vis-secondary-color: 160 81% 40%;
+    --vis-text-color: var(--muted-foreground);
   }
 }
 

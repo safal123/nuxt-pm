@@ -5,6 +5,7 @@ import {
   HistoryIcon,
   MailIcon,
   SettingsIcon,
+  UsersIcon,
   BriefcaseIcon,
   Calendar1Icon,
   ChartPieIcon,
@@ -213,6 +214,19 @@ const editProject = async (project: Project) => {
       </div>
     </SidebarGroupLabel>
     <SidebarMenu class="px-2 mt-1">
+      <SidebarMenuItem
+        :class="navItemClass(route.path.includes('/members'))"
+      >
+        <SidebarMenuButton v-if="workspaceId" as-child>
+          <NuxtLink
+            :to="{ name: 'workspace-members', params: { workspaceId } }"
+            class="w-full cursor-pointer flex items-center gap-2 p-2"
+          >
+            <UsersIcon class="h-4 w-4 text-sidebar-foreground" />
+            <span>People</span>
+          </NuxtLink>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
       <SidebarMenuItem
         :class="navItemClass(route.path.includes('/activities'))"
       >

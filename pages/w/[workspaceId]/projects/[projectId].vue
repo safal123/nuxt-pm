@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Columns3Icon, PencilIcon, Table2Icon } from "lucide-vue-next";
+import { HistoryIcon, PencilIcon } from "lucide-vue-next";
 import type { Project } from "@/types";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "vue-sonner";
+import { Button } from "@/components/ui/button";
 
 definePageMeta({
   layout: "dashboard",
@@ -13,8 +13,8 @@ definePageMeta({
 const route = useRoute();
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceStore();
-const { view, setView } = useProjectView();
 const { requestedProjectId, consumeRename } = useProjectRename();
+const { openTimeline } = useActivityTimeline();
 const workspaceId = computed(() => String(route.params.workspaceId || ""));
 
 const projectId = computed(() => String(route.params.projectId || ""));
@@ -123,14 +123,14 @@ const saveTitle = async () => {
 <template>
   <div class="h-full min-w-0">
     <template v-if="activeProject">
-      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div class="min-w-0 flex-1">
+      <div class="mb-2 flex items-center justify-between gap-3">
+        <div class="min-w-0">
           <input
             v-if="isEditing"
             ref="titleInput"
             v-model="nameDraft"
             aria-label="Project name"
-            class="h-8 w-full max-w-md rounded-md border border-input bg-background px-2 text-lg font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-violet-400"
+            class="h-8 w-full max-w-xl rounded-md border border-input bg-background px-2 text-base font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-violet-400"
             :disabled="saving"
             @blur="saveTitle"
             @keyup.enter="saveTitle"
@@ -139,34 +139,34 @@ const saveTitle = async () => {
           <button
             v-else
             type="button"
-            class="group flex min-w-0 max-w-full items-center gap-2 rounded-md px-1 py-0.5 -ml-1 text-left hover:bg-accent"
+            class="group inline-flex max-w-full items-center gap-2 rounded-md px-1 py-0.5 -ml-1 text-left hover:bg-accent"
             title="Rename project"
             @click="startEditing"
           >
-            <h1 class="min-w-0 truncate text-lg font-semibold text-foreground">
+            <h1 class="text-base font-semibold leading-6 text-foreground">
               {{ activeProject.name }}
             </h1>
             <PencilIcon
-              class="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+              class="h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-foreground"
             />
           </button>
         </div>
-        <Tabs :model-value="view" @update:model-value="setView">
-          <TabsList>
-            <TabsTrigger value="board">
-              <span class="inline-flex items-center gap-1.5">
-                <Columns3Icon class="h-3.5 w-3.5" />
-                <span class="hidden sm:inline">Board</span>
-              </span>
-            </TabsTrigger>
-            <TabsTrigger value="table">
-              <span class="inline-flex items-center gap-1.5">
-                <Table2Icon class="h-3.5 w-3.5" />
-                <span class="hidden sm:inline">Table</span>
-              </span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          class="h-8 shrink-0"
+          @click="
+            openTimeline({
+              kind: 'project',
+              id: activeProject.id,
+              name: activeProject.name,
+            })
+          "
+        >
+          <HistoryIcon class="h-3.5 w-3.5" />
+          Timeline
+        </Button>
       </div>
       <KanbanBoard :project-id="activeProject.id" />
     </template>
