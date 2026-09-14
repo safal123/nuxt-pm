@@ -16,6 +16,16 @@ export const useWorkspaceLayout = () => {
     ),
   );
 
+  const isOwner = computed(() => {
+    const userId = userStore.user?.id;
+    if (!userId) return false;
+    const workspace =
+      workspaceStore.workspaces.find(
+        (item: Workspace) => item.id === workspaceId.value,
+      ) || workspaceStore.activeWorkspace;
+    return workspace?.createdBy === userId;
+  });
+
   const workspaceColorId = computed(
     () => workspaceStore.activeWorkspace?.settings?.backgroundColor,
   );
@@ -70,6 +80,7 @@ export const useWorkspaceLayout = () => {
 
   return {
     workspaceId,
+    isOwner,
     isTinted,
     pageTitle,
     openMembers,

@@ -43,6 +43,13 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   const syncBoardTask = (updated: Task) => {
+    const sprintStore = useSprintStore()
+    if (updated.archivedAt || !sprintStore.matchesView(updated)) {
+      const open = selectedTask.value?.id === updated.id
+      removeTaskFromBoard(updated.id)
+      if (open) selectedTask.value = { ...updated }
+      return
+    }
     const boardTask = findTask(updated.id)
     const wasDone = boardTask?.status === 'DONE'
     if (boardTask) Object.assign(boardTask, updated)
@@ -110,7 +117,11 @@ export const useBoardStore = defineStore('board', () => {
     loading.value = true
     projectId.value = id
     try {
-      const { columns: next } = await api<{ columns: TaskColumn[] }>(`/api/projects/${id}/board`)
+      const sprint = useSprintStore().boardSprintParam
+      const { columns: next } = await api<{ columns: TaskColumn[] }>(
+        `/api/projects/${id}/board`,
+        { query: { sprint } },
+      )
       columns.value = (next ?? []).map((column) => ({
         ...column,
         completedCount: column.completedCount ?? 0,
@@ -124,12 +135,14 @@ export const useBoardStore = defineStore('board', () => {
 
   const addTask = async (columnId: string, title: string) => {
     if (!projectId.value) return
+    const sprintStore = useSprintStore()
+    if (!sprintStore.canAddCards) return
     const { task } = await api<{ task: Task }>(`/api/projects/${projectId.value}/tasks`, {
       method: 'POST',
-      body: { columnId, title },
+      body: { columnId, title, sprintId: sprintStore.createSprintId },
     })
     const column = columns.value.find((c) => c.id === columnId)
-    if (task && column) {
+    if (task && column && sprintStore.matchesView(task)) {
       column.tasks.push({ ...task, labels: task.labels || [] })
     }
   }
@@ -281,6 +294,7 @@ export const useBoardStore = defineStore('board', () => {
       query: {
         columnId,
         status: 'DONE',
+        sprint: useSprintStore().boardSprintParam,
         limit: BOARD_COMPLETED_LIMIT,
         ...(cursor ? { cursor } : {})
       }

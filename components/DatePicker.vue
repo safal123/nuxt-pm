@@ -5,7 +5,7 @@ import {
   getLocalTimeZone,
   parseDate,
 } from "@internationalized/date";
-import { CalendarIcon } from "lucide-vue-next";
+import { CalendarIcon, XIcon } from "lucide-vue-next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -20,7 +20,7 @@ const props = withDefaults(
     modelValue: string;
     placeholder?: string;
   }>(),
-  { placeholder: "dd/mm/yyyy" },
+  { placeholder: "Pick a date" },
 );
 
 const emit = defineEmits<{
@@ -37,7 +37,7 @@ const calendarLocale = computed(() =>
 
 const df = new DateFormatter("en-AU", {
   day: "2-digit",
-  month: "2-digit",
+  month: "short",
   year: "numeric",
 });
 
@@ -59,33 +59,50 @@ const onSelect = (value: DateValue | undefined) => {
   emit("update:modelValue", value ? value.toString() : "");
   if (value) open.value = false;
 };
+
+const clear = () => {
+  emit("update:modelValue", "");
+  open.value = false;
+};
 </script>
 
 <template>
-  <Popover :open="open" :modal="false" @update:open="open = $event">
-    <PopoverTrigger as-child>
-      <Button
-        type="button"
-        variant="outline"
-        :class="
-          cn(
-            'w-full justify-start text-left font-normal px-3',
-            !date && 'text-muted-foreground',
-          )
-        "
-      >
-        <CalendarIcon class="mr-2 h-4 w-4" />
-        {{ label }}
-      </Button>
-    </PopoverTrigger>
-    <PopoverContent class="w-auto p-0 z-[100]" align="start">
-      <Calendar
-        :model-value="date"
-        :locale="calendarLocale"
-        initial-focus
-        weekday-format="short"
-        @update:model-value="onSelect"
-      />
-    </PopoverContent>
-  </Popover>
+  <div class="relative">
+    <Popover :open="open" :modal="false" @update:open="open = $event">
+      <PopoverTrigger as-child>
+        <Button
+          type="button"
+          variant="outline"
+          :class="
+            cn(
+              'h-9 w-full justify-start px-3 text-left font-normal',
+              date && 'pr-9',
+              !date && 'text-muted-foreground',
+            )
+          "
+        >
+          <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
+          {{ label }}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent class="w-auto p-0 z-[100]" align="start">
+        <Calendar
+          :model-value="date"
+          :locale="calendarLocale"
+          initial-focus
+          weekday-format="short"
+          @update:model-value="onSelect"
+        />
+      </PopoverContent>
+    </Popover>
+    <button
+      v-if="date"
+      type="button"
+      class="absolute right-1.5 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      aria-label="Clear date"
+      @click.stop="clear"
+    >
+      <XIcon class="h-3.5 w-3.5" />
+    </button>
+  </div>
 </template>

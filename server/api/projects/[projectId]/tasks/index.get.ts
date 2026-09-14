@@ -51,11 +51,15 @@ export default defineApi({
       throw createError({ statusCode: 400, message: 'Invalid cursor.' })
     }
 
+    const sprintFilter = await resolveBoardSprintFilter(projectId, query.sprint)
+    const sprintClause = sprintTaskWhere(sprintFilter)
+
     const where: Prisma.TaskWhereInput = {
       projectId,
       archivedAt: null,
       ...(status ? { status } : {}),
       ...(columnId ? { columnId } : {}),
+      ...sprintClause,
     }
 
     const listWhere: Prisma.TaskWhereInput = cursor

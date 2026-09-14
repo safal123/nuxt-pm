@@ -48,6 +48,7 @@ const {
 } = useBoardQuery();
 
 const boardStore = useBoardStore();
+const sprintStore = useSprintStore();
 const searchWrap = ref<HTMLElement | null>(null);
 
 const labels = computed(() => boardStore.projectLabels || []);
@@ -89,6 +90,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
 <template>
   <div class="mb-3 space-y-2">
     <div class="flex flex-col gap-2 lg:flex-row lg:items-center">
+      <SprintSwitcher />
       <div ref="searchWrap" class="relative min-w-0 flex-1">
         <SearchIcon
           class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -279,7 +281,16 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
         <template v-else>
           {{ totalCount }} {{ totalCount === 1 ? "card" : "cards" }}
         </template>
-        <span v-if="!canDrag" class="ml-2 text-amber-700 dark:text-amber-300">
+        <span v-if="sprintStore.viewingClosed" class="ml-2 text-amber-700 dark:text-amber-300">
+          Viewing a previous sprint
+        </span>
+        <span
+          v-else-if="sprintStore.current && !isFiltered && totalCount === 0"
+          class="ml-2"
+        >
+          No cards in this sprint yet. Open Backlog to move work in.
+        </span>
+        <span v-else-if="!canDrag" class="ml-2 text-amber-700 dark:text-amber-300">
           Drag is off while cards are sorted
         </span>
       </p>

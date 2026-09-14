@@ -20,8 +20,9 @@ export default defineApi({
     const existing = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
-        column: { select: { id: true, name: true } },
+        column: { select: { id: true, name: true, projectId: true } },
         project: { select: { workspaceId: true } },
+        sprint: { select: { id: true, name: true, status: true } },
       },
     })
     if (!existing) {
@@ -99,8 +100,9 @@ export default defineApi({
           ? existing.column
           : await prisma.taskColumn.findUnique({
               where: { id: nextColumnId },
-              select: { id: true, name: true },
+              select: { id: true, name: true, projectId: true },
             })
+      if (nextColumn) assertSameProject(existing.projectId, [nextColumn])
 
       await moveTaskToIndex(
         taskId,
@@ -135,7 +137,40 @@ export default defineApi({
         data.completedAt = body.status === 'DONE' ? (existing.completedAt ?? new Date()) : null
       }
       if (body.dueDate !== undefined) data.dueDate = parseOptionalDate(body.dueDate)
-      if (body.coverColor !== undefined) data.coverColor = body.coverColor
+      if (body.coverColor !== undefined) {
+        data.coverColor = body.coverColor
+        if (body.coverColor) {
+          data.coverImage = null
+          data.coverThumb = null
+          data.coverCredit = null
+          data.coverCreditUrl = null
+        }
+      }
+      if (body.coverImage !== undefined) {
+        data.coverImage = body.coverImage
+        data.coverThumb = body.coverThumb ?? null
+        data.coverCredit = body.coverCredit ?? null
+        data.coverCreditUrl = body.coverCreditUrl ?? null
+        if (body.coverImage) data.coverColor = null
+      }
+      let nextSprintName: string | null = null
+      if (body.sprintId !== undefined) {
+        if (body.sprintId === null) {
+          data.sprintId = null
+          nextSprintName = 'the backlog'
+        } else {
+          const sprint = await validateSprintAccess(body.sprintId, existing.projectId)
+          assertSameProject(existing.projectId, [sprint])
+          if (isClosedSprintStatus(sprint.status)) {
+            throw createError({
+              statusCode: 400,
+              message: 'Cards cannot be added to a completed sprint.',
+            })
+          }
+          data.sprintId = sprint.id
+          nextSprintName = sprint.name
+        }
+      }
 
       if (Object.keys(data).length) {
         await prisma.task.update({
@@ -179,10 +214,17 @@ export default defineApi({
         })
       }
 
-      if (body.coverColor !== undefined && body.coverColor !== existing.coverColor) {
+      const coverChanged =
+        (body.coverColor !== undefined && body.coverColor !== existing.coverColor) ||
+        (body.coverImage !== undefined && body.coverImage !== existing.coverImage)
+      if (coverChanged) {
+        const hasCover = Boolean(
+          (body.coverImage !== undefined ? body.coverImage : existing.coverImage) ||
+            (body.coverColor !== undefined ? body.coverColor : existing.coverColor),
+        )
         await log({
           type: 'COVER_CHANGED',
-          message: body.coverColor ? 'changed the cover' : 'removed the cover',
+          message: hasCover ? 'changed the cover' : 'removed the cover',
         })
       }
 
@@ -227,6 +269,17 @@ export default defineApi({
             metadata: { memberId: member.id },
           })
         }
+      }
+
+      if (body.sprintId !== undefined && body.sprintId !== existing.sprintId) {
+        const added = body.sprintId !== null
+        await log({
+          type: added ? 'TASK_ADDED_TO_SPRINT' : 'TASK_REMOVED_FROM_SPRINT',
+          message: added
+            ? `added this card to ${nextSprintName}`
+            : `removed this card from ${existing.sprint?.name || 'the sprint'}`,
+          metadata: { from: existing.sprintId, to: body.sprintId },
+        })
       }
 
       if (Array.isArray(body.labelIds)) {

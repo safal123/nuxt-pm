@@ -31,16 +31,8 @@ const props = defineProps({
 });
 
 const userStore = useUserStore();
-const workspaceStore = useWorkspaceStore();
 const route = useRoute();
-const workspaceId = computed(() =>
-  String(
-    route.params.workspaceId ||
-      workspaceStore.activeWorkspaceId ||
-      userStore.user?.activeWorkspaceId ||
-      "",
-  ),
-);
+const { workspaceId, isOwner } = useWorkspaceLayout();
 
 const PROJECT_ICONS = [
   HomeIcon,
@@ -248,9 +240,10 @@ const editProject = async (project: Project) => {
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem
+        v-if="isOwner && workspaceId"
         :class="navItemClass(route.path.includes('/billing'))"
       >
-        <SidebarMenuButton v-if="workspaceId" as-child>
+        <SidebarMenuButton as-child>
           <NuxtLink
             :to="{ name: 'workspace-billing', params: { workspaceId } }"
             class="w-full cursor-pointer flex items-center gap-2 p-2"

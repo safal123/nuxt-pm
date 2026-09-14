@@ -68,10 +68,7 @@ const due = computed(() => {
   };
 });
 
-const visibleLabels = computed(() => (props.task.labels || []).slice(0, 3));
-const extraLabelCount = computed(() =>
-  Math.max(0, (props.task.labels?.length || 0) - 3),
-);
+const cardLabels = computed(() => props.task.labels || []);
 
 const isComplete = computed(() => props.task.status === "DONE");
 
@@ -108,9 +105,16 @@ const onPointerDown = (event: PointerEvent) => {
     @pointerdown="onPointerDown"
     @dragstart.prevent
   >
+    <div v-if="task.coverImage || task.coverThumb" class="h-28 w-full shrink-0">
+      <img
+        :src="task.coverThumb || task.coverImage || ''"
+        :alt="task.coverCredit ? `Photo by ${task.coverCredit}` : ''"
+        class="h-full w-full object-cover"
+      />
+    </div>
     <div
-      v-if="task.coverColor"
-      class="absolute inset-x-0 top-0 h-1.5"
+      v-else-if="task.coverColor"
+      class="h-8 w-full shrink-0"
       :style="{ backgroundColor: colorValue(task.coverColor) }"
     />
     <div
@@ -119,7 +123,23 @@ const onPointerDown = (event: PointerEvent) => {
       :class="priorityBar[task.priority] || priorityBar.MEDIUM"
     />
 
-    <div class="pl-3.5 pr-3 pt-3 pb-1.5 flex flex-col gap-1.5">
+    <div
+      class="pr-3 pt-3 pb-1.5 flex flex-col gap-1.5"
+      :class="task.coverImage || task.coverThumb || task.coverColor ? 'pl-3' : 'pl-3.5'"
+    >
+      <div
+        v-if="cardLabels.length"
+        class="flex flex-wrap gap-1"
+      >
+        <span
+          v-for="label in cardLabels"
+          :key="label.id"
+          class="h-2 w-10 rounded-[3px]"
+          :style="{ backgroundColor: label.color }"
+          :title="label.name"
+        />
+      </div>
+
       <div class="flex items-start gap-2 min-h-0">
         <div v-if="!preview" class="relative mt-0.5 h-4 w-4 shrink-0">
           <GripVerticalIcon
@@ -151,22 +171,10 @@ const onPointerDown = (event: PointerEvent) => {
         </p>
       </div>
 
-      <div class="flex items-center gap-1.5 overflow-hidden">
-        <span
-          v-for="label in visibleLabels"
-          :key="label.id"
-          class="h-5 max-w-[4.5rem] truncate rounded px-1.5 text-[10px] font-semibold text-white leading-5"
-          :style="{ backgroundColor: label.color }"
-          :title="label.name"
-        >
-          {{ label.name }}
-        </span>
-        <span
-          v-if="extraLabelCount"
-          class="text-[10px] font-medium text-muted-foreground"
-        >
-          +{{ extraLabelCount }}
-        </span>
+      <div
+        v-if="due || task.status || task.priority"
+        class="flex items-center gap-1.5 overflow-hidden"
+      >
         <span
           class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tracking-wide ring-1 ring-inset shrink-0"
           :class="statusChip(task.status || 'TODO')"

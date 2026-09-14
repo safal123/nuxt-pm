@@ -4,22 +4,33 @@ import {
   CheckIcon,
   ArchiveIcon,
   HistoryIcon,
+  Loader2Icon,
   MessageSquareIcon,
-  PaletteIcon,
   PaperclipIcon,
   PlusIcon,
   UserIcon,
+  XIcon,
 } from "lucide-vue-next";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { toast } from "vue-sonner";
 import type { TaskAssignee, TaskLabel, TaskPriority, TaskStatus } from "@/types";
 import { statusChip, statusLabel } from "@/utils/task-status";
+import { isHistoricSprint } from "~/utils/sprints";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-type TaskTab = "details" | "style" | "members" | "files" | "comments" | "activity";
+type TaskTab = "details" | "members" | "files" | "comments" | "activity";
 
 const TABS: { id: TaskTab; label: string; icon: typeof UserIcon }[] = [
   { id: "details", label: "Details", icon: AlignLeftIcon },
-  { id: "style", label: "Style", icon: PaletteIcon },
   { id: "members", label: "Members", icon: UserIcon },
   { id: "files", label: "Files", icon: PaperclipIcon },
   { id: "comments", label: "Comments", icon: MessageSquareIcon },
@@ -29,6 +40,7 @@ const TABS: { id: TaskTab; label: string; icon: typeof UserIcon }[] = [
 const boardStore = useBoardStore();
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceStore();
+const sprintStore = useSprintStore();
 
 const task = computed(() => boardStore.selectedTask);
 const open = computed({
@@ -45,6 +57,8 @@ const commentDraft = ref("");
 const dueDraft = ref("");
 const savingComment = ref(false);
 const savingDates = ref(false);
+const dateSaved = ref(false);
+const dueReady = ref(false);
 const newLabelName = ref("");
 const newLabelColor = ref(TASK_COLORS[4].value);
 const creatingLabel = ref(false);
@@ -61,12 +75,16 @@ watch(
   () => task.value?.id,
   async () => {
     if (!task.value) return;
+    dueReady.value = false;
+    dateSaved.value = false;
     titleDraft.value = task.value.title;
     descriptionDraft.value = task.value.description ?? "";
     dueDraft.value = toInputDate(task.value.dueDate);
     activeTab.value = "details";
     commentDraft.value = "";
     labelError.value = "";
+    await nextTick();
+    dueReady.value = true;
     const workspaceId = workspaceStore.activeWorkspaceId || userStore.user?.activeWorkspaceId;
     if (workspaceId) await boardStore.fetchWorkspaceMembers(workspaceId);
     if (task.value.projectId) {
@@ -135,17 +153,24 @@ const saveDescription = async () => {
   await boardStore.patchTask(task.value.id, { description: next });
 };
 
-const saveDueDate = async () => {
-  if (!task.value) return;
+const saveDueDate = async (value: string) => {
+  if (!task.value || !dueReady.value) return;
+  if (value === toInputDate(task.value.dueDate)) return;
   savingDates.value = true;
+  dateSaved.value = false;
   try {
     await boardStore.patchTask(task.value.id, {
-      dueDate: dueDraft.value ? new Date(`${dueDraft.value}T12:00:00`).toISOString() : null,
+      dueDate: value ? new Date(`${value}T12:00:00`).toISOString() : null,
     });
+    dateSaved.value = true;
   } finally {
     savingDates.value = false;
   }
 };
+
+watch(dueDraft, (value) => {
+  void saveDueDate(value);
+});
 
 const toggleLabel = async (label: TaskLabel) => {
   if (!task.value) return;
@@ -180,11 +205,6 @@ const toggleMember = async (person: TaskAssignee) => {
   await boardStore.patchTask(task.value.id, { memberIds });
 };
 
-const setCover = async (colorId: string | null) => {
-  if (!task.value) return;
-  const next = task.value.coverColor === colorId ? null : colorId;
-  await boardStore.patchTask(task.value.id, { coverColor: next });
-};
 
 const setPriority = async (priority: TaskPriority) => {
   if (!task.value || task.value.priority === priority) return;
@@ -194,6 +214,24 @@ const setPriority = async (priority: TaskPriority) => {
 const setStatus = async (status: TaskStatus) => {
   if (!task.value || task.value.status === status) return;
   await boardStore.patchTask(task.value.id, { status });
+};
+
+const sprintOptions = computed(() =>
+  sprintStore.sprints.filter((sprint) => !isHistoricSprint(sprint.status)),
+);
+
+const assignedClosedSprint = computed(() => {
+  const id = task.value?.sprintId;
+  if (!id) return null;
+  const sprint = sprintStore.sprints.find((item) => item.id === id);
+  return sprint && isHistoricSprint(sprint.status) ? sprint : null;
+});
+
+const setSprint = async (value: unknown) => {
+  if (!task.value || typeof value !== "string") return;
+  const sprintId = value === "backlog" ? null : value;
+  if ((task.value.sprintId ?? null) === sprintId) return;
+  await boardStore.patchTask(task.value.id, { sprintId });
 };
 
 const toggleComplete = async () => {
@@ -264,26 +302,62 @@ const ignoreSelectOutside = (event: Event) => {
   <Dialog :open="open" @update:open="open = $event">
     <DialogContent
       v-if="task"
-      class="max-w-2xl w-full h-[min(720px,90vh)] p-0 gap-0 overflow-hidden flex flex-col"
+      class="flex max-h-[min(720px,90vh)] w-full max-w-2xl flex-col overflow-hidden p-0 gap-0 [&>button]:hidden"
       @pointer-down-outside="ignoreSelectOutside"
       @focus-outside="ignoreSelectOutside"
       @interact-outside="ignoreSelectOutside"
     >
+      <div class="absolute right-3 top-3 z-20 flex items-center gap-0.5">
+        <TaskCoverPicker
+          :task="task"
+          :overlay="Boolean(task.coverImage || task.coverColor)"
+        />
+        <DialogClose
+          class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+          :class="
+            task.coverImage || task.coverColor
+              ? 'bg-black/40 text-white hover:bg-black/55'
+              : 'text-muted-foreground opacity-70 hover:bg-accent hover:text-foreground hover:opacity-100'
+          "
+        >
+          <XIcon class="h-4 w-4" />
+          <span class="sr-only">Close</span>
+        </DialogClose>
+      </div>
+      <div v-if="task.coverImage" class="relative h-40 w-full shrink-0">
+        <img
+          :src="task.coverImage"
+          :alt="task.coverCredit ? `Photo by ${task.coverCredit}` : 'Card cover'"
+          class="h-full w-full object-cover"
+        />
+        <a
+          v-if="task.coverCredit && task.coverCreditUrl"
+          :href="task.coverCreditUrl"
+          target="_blank"
+          rel="noreferrer"
+          class="absolute bottom-2 right-2 rounded-md bg-black/55 px-2 py-1 text-[10px] text-white hover:bg-black/70"
+        >
+          Photo by {{ task.coverCredit }} on Unsplash
+        </a>
+      </div>
       <div
-        v-if="task.coverColor"
+        v-else-if="task.coverColor"
         class="h-24 w-full shrink-0"
         :style="{ backgroundColor: colorValue(task.coverColor) }"
       />
 
-      <div class="shrink-0 px-6 pt-4 pr-12">
-        <div class="flex items-center gap-2">
+      <div
+        class="shrink-0 px-6 pt-5"
+        :class="task.coverImage || task.coverColor ? '' : 'pr-20'"
+      >
+        <div class="flex items-center gap-2.5">
           <button
             type="button"
-            class="h-6 w-6 shrink-0 inline-flex items-center justify-center rounded-full border transition"
+            class="h-6 w-6 shrink-0 inline-flex items-center justify-center rounded-full border transition-colors"
             :class="
               isComplete
-                ? 'border-emerald-500 bg-emerald-500 text-white'
-                : 'border-muted-foreground/40 text-transparent hover:border-emerald-500 hover:text-emerald-500'
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-muted-foreground/35 text-transparent hover:border-primary hover:text-primary'
             "
             :aria-label="isComplete ? 'Reopen card' : 'Mark as complete'"
             :title="isComplete ? 'Reopen' : 'Mark as complete'"
@@ -293,29 +367,29 @@ const ignoreSelectOutside = (event: Event) => {
           </button>
           <input
             v-model="titleDraft"
-            class="min-w-0 flex-1 text-lg font-semibold leading-6 text-foreground bg-transparent border-0 rounded-md px-1 py-0.5 -ml-0.5 focus:outline-none focus:ring-2 focus:ring-violet-400"
+            class="min-w-0 flex-1 bg-transparent px-1 py-0.5 -ml-0.5 text-lg font-semibold leading-6 text-foreground rounded-md border-0 focus:outline-none focus:ring-2 focus:ring-ring"
             :class="isComplete ? 'line-through text-muted-foreground' : ''"
             @blur="saveTitle"
             @keyup.enter="saveTitle"
           />
         </div>
-        <div class="mt-1.5 ml-8 flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
-          <p class="text-xs text-muted-foreground truncate">
-            in list <span class="underline decoration-border">{{ columnName }}</span>
+        <div class="mt-1.5 ml-8 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <p class="truncate text-xs text-muted-foreground">
+            in
+            <span class="font-medium text-foreground/80">{{ columnName }}</span>
           </p>
           <span
-            class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset shrink-0"
+            class="inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
             :class="statusChip(task.status)"
           >
             {{ statusLabel(task.status) }}
           </span>
-          <span class="text-muted-foreground/50 text-xs">·</span>
+          <span class="text-xs text-muted-foreground/40">·</span>
           <p
-            class="text-xs text-muted-foreground truncate"
+            class="truncate text-xs text-muted-foreground"
             :title="createdAtLabel?.exact"
           >
-            Created by
-            <span class="font-medium text-foreground/80">{{ creatorName }}</span>
+            {{ creatorName }}
             <template v-if="createdAtLabel">
               · {{ createdAtLabel.relative }}
             </template>
@@ -323,48 +397,123 @@ const ignoreSelectOutside = (event: Event) => {
         </div>
       </div>
 
-      <div class="shrink-0 mt-3 px-6 border-b border-border">
-        <nav class="-mb-px flex gap-1 overflow-x-auto" aria-label="Card sections">
-          <button
-            v-for="tab in TABS"
-            :key="tab.id"
-            type="button"
-            class="inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors"
-            :class="
-              activeTab === tab.id
-                ? 'border-violet-600 text-violet-700'
-                : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
-            "
-            @click="activeTab = tab.id"
+      <Tabs
+        :model-value="activeTab"
+        class="flex min-h-0 flex-1 flex-col"
+        @update:model-value="activeTab = $event as TaskTab"
+      >
+        <div class="shrink-0 px-6 pt-4">
+          <TabsList
+            class="h-auto w-full justify-start gap-0.5 overflow-x-auto rounded-lg bg-muted p-1"
           >
-            <component :is="tab.icon" class="h-4 w-4" />
-            {{ tab.label }}
-          </button>
-        </nav>
-      </div>
+            <TabsTrigger
+              v-for="tab in TABS"
+              :key="tab.id"
+              :value="tab.id"
+              class="h-8 gap-1.5 rounded-md px-2.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
+            >
+              <component :is="tab.icon" class="h-3.5 w-3.5" />
+              {{ tab.label }}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-      <div class="flex-1 min-h-0 overflow-y-auto px-6 py-5">
-        <section v-if="activeTab === 'details'" class="space-y-5">
-          <div>
-            <h3 class="text-sm font-semibold text-foreground mb-1">Status</h3>
-            <p class="text-sm text-muted-foreground mb-3">
-              Track where this card is. Marking it complete sets the status to Done.
+        <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div v-if="activeTab === 'details'" class="space-y-6">
+          <div class="grid gap-4 sm:grid-cols-3">
+            <div class="space-y-2">
+              <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Status
+              </h3>
+              <StatusSelect
+                :model-value="task.status"
+                @update:model-value="setStatus"
+              />
+            </div>
+            <div class="space-y-2">
+              <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Priority
+              </h3>
+              <PrioritySelect
+                :model-value="task.priority"
+                @update:model-value="setPriority"
+              />
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Due date
+                </h3>
+                <p
+                  v-if="savingDates"
+                  class="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                >
+                  <Loader2Icon class="h-3 w-3 animate-spin" />
+                  Saving
+                </p>
+                <p
+                  v-else-if="dateSaved"
+                  class="text-[11px] font-medium text-primary"
+                >
+                  Saved
+                </p>
+              </div>
+              <DatePicker v-model="dueDraft" placeholder="No due date" />
+            </div>
+          </div>
+
+          <div v-if="sprintStore.sprints.length" class="space-y-2">
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Sprint
+            </h3>
+            <Select
+              :model-value="task.sprintId || 'backlog'"
+              :modal="false"
+              @update:model-value="setSprint"
+            >
+              <SelectTrigger class="w-full max-w-xs">
+                <SelectValue placeholder="Backlog" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Sprint</SelectLabel>
+                  <SelectItem value="backlog">Backlog</SelectItem>
+                  <SelectItem
+                    v-if="assignedClosedSprint"
+                    :value="assignedClosedSprint.id"
+                    disabled
+                  >
+                    {{ assignedClosedSprint.name }} (completed)
+                  </SelectItem>
+                  <SelectItem
+                    v-for="sprint in sprintOptions"
+                    :key="sprint.id"
+                    :value="sprint.id"
+                  >
+                    {{ sprint.name }}
+                    {{ sprint.status === "ACTIVE" ? "(current)" : "" }}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <p
+              v-if="task.sprintId && !sprintOptions.some((sprint) => sprint.id === task.sprintId)"
+              class="text-xs text-muted-foreground"
+            >
+              This card is on a completed sprint. Move it to the backlog or the
+              current sprint to keep working on it.
             </p>
-            <StatusSelect
-              :model-value="task.status"
-              @update:model-value="setStatus"
-            />
           </div>
 
           <div v-if="task.members?.length">
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Members
             </p>
             <div class="flex -space-x-1">
               <div
                 v-for="member in task.members"
                 :key="member.id"
-                class="h-8 w-8 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 text-[11px] font-semibold overflow-hidden ring-2 ring-background flex items-center justify-center"
+                class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[11px] font-semibold text-primary ring-2 ring-background"
                 :title="member.name || member.email"
               >
                 <img
@@ -377,85 +526,54 @@ const ignoreSelectOutside = (event: Event) => {
             </div>
           </div>
 
-          <div class="space-y-3">
-            <div>
-              <h3 class="text-sm font-semibold text-foreground">Due date</h3>
-              <p class="text-sm text-muted-foreground">Optional. Cards with a due date show it on the board.</p>
-            </div>
-            <DatePicker v-model="dueDraft" />
-            <div class="flex items-center gap-2">
-              <Button size="sm" :disabled="savingDates" @click="saveDueDate">Save</Button>
-              <button
-                type="button"
-                class="text-sm text-muted-foreground hover:text-foreground"
-                @click="dueDraft = ''"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-
           <div>
-            <h3 class="text-sm font-semibold text-foreground mb-2">Description</h3>
+            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Description
+            </h3>
             <textarea
               v-model="descriptionDraft"
               rows="5"
               placeholder="Add a more detailed description…"
-              class="w-full rounded-lg border border-transparent bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:bg-background focus:border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-400"
+              class="w-full rounded-lg border border-transparent bg-muted px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               @blur="saveDescription"
             />
           </div>
-        </section>
-
-        <section v-else-if="activeTab === 'style'" class="space-y-6">
-          <div>
-            <h3 class="text-sm font-semibold text-foreground mb-1">Priority</h3>
-            <p class="text-sm text-muted-foreground mb-3">Choose how important this card is.</p>
-            <PrioritySelect
-              :model-value="task.priority"
-              @update:model-value="setPriority"
-            />
-          </div>
-
-          <div>
-            <h3 class="text-sm font-semibold text-foreground mb-1">Cover</h3>
-            <p class="text-sm text-muted-foreground mb-3">Pick a color for the top of this card.</p>
-            <div class="grid grid-cols-5 gap-2">
-              <button
-                v-for="color in TASK_COLORS"
-                :key="color.id"
-                type="button"
-                class="h-10 rounded-md ring-offset-2"
-                :class="task.coverColor === color.id ? 'ring-2 ring-foreground' : 'hover:opacity-90'"
-                :style="{ backgroundColor: color.value }"
-                :title="color.name"
-                @click="setCover(color.id)"
-              />
-            </div>
-            <button
-              type="button"
-              class="mt-3 text-sm text-muted-foreground hover:text-foreground"
-              @click="setCover(null)"
-            >
-              Remove cover
-            </button>
-          </div>
 
           <div class="space-y-3">
-            <div>
-              <h3 class="text-sm font-semibold text-foreground mb-1">Labels</h3>
-              <p class="text-sm text-muted-foreground">
-                Labels are optional. Create your own, then add them to this card.
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Labels
+            </h3>
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                v-for="label in boardStore.projectLabels"
+                :key="label.id"
+                type="button"
+                class="inline-flex h-6 max-w-full items-center gap-1 rounded px-2 text-xs font-semibold text-white"
+                :style="{ backgroundColor: label.color }"
+                @click="toggleLabel(label)"
+              >
+                <span class="truncate">{{ label.name }}</span>
+                <CheckIcon
+                  v-if="hasLabel(label.id)"
+                  class="h-3 w-3 shrink-0"
+                />
+              </button>
+              <p
+                v-if="!boardStore.projectLabels.length"
+                class="py-1 text-sm text-muted-foreground"
+              >
+                No labels yet. Create one below.
               </p>
             </div>
-
-            <div class="rounded-lg border border-border p-3 space-y-3">
-              <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Create a label</p>
+            <div class="space-y-3 rounded-lg border border-border p-3">
+              <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Create a label
+              </p>
               <input
                 v-model="newLabelName"
                 maxlength="32"
                 placeholder="Label name"
-                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 @keyup.enter="createLabel"
               />
               <div class="flex flex-wrap gap-1.5">
@@ -480,33 +598,10 @@ const ignoreSelectOutside = (event: Event) => {
                 Create label
               </Button>
             </div>
-
-            <div class="space-y-1.5">
-              <button
-                v-for="label in boardStore.projectLabels"
-                :key="label.id"
-                type="button"
-                class="w-full h-9 rounded-md text-sm font-semibold text-white relative px-3 text-left"
-                :style="{ backgroundColor: label.color }"
-                @click="toggleLabel(label)"
-              >
-                {{ label.name }}
-                <CheckIcon
-                  v-if="hasLabel(label.id)"
-                  class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2"
-                />
-              </button>
-              <p
-                v-if="!boardStore.projectLabels.length"
-                class="text-sm text-muted-foreground py-4 text-center"
-              >
-                No labels yet. Create one above.
-              </p>
-            </div>
           </div>
-        </section>
+        </div>
 
-        <section v-else-if="activeTab === 'members'" class="space-y-2">
+        <div v-else-if="activeTab === 'members'" class="space-y-2">
           <p class="text-sm text-muted-foreground mb-3">
             Add or remove people on this card. People come from the project member list.
           </p>
@@ -518,7 +613,7 @@ const ignoreSelectOutside = (event: Event) => {
             @click="toggleMember(person)"
           >
             <div
-              class="h-8 w-8 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 text-[11px] font-semibold overflow-hidden flex items-center justify-center"
+              class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[11px] font-semibold text-primary"
             >
               <img v-if="person.imageUrl" :src="person.imageUrl" class="h-full w-full object-cover" />
               <span v-else>{{ initials(person) }}</span>
@@ -535,23 +630,23 @@ const ignoreSelectOutside = (event: Event) => {
             >
               Remove
             </span>
-            <span v-else class="text-xs font-medium text-violet-600">Add</span>
+            <span v-else class="text-xs font-medium text-primary">Add</span>
           </button>
           <p v-if="!assignableMembers.length" class="text-sm text-muted-foreground py-6 text-center">
             No project members yet. Add people to the project first.
           </p>
-        </section>
+        </div>
 
-        <section v-else-if="activeTab === 'files'">
+        <div v-else-if="activeTab === 'files'">
           <ClientOnly>
             <TaskAttachments />
             <template #fallback>
               <p class="text-sm text-muted-foreground">Loading files…</p>
             </template>
           </ClientOnly>
-        </section>
+        </div>
 
-        <section v-else-if="activeTab === 'comments'" class="flex min-h-full flex-col">
+        <div v-else-if="activeTab === 'comments'" class="flex flex-col">
           <p class="text-sm text-muted-foreground">
             {{ comments.length }}
             {{ comments.length === 1 ? "comment" : "comments" }}
@@ -565,7 +660,7 @@ const ignoreSelectOutside = (event: Event) => {
               :class="index ? 'border-t border-border' : ''"
             >
               <div
-                class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-violet-100 text-[11px] font-semibold text-violet-700 flex items-center justify-center dark:bg-violet-500/20 dark:text-violet-300"
+                class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[11px] font-semibold text-primary"
               >
                 <img
                   v-if="comment.user.imageUrl"
@@ -597,7 +692,7 @@ const ignoreSelectOutside = (event: Event) => {
           </div>
           <div
             v-else
-            class="mt-8 flex flex-1 flex-col items-center justify-center py-8 text-center"
+            class="mt-8 flex flex-col items-center justify-center py-8 text-center"
           >
             <div
               class="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
@@ -610,7 +705,7 @@ const ignoreSelectOutside = (event: Event) => {
             </p>
           </div>
 
-          <div class="mt-auto pt-4">
+          <div class="pt-4">
             <textarea
               v-model="commentDraft"
               placeholder="Write a comment…"
@@ -629,9 +724,9 @@ const ignoreSelectOutside = (event: Event) => {
               </Button>
             </div>
           </div>
-        </section>
+        </div>
 
-        <section v-else-if="activeTab === 'activity'">
+        <div v-else-if="activeTab === 'activity'">
           <p class="text-sm text-muted-foreground mb-4">
             A log of every change made on this card.
           </p>
@@ -645,8 +740,9 @@ const ignoreSelectOutside = (event: Event) => {
               No activity yet.
             </p>
           </div>
-        </section>
-      </div>
+        </div>
+        </div>
+      </Tabs>
 
       <DialogFooter
         v-if="canArchive"

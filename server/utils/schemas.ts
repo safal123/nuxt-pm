@@ -184,15 +184,50 @@ export const taskCreateSchema = z.object({
   columnId: idSchema,
   title: trimmedName('Title'),
   description: optionalString,
+  sprintId: z.string().trim().min(1).nullable().optional(),
 })
 
 export const taskListQuerySchema = z.object({
   status: z.string().optional(),
   columnId: z.string().optional(),
+  sprint: z.string().optional(),
   cursor: z.string().optional(),
   limit: z.coerce.number().optional(),
   page: z.coerce.number().optional(),
 })
+
+export const boardQuerySchema = z.object({
+  sprint: z.string().optional(),
+})
+
+export const sprintCreateSchema = z.object({
+  name: trimmedName('Sprint name'),
+  goal: optionalString,
+  plannedStartAt: z.string().trim().optional().nullable(),
+  plannedEndAt: z.string().trim().optional().nullable(),
+  start: z.boolean().optional().default(true),
+  pullBacklog: z.boolean().optional(),
+})
+
+export const sprintUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Sprint name is required.').optional(),
+    goal: optionalString,
+    plannedStartAt: z.string().trim().optional().nullable(),
+    plannedEndAt: z.string().trim().optional().nullable(),
+    status: z.enum(['ACTIVE', 'COMPLETED', 'CANCELLED']).optional(),
+    unfinishedDestination: z.enum(['backlog', 'next']).optional(),
+    pullBacklog: z.boolean().optional(),
+  })
+  .refine(
+    (value) =>
+      value.name !== undefined ||
+      value.goal !== undefined ||
+      value.plannedStartAt !== undefined ||
+      value.plannedEndAt !== undefined ||
+      value.status !== undefined,
+    { message: 'Nothing to update.' },
+  )
 
 export const taskCommentSchema = z.object({
   content: trimmedName('Comment'),
@@ -209,8 +244,13 @@ export const taskUpdateSchema = z.object({
   status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED']).optional(),
   dueDate: z.union([z.string(), z.null()]).optional(),
   coverColor: z.string().nullable().optional(),
+  coverImage: z.string().nullable().optional(),
+  coverThumb: z.string().nullable().optional(),
+  coverCredit: z.string().nullable().optional(),
+  coverCreditUrl: z.string().nullable().optional(),
   memberIds: z.array(z.string()).optional(),
   labelIds: z.array(z.string()).optional(),
+  sprintId: z.string().trim().min(1).nullable().optional(),
 })
 
 export const columnUpdateSchema = z

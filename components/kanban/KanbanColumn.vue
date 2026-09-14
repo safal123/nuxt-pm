@@ -4,6 +4,7 @@ import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronsLeftIcon,
   MoreHorizontalIcon,
   PaletteIcon,
   PlusIcon,
@@ -17,6 +18,7 @@ const props = defineProps<{
   visibleTasks?: Task[];
   filtered?: boolean;
   canDrag?: boolean;
+  canAdd?: boolean;
   isFirst?: boolean;
   isLast?: boolean;
 }>();
@@ -33,6 +35,9 @@ const emit = defineEmits<{
 }>();
 
 const boardStore = useBoardStore();
+const { isCollapsed, toggle } = useCollapsedColumns(() => props.column.projectId);
+
+const collapsed = computed(() => isCollapsed(props.column.id));
 
 const isAdding = ref(false);
 const isEditing = ref(false);
@@ -78,7 +83,14 @@ const columnTint = computed(() => {
   return colorValue(props.column.color);
 });
 
+const collapseList = () => {
+  isAdding.value = false;
+  isEditing.value = false;
+  toggle(props.column.id);
+};
+
 const startAdding = async () => {
+  if (collapsed.value) toggle(props.column.id);
   isAdding.value = true;
   await nextTick();
   inputRef.value?.focus();
@@ -118,7 +130,37 @@ const saveName = () => {
 </script>
 
 <template>
+  <div class="contents">
+  <button
+    v-if="collapsed"
+    type="button"
+    :data-column-id="column.id"
+    data-collapsed="true"
+    class="flex w-11 shrink-0 flex-col items-center gap-2 rounded-xl border px-1.5 py-2.5 transition hover:border-muted-foreground/40"
+    :class="[
+      isDropTarget
+        ? 'border-dropzone-border ring-1 ring-inset ring-dropzone-border'
+        : 'border-border',
+      !columnTint && (isDropTarget ? 'bg-dropzone' : 'bg-muted'),
+    ]"
+    :style="columnTint ? { backgroundColor: `${columnTint}2e` } : undefined"
+    :title="`Expand ${column.name}`"
+    :aria-label="`Expand ${column.name}`"
+    @click="toggle(column.id)"
+  >
+    <span
+      class="text-[11px] font-medium text-muted-foreground bg-background/80 border border-border rounded-full min-w-[1.25rem] h-5 px-1.5 inline-flex items-center justify-center shrink-0"
+    >
+      {{ shownTasks.length }}
+    </span>
+    <span
+      class="overflow-hidden text-[13px] font-semibold tracking-tight text-foreground [writing-mode:vertical-rl] rotate-180"
+    >
+      {{ column.name }}
+    </span>
+  </button>
   <div
+    v-else
     :data-column-id="column.id"
     class="flex flex-col w-80 shrink-0 rounded-xl border max-h-[calc(100vh-12rem)]"
     :class="[
@@ -130,9 +172,19 @@ const saveName = () => {
     :style="columnTint ? { backgroundColor: `${columnTint}2e` } : undefined"
   >
     <div
-      class="flex items-center gap-1 px-2 py-2 rounded-t-xl"
+      class="flex items-center gap-0.5 px-2 py-2 rounded-t-xl"
       :style="columnTint ? { backgroundColor: `${columnTint}55` } : undefined"
     >
+      <button
+        type="button"
+        class="h-7 w-7 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-background/80 hover:text-foreground"
+        aria-label="Collapse list"
+        title="Collapse list"
+        @click="collapseList"
+        @pointerdown.stop
+      >
+        <ChevronsLeftIcon class="h-4 w-4" />
+      </button>
       <input
         v-if="isEditing"
         ref="nameInputRef"
@@ -241,6 +293,11 @@ const saveName = () => {
             Move right
           </DropdownMenuItem>
 
+          <DropdownMenuItem @select="collapseList">
+            <ChevronsLeftIcon class="h-4 w-4" />
+            Collapse list
+          </DropdownMenuItem>
+
           <DropdownMenuSeparator />
 
           <DropdownMenuItem
@@ -294,7 +351,7 @@ const saveName = () => {
       </Button>
     </div>
 
-    <div class="p-2">
+    <div v-if="canAdd !== false" class="p-2">
       <div v-if="isAdding" class="flex flex-col gap-2">
         <input
           ref="inputRef"
@@ -316,5 +373,6 @@ const saveName = () => {
         Add task
       </button>
     </div>
+  </div>
   </div>
 </template>

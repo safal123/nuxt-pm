@@ -1,10 +1,15 @@
 import prisma from '~/lib/prisma'
+import { boardQuerySchema } from '~/server/utils/schemas'
 import { BOARD_COMPLETED_LIMIT } from '~/utils/board'
 
 export default defineApi({
-  handler: async ({ user, event }) => {
+  query: boardQuerySchema,
+  handler: async ({ user, event, query }) => {
     const projectId = getRouterParam(event, 'projectId') as string
     await validateProjectAccess(projectId, user.id)
+
+    const sprintFilter = await resolveBoardSprintFilter(projectId, query.sprint)
+    const sprintClause = sprintTaskWhere(sprintFilter)
 
     const columnCount = await prisma.taskColumn.count({ where: { projectId } })
     if (columnCount === 0) {
@@ -16,7 +21,11 @@ export default defineApi({
       orderBy: { order: 'asc' },
       include: {
         tasks: {
-          where: { archivedAt: null, status: { not: 'DONE' } },
+          where: {
+            archivedAt: null,
+            status: { not: 'DONE' },
+            ...sprintClause,
+          },
           orderBy: { order: 'asc' },
           include: taskBoardInclude(user.id),
         },
@@ -33,6 +42,7 @@ export default defineApi({
               archivedAt: null,
               status: 'DONE',
               columnId: { in: columnIds },
+              ...sprintClause,
             },
             _count: { _all: true },
           })
@@ -40,7 +50,12 @@ export default defineApi({
       Promise.all(
         columns.map((column) =>
           prisma.task.findMany({
-            where: { columnId: column.id, archivedAt: null, status: 'DONE' },
+            where: {
+              columnId: column.id,
+              archivedAt: null,
+              status: 'DONE',
+              ...sprintClause,
+            },
             orderBy: [{ completedAt: 'desc' }, { id: 'desc' }],
             take: BOARD_COMPLETED_LIMIT,
             include: taskBoardInclude(user.id),

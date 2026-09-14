@@ -18,10 +18,20 @@ export default defineApi({
       })
     }
 
-    const lastTask = await prisma.task.findFirst({
-      where: { columnId: body.columnId },
-      orderBy: { order: 'desc' },
-    })
+    let sprintId: string | null = null
+    if (body.sprintId) {
+      const sprint = await validateSprintAccess(body.sprintId, projectId)
+      assertSameProject(projectId, [column, sprint])
+      if (isClosedSprintStatus(sprint.status)) {
+        throw createError({
+          statusCode: 400,
+          message: 'Cards cannot be added to a completed sprint.',
+        })
+      }
+      sprintId = sprint.id
+    } else {
+      assertSameProject(projectId, [column])
+    }
 
     const created = await prisma.task.create({
       data: {
@@ -29,11 +39,12 @@ export default defineApi({
         description: body.description || null,
         columnId: body.columnId,
         projectId,
+        sprintId,
         createdBy: user.id,
         assigneeId: user.id,
         priority: 'MEDIUM',
         status: 'TODO',
-        order: (lastTask?.order ?? -1) + 1,
+        order: await nextOrderInColumnSprint(body.columnId, sprintId),
         members: {
           create: { userId: user.id },
         },
@@ -48,6 +59,17 @@ export default defineApi({
       type: 'CREATED',
       message: 'created this card',
     })
+    if (sprintId) {
+      await logActivity({
+        workspaceId: project.workspaceId,
+        projectId,
+        taskId: created.id,
+        userId: user.id,
+        type: 'TASK_ADDED_TO_SPRINT',
+        message: 'added this card to the sprint',
+        metadata: { sprintId },
+      })
+    }
 
     const task = await prisma.task.findUniqueOrThrow({
       where: { id: created.id },

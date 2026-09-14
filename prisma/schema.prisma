@@ -8,6 +8,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum SprintStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  BLOCKED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum ProjectRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
 model User {
   id                String   @id @default(cuid())
   email             String   @unique
@@ -35,6 +69,7 @@ model User {
   taskMemberships    TaskMember[]
   activities         Activity[]
   createdLabels      Label[]
+  createdSprints     Sprint[]          @relation("CreatedSprints")
   sentEmails         EmailLog[]        @relation("CreatedEmails")
   subscription       Subscription?
   billingEvents      BillingEvent[]
@@ -121,8 +156,8 @@ model WorkspaceSetting {
 model WorkspaceMember {
   userId      String   @map("user_id")
   workspaceId String   @map("workspace_id")
-  role        String   @default("MEMBER")
-  joinedAt    DateTime @default(now())
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
 
   // Relationships
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -136,8 +171,8 @@ model WorkspaceInvite {
   id          String    @id @default(cuid())
   workspaceId String    @map("workspace_id")
   email       String?
-  role        String    @default("MEMBER")
-  tokenHash   String    @unique @map("token_hash")
+  role        WorkspaceRole @default(MEMBER)
+  tokenHash   String        @unique @map("token_hash")
   expiresAt   DateTime  @map("expires_at")
   usedAt      DateTime? @map("used_at")
   createdBy   String    @map("created_by")
@@ -153,8 +188,8 @@ model WorkspaceInvite {
 model ProjectMember {
   userId    String   @map("user_id")
   projectId String   @map("project_id")
-  role      String   @default("MEMBER")
-  addedAt   DateTime @default(now())
+  role      ProjectRole @default(MEMBER)
+  addedAt   DateTime    @default(now())
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -180,11 +215,36 @@ model Project {
   members     ProjectMember[]
   columns     TaskColumn[]
   tasks       Task[]
+  sprints     Sprint[]
   labels      Label[]
   emailLogs   EmailLog[]
   activities  Activity[]
 
   @@map("projects")
+}
+
+model Sprint {
+  id             String       @id @default(cuid())
+  name           String
+  number         Int
+  goal           String?
+  status         SprintStatus @default(PLANNED)
+  plannedStartAt DateTime?    @map("planned_start_at")
+  plannedEndAt   DateTime?    @map("planned_end_at")
+  startedAt      DateTime?    @map("started_at")
+  completedAt    DateTime?    @map("completed_at")
+  projectId      String       @map("project_id")
+  createdBy      String       @map("created_by")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator User    @relation("CreatedSprints", fields: [createdBy], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@unique([projectId, number])
+  @@index([projectId, status])
+  @@map("sprints")
 }
 
 model TaskColumn {
@@ -208,17 +268,24 @@ model Task {
   id          String    @id @default(cuid())
   title       String
   description String?   @db.Text
-  order       Int       @default(0)
-  priority    String    @default("MEDIUM")
-  status      String    @default("TODO")
+  // Shared column position for backlog and sprint views. Split later if
+  // backlog and sprint need independent ranks in the same list.
+  order       Int          @default(0)
+  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(TODO)
   completedAt DateTime? @map("completed_at")
   dueDate     DateTime? @map("due_date")
   startDate   DateTime? @map("start_date")
   endDate     DateTime? @map("end_date")
-  coverColor  String?   @map("cover_color")
-  archivedAt  DateTime? @map("archived_at")
+  coverColor     String?   @map("cover_color")
+  coverImage     String?   @map("cover_image")
+  coverThumb     String?   @map("cover_thumb")
+  coverCredit    String?   @map("cover_credit")
+  coverCreditUrl String?   @map("cover_credit_url")
+  archivedAt     DateTime? @map("archived_at")
   columnId    String    @map("column_id")
   projectId   String    @map("project_id")
+  sprintId    String?   @map("sprint_id")
   createdBy   String    @map("created_by")
   assigneeId  String?   @map("assignee_id")
   createdAt   DateTime  @default(now())
@@ -227,6 +294,7 @@ model Task {
   // Relationships
   column     TaskColumn     @relation(fields: [columnId], references: [id], onDelete: Cascade)
   project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sprint     Sprint?        @relation(fields: [sprintId], references: [id], onDelete: SetNull)
   creator    User           @relation("CreatedTasks", fields: [createdBy], references: [id], onDelete: Cascade)
   assignee   User?          @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
   comments   TaskComment[]
@@ -238,6 +306,7 @@ model Task {
   @@index([columnId, archivedAt, order], map: "tasks_column_id_archived_at_order_idx")
   @@index([columnId, archivedAt, status, completedAt], map: "tasks_column_id_archived_at_status_completed_at_idx")
   @@index([projectId, archivedAt, createdAt], map: "tasks_project_id_archived_at_createdAt_idx")
+  @@index([sprintId, archivedAt])
   @@map("tasks")
 }
 

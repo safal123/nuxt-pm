@@ -110,6 +110,35 @@ export interface Project {
   updatedAt: Date | string
 }
 
+export type SprintStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
+
+export type SprintView = 'current' | 'backlog' | string
+
+export type SprintFilter =
+  | { type: 'all' }
+  | { type: 'backlog' }
+  | { type: 'sprint'; sprintId: string }
+
+export type UnfinishedDestination = 'backlog' | 'next'
+
+export interface Sprint {
+  id: string
+  name: string
+  number: number
+  goal: string | null
+  status: SprintStatus
+  plannedStartAt: Date | string | null
+  plannedEndAt: Date | string | null
+  startedAt: Date | string | null
+  completedAt: Date | string | null
+  projectId: string
+  createdBy: string
+  createdAt: Date | string
+  updatedAt: Date | string
+  taskCount: number
+  doneCount: number
+}
+
 export interface Member {
   id: string
   name: string | null
@@ -174,6 +203,11 @@ export type ActivityType =
   | 'ARCHIVED'
   | 'RESTORED'
   | 'COLUMN_CREATED'
+  | 'SPRINT_CREATED'
+  | 'SPRINT_STARTED'
+  | 'SPRINT_COMPLETED'
+  | 'TASK_ADDED_TO_SPRINT'
+  | 'TASK_REMOVED_FROM_SPRINT'
   | 'EMAIL_SENT'
   | 'EMAIL_FAILED'
 
@@ -240,10 +274,15 @@ export interface Task {
   completedAt: Date | string | null
   dueDate: Date | string | null
   coverColor: string | null
+  coverImage: string | null
+  coverThumb: string | null
+  coverCredit: string | null
+  coverCreditUrl: string | null
   archivedAt?: Date | string | null
   labels: TaskLabel[]
   columnId: string
   projectId: string
+  sprintId: string | null
   createdBy: string
   createdAt: Date | string
   updatedAt: Date | string

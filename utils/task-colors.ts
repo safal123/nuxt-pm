@@ -97,9 +97,9 @@ export const workspaceThemeVars = (
   if (!hex) return actions
   const { lightness, chroma, hue } = hexToOklch(hex)
   return {
-    // Only the hue, an intensity scale and a lightness nudge are published. The
-    // per-surface ramp lives in assets/css/main.css so it can differ between
-    // light and dark mode from a single set of injected values.
+    // Only the hue, an intensity scale and a lightness nudge are published. CSS
+    // maps those onto interactive tokens in light mode and the full surface
+    // ramp in dark mode.
     '--ws-hue': hue.toFixed(1),
     '--ws-chroma': Math.min(1, chroma / REFERENCE_CHROMA).toFixed(3),
     '--ws-lift': `${rampLift(lightness).toFixed(2)}%`,

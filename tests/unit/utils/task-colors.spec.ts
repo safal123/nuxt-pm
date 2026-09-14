@@ -60,7 +60,7 @@ describe("workspaceThemeVars", () => {
     expect(vars).not.toHaveProperty("--dropzone-border-color");
   });
 
-  it("publishes the workspace hue so CSS can build the surface ramp", () => {
+  it("publishes the workspace hue so CSS can tint interactive tokens", () => {
     expect(workspaceThemeVars("blue")).toMatchObject({
       "--ws-hue": "245.0",
       "--primary-color": "#0079bf",

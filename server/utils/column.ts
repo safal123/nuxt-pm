@@ -1,7 +1,7 @@
 import prisma from '~/lib/prisma'
 import { workspaceAccessWhere } from '~/server/utils/access'
 
-const DEFAULT_COLUMNS = ['To Do', 'In Progress', 'Done']
+const DEFAULT_COLUMNS = ['To Do', 'In Progress', 'Review', 'Done']
 
 /** 404 unless the user can reach this column through the workspace. */
 export const validateColumnAccess = async (columnId: string, userId: string) => {

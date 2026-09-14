@@ -46,6 +46,11 @@ const ACTIVITY_TONES: Record<string, Tone> = {
   UNLIKED: 'slate',
   ARCHIVED: 'orange',
   RESTORED: 'teal',
+  SPRINT_CREATED: 'sky',
+  SPRINT_STARTED: 'emerald',
+  SPRINT_COMPLETED: 'violet',
+  TASK_ADDED_TO_SPRINT: 'indigo',
+  TASK_REMOVED_FROM_SPRINT: 'orange',
   EMAIL_SENT: 'emerald',
   EMAIL_FAILED: 'rose',
 }

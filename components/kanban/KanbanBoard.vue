@@ -40,10 +40,14 @@ const archiveList = async (columnId: string) => {
   }
 };
 
+const sprintStore = useSprintStore();
+
 watch(
   () => props.projectId,
-  (id) => {
-    if (id) boardStore.fetchBoard(id);
+  async (id) => {
+    if (!id) return;
+    await sprintStore.fetchSprints(id);
+    await boardStore.fetchBoard(id);
   },
   { immediate: true },
 );
@@ -92,6 +96,15 @@ const updateDropTarget = (x: number, y: number) => {
   const visible = visibleTasksFor(source);
 
   let visibleIndex: number | null = null;
+
+  if (columnEl.dataset.collapsed === "true") {
+    const nextIndex = source.tasks.length;
+    if (columnId === lastDropColumnId && nextIndex === lastDropIndex) return;
+    lastDropColumnId = columnId;
+    lastDropIndex = nextIndex;
+    boardStore.moveDraggingTo(columnId, nextIndex);
+    return;
+  }
 
   if (overSlot?.dataset.taskId) {
     const overIndex = slots.findIndex(
@@ -237,7 +250,7 @@ const onCardPointerDown = (event: PointerEvent, task: Task) => {
   if ((event.target as HTMLElement | null)?.closest("[data-card-action]")) {
     return;
   }
-  if (!canDrag.value) {
+  if (!canDrag.value || sprintStore.viewingClosed) {
     boardStore.openTask(task);
     return;
   }
@@ -337,7 +350,8 @@ const { view } = useProjectView();
         :column="column"
         :visible-tasks="visibleTasksFor(column)"
         :filtered="isFiltered"
-        :can-drag="canDrag"
+        :can-drag="canDrag && !sprintStore.viewingClosed"
+        :can-add="sprintStore.canAddCards"
         :is-first="index === 0"
         :is-last="index === boardStore.columns.length - 1"
         @add-task="boardStore.addTask"
@@ -363,5 +377,8 @@ const { view } = useProjectView();
       </div>
     </Teleport>
     <TaskDetailModal />
+    <StartSprintModal />
+    <EditSprintModal />
+    <CompleteSprintModal />
   </div>
 </template>

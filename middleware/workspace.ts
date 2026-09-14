@@ -32,10 +32,22 @@ export default defineNuxtRouteMiddleware(async (to) => {
     );
   }
 
-  const known = workspaceStore.workspaces.some(
-    (workspace: { id: string }) => workspace.id === routeWorkspaceId,
+  const known = workspaceStore.workspaces.find(
+    (workspace: { id: string; createdBy?: string }) =>
+      workspace.id === routeWorkspaceId,
   );
-  if (known) return;
+  if (known) {
+    if (
+      to.name === "workspace-billing" &&
+      known.createdBy !== userStore.user?.id
+    ) {
+      return navigateTo(
+        { name: "workspace-dashboard", params: { workspaceId: known.id } },
+        { replace: true },
+      );
+    }
+    return;
+  }
 
   const fallback =
     userStore.user?.activeWorkspaceId || workspaceStore.workspaces[0]?.id;

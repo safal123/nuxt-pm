@@ -9,13 +9,16 @@ definePageMeta({
   middleware: "workspace",
 });
 
+const { isOwner } = useWorkspaceLayout();
 const { billing, loading, acting, fetchBilling, startCheckout, openPortal } =
   useBilling();
 
-try {
-  await fetchBilling();
-} catch {
-  // Page still renders the manage and empty states.
+if (isOwner.value) {
+  try {
+    await fetchBilling();
+  } catch {
+    // Page still renders the manage and empty states.
+  }
 }
 
 const planLabel = computed(() => {

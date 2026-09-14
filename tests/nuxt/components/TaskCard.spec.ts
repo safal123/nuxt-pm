@@ -25,7 +25,7 @@ describe("TaskCard", () => {
     expect(wrapper.find("p.line-through").exists()).toBe(true);
   });
 
-  it("shows label names and counts the overflow", async () => {
+  it("renders compact label bars with names in the title", async () => {
     const wrapper = await mountSuspended(TaskCard, {
       props: {
         task: createTask({
@@ -39,8 +39,11 @@ describe("TaskCard", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("Design");
-    expect(wrapper.text()).toContain("+1");
+    expect(wrapper.find('[title="Design"]').exists()).toBe(true);
+    expect(wrapper.find('[title="Backend"]').exists()).toBe(true);
+    expect(wrapper.find('[title="Urgent"]').exists()).toBe(true);
+    expect(wrapper.find('[title="Later"]').exists()).toBe(true);
+    expect(wrapper.text()).not.toContain("Design");
   });
 
   it("renders the due date when one is set", async () => {

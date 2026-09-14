@@ -3,6 +3,7 @@ import prisma from '~/lib/prisma'
 import { workspaceAccessWhere } from '~/server/utils/access'
 import { serializeActivity } from '~/server/utils/activity'
 import { personSelect, serializePerson } from '~/server/utils/person'
+import { assertSameProject } from '~/server/utils/sprint'
 
 export const taskBoardInclude = (userId: string) => ({
   creator: { select: personSelect },
@@ -66,10 +67,15 @@ export const serializeTask = (task: any, options?: { compact?: boolean }) => {
     completedAt: task.completedAt ?? null,
     dueDate: task.dueDate,
     coverColor: task.coverColor ?? null,
+    coverImage: task.coverImage ?? null,
+    coverThumb: task.coverThumb ?? null,
+    coverCredit: task.coverCredit ?? null,
+    coverCreditUrl: task.coverCreditUrl ?? null,
     archivedAt: task.archivedAt ?? null,
     labels: serializeLabels(task),
     columnId: task.columnId,
     projectId: task.projectId,
+    sprintId: task.sprintId ?? null,
     createdBy: task.createdBy,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
@@ -279,21 +285,38 @@ export const syncTaskLabels = async (
   }
 }
 
-/** Rewrite `order` in the destination (and source, on a column change). */
+/**
+ * Rewrite `order` inside one column + sprint group.
+ * Backlog (`sprintId` null) and sprint cards in the same list stay independent
+ * so dragging the current sprint does not reshuffle the backlog.
+ */
 export const moveTaskToIndex = async (
   taskId: string,
   columnId: string,
   index: number
 ) => {
-  const task = await prisma.task.findUnique({ where: { id: taskId } })
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: { column: { select: { projectId: true } } },
+  })
   if (!task) {
     throw createError({ statusCode: 404, message: 'Task not found.' })
   }
 
+  const column = await prisma.taskColumn.findUnique({
+    where: { id: columnId },
+    select: { id: true, projectId: true },
+  })
+  if (!column) {
+    throw createError({ statusCode: 404, message: 'Column not found.' })
+  }
+  assertSameProject(task.projectId, [task.column, column])
+
   const sourceColumnId = task.columnId
+  const group = { columnId, id: { not: taskId }, sprintId: task.sprintId }
 
   const siblings = await prisma.task.findMany({
-    where: { columnId, id: { not: taskId } },
+    where: group,
     orderBy: { order: 'asc' },
     select: { id: true }
   })
@@ -311,7 +334,11 @@ export const moveTaskToIndex = async (
 
   if (sourceColumnId !== columnId) {
     const leftover = await prisma.task.findMany({
-      where: { columnId: sourceColumnId, id: { not: taskId } },
+      where: {
+        columnId: sourceColumnId,
+        id: { not: taskId },
+        sprintId: task.sprintId,
+      },
       orderBy: { order: 'asc' },
       select: { id: true }
     })
