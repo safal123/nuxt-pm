@@ -6,6 +6,7 @@ const toasterTheme = computed(() => (isDark.value ? "dark" : "light"));
 </script>
 
 <template>
+  <NuxtLoadingIndicator color="hsl(var(--primary))" />
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>

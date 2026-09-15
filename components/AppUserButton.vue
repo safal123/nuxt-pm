@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { ChevronsUpDownIcon, LogOutIcon, UserIcon } from "lucide-vue-next";
+import {
+  ChevronsUpDownIcon,
+  LinkIcon,
+  LogOutIcon,
+  SunIcon,
+  UserIcon,
+  UsersIcon,
+} from "lucide-vue-next";
 import { authClient } from "~/lib/auth-client";
 
 withDefaults(
@@ -9,8 +16,14 @@ withDefaults(
   { variant: "compact" },
 );
 
+const route = useRoute();
 const { user, clearSession } = useAuth();
 const userStore = useUserStore();
+const modalsStore = useModalsStore();
+const { preference, setPreference } = useTheme();
+
+const workspaceId = computed(() => String(route.params.workspaceId || ""));
+const inWorkspace = computed(() => Boolean(workspaceId.value));
 
 const initials = computed(() => {
   const source = user.value?.name || user.value?.email || "";
@@ -25,6 +38,14 @@ const initials = computed(() => {
 });
 
 const signingOut = ref(false);
+
+const onTheme = (value: string) => {
+  if (value === "light" || value === "dark" || value === "auto") {
+    setPreference(value);
+  }
+};
+
+const openInvite = () => modalsStore.openModal("workspaceInvite");
 
 async function handleSignOut() {
   if (signingOut.value) return;
@@ -138,6 +159,41 @@ async function handleSignOut() {
             Manage account
           </DropdownMenuItem>
         </DialogTrigger>
+
+        <template v-if="inWorkspace">
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem as-child>
+            <NuxtLink
+              :to="{ name: 'workspace-members', params: { workspaceId } }"
+            >
+              <UsersIcon />
+              Members
+            </NuxtLink>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem @select="openInvite">
+            <LinkIcon />
+            Invite
+          </DropdownMenuItem>
+        </template>
+
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger class="gap-2">
+            <SunIcon class="size-4 shrink-0" />
+            Appearance
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent class="w-40">
+            <DropdownMenuRadioGroup
+              :model-value="preference"
+              @update:model-value="onTheme"
+            >
+              <DropdownMenuRadioItem value="light">Light</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark">Dark</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="auto">System</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
 
         <DropdownMenuSeparator />
 
