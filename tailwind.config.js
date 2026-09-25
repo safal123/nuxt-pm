@@ -22,7 +22,9 @@ module.exports = {
         background: "var(--background-color, hsl(var(--background)))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "var(--primary-color, hsl(var(--primary)))",
+          // color-mix so opacity modifiers (bg-primary/10) work with the workspace colour var.
+          DEFAULT:
+            "color-mix(in oklab, var(--primary-color, hsl(var(--primary))) calc(<alpha-value> * 100%), transparent)",
           foreground: "var(--primary-foreground-color, hsl(var(--primary-foreground)))",
         },
         secondary: {

@@ -4,4 +4,5 @@
   <WorkspaceMembersModal />
   <WorkspaceInviteModal />
   <ActivityTimelineModal />
+  <ProjectAiSheet />
 </template>

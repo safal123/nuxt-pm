@@ -5,7 +5,7 @@ export default defineApi({
   body: projectLabelCreateSchema,
   handler: async ({ user, event, body }) => {
     const projectId = getRouterParam(event, 'projectId') as string
-    await validateProjectAccess(projectId, user.id)
+    const project = await validateProjectAccess(projectId, user.id)
 
     const existing = await prisma.label.findFirst({
       where: { projectId, name: body.name },
@@ -22,6 +22,7 @@ export default defineApi({
         name: body.name,
         color: body.color,
         projectId,
+        workspaceId: project.workspaceId,
         createdBy: user.id,
       },
     })

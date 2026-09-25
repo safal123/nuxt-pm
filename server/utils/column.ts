@@ -24,17 +24,22 @@ export const validateColumnAccess = async (columnId: string, userId: string) => 
   return column
 }
 
-export const createDefaultColumns = async (projectId: string) => {
+export const createDefaultColumns = async (projectId: string, workspaceId: string) => {
   await prisma.taskColumn.createMany({
     data: DEFAULT_COLUMNS.map((name, order) => ({
       name,
       order,
       projectId,
+      workspaceId,
     })),
   })
 }
 
-export const createProjectColumn = async (projectId: string, name: string) => {
+export const createProjectColumn = async (
+  projectId: string,
+  name: string,
+  workspaceId: string,
+) => {
   const trimmed = name.trim()
   if (!trimmed) {
     throw createError({ statusCode: 400, message: 'Column name is required.' })
@@ -48,6 +53,7 @@ export const createProjectColumn = async (projectId: string, name: string) => {
   return prisma.taskColumn.create({
     data: {
       projectId,
+      workspaceId,
       name: trimmed,
       order: (last?.order ?? -1) + 1
     }

@@ -72,7 +72,8 @@ const limitLabel = (used: number, limit: number | null) =>
       <div v-if="canManage" class="space-y-4 px-4 py-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p class="text-sm text-muted-foreground">
-            Team and Business are billed per member.
+            Team and Business are billed per member and include AI task
+            summaries.
           </p>
           <Tabs
             :model-value="interval"

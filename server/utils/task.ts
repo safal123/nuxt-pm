@@ -108,7 +108,34 @@ export const serializeTask = (task: any, options?: { compact?: boolean }) => {
     commentCount: task._count?.comments ?? task.comments?.length ?? 0,
     attachmentCount: task._count?.attachments ?? task.attachments?.length ?? 0,
     likeCount: task._count?.likes ?? 0,
-    likedByMe: Array.isArray(task.likes) && task.likes.length > 0
+    likedByMe: Array.isArray(task.likes) && task.likes.length > 0,
+    summary: compact
+      ? undefined
+      : serializeTaskSummary(task.summary ?? task.summaries?.[0] ?? null),
+    summaries: compact
+      ? undefined
+      : Array.isArray(task.summaries)
+        ? task.summaries
+            .map(serializeTaskSummary)
+            .filter((item: ReturnType<typeof serializeTaskSummary>): item is NonNullable<typeof item> => Boolean(item))
+        : task.summary
+          ? [serializeTaskSummary(task.summary)].filter(Boolean)
+          : [],
+  }
+}
+
+export const serializeTaskSummary = (summary: {
+  id?: string
+  progress: string
+  furtherAction: string
+  generatedAt: Date | string
+} | null | undefined) => {
+  if (!summary) return null
+  return {
+    id: summary.id || '',
+    progress: summary.progress,
+    furtherAction: summary.furtherAction,
+    generatedAt: summary.generatedAt,
   }
 }
 
@@ -167,7 +194,7 @@ export const validateTaskAccess = async (taskId: string, userId: string) => {
 }
 
 export const getTaskWithDetails = async (taskId: string, userId: string) => {
-  const [task, attachments] = await Promise.all([
+  const [task, attachments, summaries] = await Promise.all([
     prisma.task.findUniqueOrThrow({
       where: { id: taskId },
       include: {
@@ -193,12 +220,19 @@ export const getTaskWithDetails = async (taskId: string, userId: string) => {
       include: {
         uploader: { select: personSelect }
       }
-    })
+    }),
+    prisma.aiSummary.findMany({
+      where: { attachableType: 'Task', attachableId: taskId },
+      orderBy: { generatedAt: 'desc' },
+      take: 20,
+    }),
   ])
 
   return {
     ...task,
     attachments,
+    summaries,
+    summary: summaries[0] ?? null,
     _count: {
       ...task._count,
       attachments: attachments.length
@@ -208,6 +242,10 @@ export const getTaskWithDetails = async (taskId: string, userId: string) => {
 
 export const syncTaskMembers = async (taskId: string, memberIds: string[]) => {
   const uniqueIds = [...new Set(memberIds.filter(Boolean))]
+  const task = await prisma.task.findUniqueOrThrow({
+    where: { id: taskId },
+    select: { workspaceId: true },
+  })
   const current = await prisma.taskMember.findMany({
     where: { taskId },
     include: { user: { select: { id: true, name: true, email: true } } }
@@ -224,7 +262,7 @@ export const syncTaskMembers = async (taskId: string, memberIds: string[]) => {
       prisma.taskMember.upsert({
         where: { taskId_userId: { taskId, userId: id } },
         update: {},
-        create: { taskId, userId: id }
+        create: { taskId, userId: id, workspaceId: task.workspaceId }
       })
     ),
     prisma.task.update({

@@ -2,7 +2,7 @@
 import { FolderPlusIcon } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 import { toTypedSchema } from "@vee-validate/zod";
-import * as z from "zod";
+import { projectCreateSchema } from "~/server/utils/schemas";
 
 const store = useModalsStore();
 const workspaceStore = useWorkspaceStore();
@@ -22,10 +22,7 @@ watch(open, (value) => {
 });
 
 const formSchema = toTypedSchema(
-  z.object({
-    name: z.string().trim().min(1, "Project name is required"),
-    description: z.string().optional(),
-  }),
+  projectCreateSchema.pick({ name: true, description: true }),
 );
 
 const close = () => {
@@ -39,9 +36,9 @@ async function onSubmit(values: any) {
 
   try {
     const project = await workspaceStore.createProject({
-      name: values.name.trim(),
+      name: values.name,
       workspaceId: store.modalProps.workspaceId,
-      description: values.description?.trim() || undefined,
+      description: values.description,
     });
     if (project) {
       await userStore.updateUser({ activeProjectId: project.id });
@@ -56,7 +53,7 @@ async function onSubmit(values: any) {
 
     store.closeModal();
     toast.success("Project created", {
-      description: `${values.name.trim()} is ready to use.`,
+      description: `${values.name} is ready to use.`,
     });
   } catch (error: any) {
     toast.error("Could not create project", {

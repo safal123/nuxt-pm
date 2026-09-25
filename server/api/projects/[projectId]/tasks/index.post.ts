@@ -39,6 +39,7 @@ export default defineApi({
         description: body.description || null,
         columnId: body.columnId,
         projectId,
+        workspaceId: project.workspaceId,
         sprintId,
         createdBy: user.id,
         assigneeId: user.id,
@@ -46,7 +47,7 @@ export default defineApi({
         status: 'TODO',
         order: await nextOrderInColumnSprint(body.columnId, sprintId),
         members: {
-          create: { userId: user.id },
+          create: { userId: user.id, workspaceId: project.workspaceId },
         },
       },
     })

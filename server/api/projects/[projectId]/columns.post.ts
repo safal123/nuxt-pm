@@ -5,7 +5,7 @@ export default defineApi({
   handler: async ({ user, event, body }) => {
     const projectId = getRouterParam(event, 'projectId') as string
     const project = await validateProjectAccess(projectId, user.id)
-    const column = await createProjectColumn(projectId, body.name)
+    const column = await createProjectColumn(projectId, body.name, project.workspaceId)
 
     await logActivity({
       workspaceId: project.workspaceId,

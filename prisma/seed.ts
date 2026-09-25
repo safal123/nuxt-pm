@@ -994,6 +994,7 @@ async function seedProject(
         name: label.name,
         color: COLORS[label.color],
         projectId,
+        workspaceId,
         createdBy: ownerId,
       },
     })
@@ -1012,6 +1013,7 @@ async function seedProject(
         color: column.color ?? null,
         archivedAt: column.archived ? hoursAgo(48) : null,
         projectId,
+        workspaceId,
       },
     })
 
@@ -1050,11 +1052,15 @@ async function seedProject(
           coverColor: task.cover ?? null,
           columnId: createdColumn.id,
           projectId,
+          workspaceId,
           createdBy: people[creatorKey].id,
           assigneeId: people[assigneeKey].id,
           createdAt: hoursAgo(30 + hash(task.title) % 400),
           members: {
-            create: memberKeys.map((key) => ({ userId: people[key].id })),
+            create: memberKeys.map((key) => ({
+              userId: people[key].id,
+              workspaceId,
+            })),
           },
           taskLabels: {
             create: (task.labels ?? [])
@@ -1063,7 +1069,10 @@ async function seedProject(
               .map((labelId) => ({ labelId })),
           },
           likes: {
-            create: (task.likes ?? []).map((key) => ({ userId: people[key].id })),
+            create: (task.likes ?? []).map((key) => ({
+              userId: people[key].id,
+              workspaceId,
+            })),
           },
         },
       })
@@ -1078,6 +1087,7 @@ async function seedProject(
             attachableType: 'Task',
             attachableId: created.id,
             uploadedBy: people[creatorKey].id,
+            workspaceId,
           })),
         })
       }
@@ -1097,6 +1107,7 @@ async function seedProject(
           data: {
             content: comment.text,
             taskId: created.id,
+            workspaceId,
             userId: people[comment.by].id,
             createdAt: hoursAgo(comment.hoursAgo),
           },
@@ -1144,6 +1155,7 @@ async function seedProject(
     data: [...projectMemberIds].map((userId) => ({
       userId,
       projectId,
+      workspaceId,
       role: userId === ownerId ? 'OWNER' : 'MEMBER',
     })),
     skipDuplicates: true,

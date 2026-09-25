@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { HistoryIcon, PencilIcon } from "lucide-vue-next";
+import { HistoryIcon, PencilIcon, SparklesIcon } from "lucide-vue-next";
 import type { Project } from "@/types";
 import { toast } from "vue-sonner";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ const userStore = useUserStore();
 const workspaceStore = useWorkspaceStore();
 const { requestedProjectId, consumeRename } = useProjectRename();
 const { openTimeline } = useActivityTimeline();
+const modals = useModalsStore();
 const workspaceId = computed(() => String(route.params.workspaceId || ""));
 
 const projectId = computed(() => String(route.params.projectId || ""));
@@ -151,22 +152,39 @@ const saveTitle = async () => {
             />
           </button>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          class="h-8 shrink-0"
-          @click="
-            openTimeline({
-              kind: 'project',
-              id: activeProject.id,
-              name: activeProject.name,
-            })
-          "
-        >
-          <HistoryIcon class="h-3.5 w-3.5" />
-          Timeline
-        </Button>
+        <div class="flex shrink-0 items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            class="h-8"
+            @click="
+              modals.openModal('projectAi', {
+                projectId: activeProject.id,
+                name: activeProject.name,
+              })
+            "
+          >
+            <SparklesIcon class="h-3.5 w-3.5 text-primary" />
+            AI summary
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            class="h-8"
+            @click="
+              openTimeline({
+                kind: 'project',
+                id: activeProject.id,
+                name: activeProject.name,
+              })
+            "
+          >
+            <HistoryIcon class="h-3.5 w-3.5" />
+            Timeline
+          </Button>
+        </div>
       </div>
       <KanbanBoard :project-id="activeProject.id" />
     </template>

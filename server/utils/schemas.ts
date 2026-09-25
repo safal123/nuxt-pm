@@ -1,6 +1,6 @@
 /** Zod request schemas for `defineApi` `body` / `query`. */
 import { z } from 'zod'
-import { ATTACHABLE_TYPES } from '~/server/utils/attachment'
+import { ATTACHABLE_TYPES } from '~/server/utils/attachable-types'
 import { isWorkspaceColorId } from '~/utils/task-colors'
 import { TASK_STATUS_IDS } from '~/utils/task-status'
 
@@ -51,7 +51,10 @@ export const userUpdateSchema = z
   )
 
 export const workspaceCreateSchema = z.object({
-  name: trimmedName('Workspace name'),
+  name: trimmedName('Workspace name').max(
+    50,
+    'Workspace name must be 50 characters or less.',
+  ),
   description: optionalString,
 })
 
@@ -231,6 +234,16 @@ export const sprintUpdateSchema = z
 
 export const taskCommentSchema = z.object({
   content: trimmedName('Comment'),
+})
+
+export const AI_CHAT_MAX_LENGTH = 2000
+
+export const aiChatMessageSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, 'Message is required')
+    .max(AI_CHAT_MAX_LENGTH, `Keep messages under ${AI_CHAT_MAX_LENGTH} characters.`),
 })
 
 export const taskUpdateSchema = z.object({

@@ -305,6 +305,20 @@ export type MemberProfile = {
   activities: WorkspaceActivity[]
 }
 
+export type TaskSummary = {
+  id: string
+  progress: string
+  furtherAction: string
+  generatedAt: Date | string | null
+}
+
+export type AiChatMessage = {
+  id?: string
+  role: 'user' | 'assistant'
+  content: string
+  at?: string
+}
+
 export interface Task {
   id: string
   title: string
@@ -338,6 +352,8 @@ export interface Task {
   attachmentCount: number
   likeCount: number
   likedByMe: boolean
+  summary?: TaskSummary | null
+  summaries?: TaskSummary[]
 }
 
 export interface TaskColumn {

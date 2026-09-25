@@ -201,6 +201,7 @@ export const addProjectMember = async (projectId: string, userId: string) => {
     data: {
       userId,
       projectId,
+      workspaceId: project.workspaceId,
       role: userId === project.createdBy ? 'OWNER' : 'MEMBER'
     }
   })

@@ -2,6 +2,7 @@
 import {
   CalendarIcon,
   CheckIcon,
+  Loader2Icon,
   MessageSquareIcon,
   PaperclipIcon,
   HeartIcon,
@@ -71,12 +72,18 @@ const due = computed(() => {
 const cardLabels = computed(() => props.task.labels || []);
 
 const isComplete = computed(() => props.task.status === "DONE");
+const completing = ref(false);
 
 const toggleComplete = async () => {
-  if (props.preview) return;
-  await boardStore.patchTask(props.task.id, {
-    completed: props.task.status !== "DONE",
-  });
+  if (props.preview || completing.value) return;
+  completing.value = true;
+  try {
+    await boardStore.patchTask(props.task.id, {
+      completed: props.task.status !== "DONE",
+    });
+  } finally {
+    completing.value = false;
+  }
 };
 
 const onPointerDown = (event: PointerEvent) => {
@@ -151,16 +158,20 @@ const onPointerDown = (event: PointerEvent) => {
             data-card-action
             class="absolute inset-0 z-10 inline-flex items-center justify-center rounded-full border transition"
             :class="
-              isComplete
-                ? 'border-emerald-500 bg-emerald-500 text-white'
-                : 'border-muted-foreground/50 bg-card text-transparent opacity-0 group-hover:opacity-100 hover:border-emerald-500 hover:text-emerald-500'
+              completing
+                ? 'border-emerald-500 text-emerald-600 opacity-100'
+                : isComplete
+                  ? 'border-emerald-500 bg-emerald-500 text-white'
+                  : 'border-muted-foreground/50 bg-card text-transparent opacity-0 group-hover:opacity-100 hover:border-emerald-500 hover:text-emerald-500'
             "
             :aria-label="isComplete ? 'Reopen card' : 'Mark as complete'"
             :title="isComplete ? 'Reopen' : 'Mark as complete'"
+            :disabled="completing"
             @click.stop="toggleComplete"
             @pointerdown.stop.prevent
           >
-            <CheckIcon class="h-2.5 w-2.5" />
+            <Loader2Icon v-if="completing" class="h-2.5 w-2.5 animate-spin" />
+            <CheckIcon v-else class="h-2.5 w-2.5" />
           </button>
         </div>
         <p

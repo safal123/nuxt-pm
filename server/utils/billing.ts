@@ -8,6 +8,7 @@ import {
   planLimits,
   type PlanId,
 } from "~/utils/plans";
+import { canBypassSummaryLimit } from "~/utils/ai-summary";
 import {
   getStripe,
   intervalFromSubscription,
@@ -134,6 +135,23 @@ export const getEffectivePlanForWorkspace = async (workspaceId: string) => {
 
 const limitError = (message: string) =>
   createError({ statusCode: 402, message });
+
+export const canUseAiSummaries = async (
+  workspaceId: string,
+  email?: string | null,
+) => {
+  if (canBypassSummaryLimit(email)) return true;
+  const { plan } = await getEffectivePlanForWorkspace(workspaceId);
+  return isPaidPlan(plan);
+};
+
+export const assertCanUseAiSummaries = async (
+  workspaceId: string,
+  email?: string | null,
+) => {
+  if (await canUseAiSummaries(workspaceId, email)) return;
+  throw limitError("AI summaries and chat are on Team and Business. Upgrade to use them.");
+};
 
 export const assertCanCreateWorkspace = async (userId: string) => {
   const plan = await getEffectivePlanForUser(userId);

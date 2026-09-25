@@ -33,19 +33,21 @@ export default defineApi({
 - Reusable logic belongs in `server/utils/*.ts`. Access checks use `workspaceAccessWhere` via `validateWorkspaceAccess`, `validateProjectAccess`, `validateTaskAccess`, `validateColumnAccess`. Person rows use `personSelect` / `serializePerson` / `serializeMember` from `~/server/utils/person` only — do not re-export those names from other utils (Nuxt auto-import collides).
 - Utils that call each other import explicitly — do not rely on Nuxt auto-import between `server/utils` files.
 
-## Handler shape
+## Stack
+
+Client fetch / form / Pinia rules: `.cursor/rules/data-flow.mdc` (always apply). Routes stay thin:
 
 ```ts
 export default defineApi({
-  body: workspaceCreateSchema, // Zod; omit on GET/DELETE with no body
-  handler: async ({ user, event, body }) => {
-    // business logic only
+  body: workspaceCreateSchema,
+  handler: async ({ user, body }) => {
+    const workspace = await createWorkspace(user.id, body)
     return { data: { workspace }, message: 'Workspace created successfully', status: 201 }
   },
 })
 ```
 
-Do not wrap handlers in try/catch. `defineApi` parses the body/query, runs auth, returns `{ data, message }`, sets 201 when `status: 201`, and rethrows `createError` preserving `statusCode`. Unexpected errors log via `console.error` and become 500.
+Do not parse `body` again in the util. Do not wrap handlers in try/catch. `defineApi` parses the body/query, runs auth, returns `{ data, message }`, sets 201 when `status: 201`, and rethrows `createError` preserving `statusCode`. Unexpected errors log via `console.error` and become 500.
 
 ## Errors
 

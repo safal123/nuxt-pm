@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { SendIcon } from "lucide-vue-next";
-import { api } from "~/lib/api";
 import { toast } from "vue-sonner";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
@@ -151,18 +150,15 @@ async function onSubmit(values: any) {
   if (!workspaceId || sending.value) return;
   sending.value = true;
   try {
-    await api(`/api/workspaces/${workspaceId}/emails`, {
-      method: "POST",
-      body: {
-        to: values.to.trim(),
-        subject: values.subject.trim(),
-        kicker: values.kicker?.trim() || "Update",
-        title: values.title.trim(),
-        body: values.body.trim(),
-        actionLabel: values.actionLabel?.trim() || undefined,
-        actionUrl: values.actionUrl?.trim() || undefined,
-        projectId: values.projectId === NONE ? null : values.projectId,
-      },
+    await workspaceStore.sendEmail({
+      to: values.to.trim(),
+      subject: values.subject.trim(),
+      kicker: values.kicker?.trim() || "Update",
+      title: values.title.trim(),
+      body: values.body.trim(),
+      actionLabel: values.actionLabel?.trim() || undefined,
+      actionUrl: values.actionUrl?.trim() || undefined,
+      projectId: values.projectId === NONE ? null : values.projectId,
     });
     toast.success("Email sent", {
       description: `Sent to ${values.to.trim()}.`,

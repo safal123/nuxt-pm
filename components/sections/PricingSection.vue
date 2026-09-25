@@ -45,6 +45,7 @@ const plans = computed(() => {
       features: [
         "Everything in Free",
         "Unlimited projects and members",
+        "AI task summaries: progress and next steps, daily",
         "Full workspace activity, filterable by project and task",
         "Custom branded emails and HTML preview",
         "Email send log for mail you send",

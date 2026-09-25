@@ -3,7 +3,8 @@ import type { FileRouter } from 'uploadthing/h3'
 import { UploadThingError } from 'uploadthing/server'
 import { z } from 'zod'
 import prisma from '~/lib/prisma'
-import { ATTACHABLE_TYPES, validateAttachableAccess } from '~/server/utils/attachment'
+import { validateAttachableAccess } from '~/server/utils/attachment'
+import { ATTACHABLE_TYPES } from '~/server/utils/attachable-types'
 import { validateAndGetUser } from '~/server/utils/user'
 import { logActivity } from '~/server/utils/activity'
 import { MAX_CARD_FILES, MAX_CARD_FILE_SIZE } from '~/utils/upload-limits'
@@ -53,7 +54,8 @@ export const uploadRouter = {
           mimeType: file.type || null,
           attachableType: metadata.attachableType,
           attachableId: metadata.attachableId,
-          uploadedBy: metadata.userId
+          uploadedBy: metadata.userId,
+          workspaceId: metadata.workspaceId,
         }
       })
 

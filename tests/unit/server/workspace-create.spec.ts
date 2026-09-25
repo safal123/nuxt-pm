@@ -39,6 +39,18 @@ describe("POST /api/workspaces body", () => {
       }),
     ).toEqual({ name: "Acme", description: null });
   });
+
+  it("rejects a name longer than 50 characters", () => {
+    const result = workspaceCreateSchema.safeParse({
+      name: "A".repeat(51),
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        "Workspace name must be 50 characters or less.",
+      );
+    }
+  });
 });
 
 describe("createWorkspace", () => {
@@ -57,8 +69,7 @@ describe("createWorkspace", () => {
     create.mockResolvedValue(workspace);
 
     await expect(
-      createWorkspace({
-        userId: "user_1",
+      createWorkspace("user_1", {
         name: "Acme",
         description: "Ops",
       }),
@@ -81,7 +92,7 @@ describe("createWorkspace", () => {
   it("stores a blank description as null", async () => {
     create.mockResolvedValue({ id: "ws_1" });
 
-    await createWorkspace({ userId: "user_1", name: "Acme" });
+    await createWorkspace("user_1", { name: "Acme" });
 
     expect(create.mock.calls[0][0].data.description).toBeNull();
   });
@@ -95,7 +106,7 @@ describe("createWorkspace", () => {
     );
 
     await expect(
-      createWorkspace({ userId: "user_1", name: "Acme" }),
+      createWorkspace("user_1", { name: "Acme" }),
     ).rejects.toMatchObject({
       statusCode: 402,
       message: "Free includes one workspace. Upgrade to Business for more.",

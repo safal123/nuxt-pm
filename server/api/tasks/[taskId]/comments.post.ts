@@ -10,6 +10,7 @@ export default defineApi({
     await prisma.taskComment.create({
       data: {
         taskId,
+        workspaceId: task.project.workspaceId,
         userId: user.id,
         content: body.content,
       },

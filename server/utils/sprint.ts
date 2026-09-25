@@ -57,6 +57,7 @@ export const findOrCreateNextSprint = async (
   projectId: string,
   current: Pick<Sprint, 'number'>,
   createdBy: string,
+  workspaceId: string,
 ) => {
   const planned = await prisma.sprint.findFirst({
     where: {
@@ -81,6 +82,7 @@ export const findOrCreateNextSprint = async (
       number,
       status: 'PLANNED',
       projectId,
+      workspaceId,
       createdBy,
     },
   })

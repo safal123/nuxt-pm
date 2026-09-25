@@ -4,11 +4,7 @@ import { createWorkspace } from '~/server/utils/workspace'
 export default defineApi({
   body: workspaceCreateSchema,
   handler: async ({ user, body }) => {
-    const workspace = await createWorkspace({
-      userId: user.id,
-      name: body.name,
-      description: body.description,
-    })
+    const workspace = await createWorkspace(user.id, body)
 
     return {
       data: { workspace },

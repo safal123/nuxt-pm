@@ -3,9 +3,10 @@ import { personSelect } from '~/server/utils/person'
 import { validateTaskAccess } from '~/server/utils/task'
 import { validateProjectAccess } from '~/server/utils/project'
 import { validateWorkspaceAccess } from '~/server/utils/workspace'
-
-export const ATTACHABLE_TYPES = ['Task', 'Project', 'Workspace', 'Comment'] as const
-export type AttachableType = (typeof ATTACHABLE_TYPES)[number]
+import {
+  ATTACHABLE_TYPES,
+  type AttachableType,
+} from '~/server/utils/attachable-types'
 
 export const attachmentUploaderInclude = {
   uploader: { select: personSelect }

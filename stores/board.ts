@@ -244,6 +244,7 @@ export const useBoardStore = defineStore('board', () => {
 
   const selectedTask = ref<Task | null>(null)
   const selectedTaskLoading = ref(false)
+  const canGenerateSummary = ref(false)
   const workspaceMembers = ref<Task['members']>([])
   const projectMembers = ref<Task['members']>([])
   const projectLabels = ref<Task['labels']>([])
@@ -323,7 +324,11 @@ export const useBoardStore = defineStore('board', () => {
     selectedTask.value = { ...task, comments: task.comments ?? [] }
     selectedTaskLoading.value = true
     try {
-      const { task: next } = await api<{ task: Task }>(`/api/tasks/${task.id}`)
+      const { task: next, canGenerateSummary: allowed } = await api<{
+        task: Task
+        canGenerateSummary: boolean
+      }>(`/api/tasks/${task.id}`)
+      canGenerateSummary.value = allowed ?? false
       if (next) {
         selectedTask.value = next
         const boardTask = findTask(task.id)
@@ -357,14 +362,42 @@ export const useBoardStore = defineStore('board', () => {
     }
   }
 
+  const listProjectMembers = async (id: string) => {
+    const { members } = await api<{ members: Task['members'] }>(
+      `/api/projects/${id}/members`,
+    )
+    const next = members ?? []
+    if (projectId.value === id) projectMembers.value = next
+    return next
+  }
+
   const fetchProjectMembers = async (id: string) => {
     try {
-      const { members } = await api<{ members: Task['members'] }>(
-        `/api/projects/${id}/members`
-      )
-      projectMembers.value = members ?? []
+      await listProjectMembers(id)
     } catch (error) {
       console.error('Failed to load project members:', error)
+    }
+  }
+
+  const addProjectMember = async (id: string, userId: string) => {
+    const { member } = await api<{ member: Task['members'][number] }>(
+      `/api/projects/${id}/members`,
+      { method: 'POST', body: { userId } },
+    )
+    if (
+      projectId.value === id &&
+      member &&
+      !projectMembers.value.some((item) => item.id === member.id)
+    ) {
+      projectMembers.value.push(member)
+    }
+    return member ?? null
+  }
+
+  const removeProjectMember = async (id: string, userId: string) => {
+    await api(`/api/projects/${id}/members/${userId}`, { method: 'DELETE' })
+    if (projectId.value === id) {
+      projectMembers.value = projectMembers.value.filter((item) => item.id !== userId)
     }
   }
 
@@ -416,7 +449,11 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   const refreshTask = async (taskId: string) => {
-    const { task: updated } = await api<{ task: Task }>(`/api/tasks/${taskId}`)
+    const { task: updated, canGenerateSummary: allowed } = await api<{
+      task: Task
+      canGenerateSummary: boolean
+    }>(`/api/tasks/${taskId}`)
+    canGenerateSummary.value = allowed ?? false
     if (updated) applyUpdatedTask(updated)
     return updated
   }
@@ -428,6 +465,17 @@ export const useBoardStore = defineStore('board', () => {
     })
     if (updated) applyUpdatedTask(updated)
     return updated
+  }
+
+  const generateTaskSummary = async (taskId: string) => {
+    const { task: updated, created } = await api<{
+      task: Task
+      created: boolean
+    }>(`/api/tasks/${taskId}/summary`, {
+      method: 'POST',
+    })
+    if (updated) applyUpdatedTask(updated)
+    return { task: updated, created }
   }
 
   const archiveTask = async (taskId: string) => {
@@ -673,6 +721,7 @@ export const useBoardStore = defineStore('board', () => {
     dragSize,
     selectedTask,
     selectedTaskLoading,
+    canGenerateSummary,
     workspaceMembers,
     projectMembers,
     projectLabels,
@@ -695,9 +744,13 @@ export const useBoardStore = defineStore('board', () => {
     patchTask,
     loadMoreCompleted,
     addComment,
+    generateTaskSummary,
     refreshTask,
     fetchWorkspaceMembers,
     fetchProjectMembers,
+    listProjectMembers,
+    addProjectMember,
+    removeProjectMember,
     fetchLabels,
     createLabel,
     applyRealtimeEvent,

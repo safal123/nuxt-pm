@@ -203,6 +203,23 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
   }
 
+  const sendEmail = async (payload: {
+    to: string
+    subject: string
+    kicker?: string
+    title: string
+    body: string
+    actionLabel?: string
+    actionUrl?: string
+    projectId?: string | null
+  }) => {
+    if (!activeWorkspaceId.value) return
+    return api(`/api/workspaces/${activeWorkspaceId.value}/emails`, {
+      method: 'POST',
+      body: payload,
+    })
+  }
+
   const updateSettings = async (patch: Partial<WorkspaceSetting>) => {
     if (!activeWorkspaceId.value) return
     const workspaceId = activeWorkspaceId.value
@@ -245,6 +262,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     addMember,
     createInvite,
     removeMember,
+    sendEmail,
     updateProject,
     updateSettings,
     fetchArchive,

@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import { PlusIcon } from "lucide-vue-next";
 import { toast } from "vue-sonner";
+import { toTypedSchema } from "@vee-validate/zod";
+import { workspaceCreateSchema } from "~/server/utils/schemas";
 
 const workspaceStore = useWorkspaceStore();
 const userStore = useUserStore();
-const name = ref("");
 const creating = ref(false);
 
-const createWorkspace = async () => {
-  const trimmed = name.value.trim();
-  if (!trimmed || creating.value) return;
+const formSchema = toTypedSchema(workspaceCreateSchema.pick({ name: true }));
+
+async function onSubmit(values: any) {
+  if (creating.value) return;
   creating.value = true;
   try {
-    const workspace = await workspaceStore.createWorkspace({ name: trimmed });
+    const workspace = await workspaceStore.createWorkspace({ name: values.name });
     await userStore.updateUser({ activeWorkspaceId: workspace.id });
     await workspaceStore.setActiveWorkspace(workspace.id);
-    name.value = "";
     toast.success("Workspace created");
     await navigateTo({
       name: "workspace-dashboard",
@@ -26,7 +27,7 @@ const createWorkspace = async () => {
   } finally {
     creating.value = false;
   }
-};
+}
 </script>
 
 <template>
@@ -41,14 +42,27 @@ const createWorkspace = async () => {
       </Button>
     </template>
     <template #body>
-      <div class="py-4">
-        <Input
-          label="Workspace Name"
-          placeholder="My Awesome Workspace"
-          v-model="name"
-          :disabled="creating"
-        />
-      </div>
+      <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
+        <form
+          id="createWorkspaceForm"
+          class="py-4"
+          @submit="handleSubmit($event, onSubmit)"
+        >
+          <FormField v-slot="{ componentField }" name="name">
+            <FormItem>
+              <FormLabel>Workspace Name</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="My Awesome Workspace"
+                  v-bind="componentField"
+                  :disabled="creating"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+        </form>
+      </Form>
     </template>
     <template #footer>
       <div class="flex gap-4">
@@ -57,8 +71,9 @@ const createWorkspace = async () => {
         </DialogClose>
         <Button
           size="sm"
-          :disabled="creating || !name.trim()"
-          @click.prevent="createWorkspace"
+          type="submit"
+          form="createWorkspaceForm"
+          :disabled="creating"
         >
           {{ creating ? "Creating..." : "Create" }}
         </Button>

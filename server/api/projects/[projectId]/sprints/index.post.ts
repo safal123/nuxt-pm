@@ -39,6 +39,7 @@ export default defineApi({
         status: body.start ? 'ACTIVE' : 'PLANNED',
         startedAt: body.start ? now : null,
         projectId,
+        workspaceId: project.workspaceId,
         createdBy: user.id,
       },
       include: { _count: { select: { tasks: true } } },

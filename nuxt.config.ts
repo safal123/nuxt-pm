@@ -41,6 +41,9 @@ export default defineNuxtConfig({
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     ablyApiKey: process.env.ABLY_API_KEY,
+    groqApiKey: process.env.GROQ_API_KEY,
+    geminiApiKey: process.env.GEMINI_API_KEY,
+    deepseekApiKey: process.env.DEEPSEEK_API_KEY,
     public: {
       stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
       ablyEnabled: Boolean(process.env.ABLY_API_KEY || process.env.NUXT_ABLY_API_KEY),

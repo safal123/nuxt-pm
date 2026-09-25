@@ -6,14 +6,14 @@ export default defineApi({
   query: boardQuerySchema,
   handler: async ({ user, event, query }) => {
     const projectId = getRouterParam(event, 'projectId') as string
-    await validateProjectAccess(projectId, user.id)
+    const project = await validateProjectAccess(projectId, user.id)
 
     const sprintFilter = await resolveBoardSprintFilter(projectId, query.sprint)
     const sprintClause = sprintTaskWhere(sprintFilter)
 
     const columnCount = await prisma.taskColumn.count({ where: { projectId } })
     if (columnCount === 0) {
-      await createDefaultColumns(projectId)
+      await createDefaultColumns(projectId, project.workspaceId)
     }
 
     const columns = await prisma.taskColumn.findMany({

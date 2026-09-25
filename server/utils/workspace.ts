@@ -1,20 +1,21 @@
+import type { z } from 'zod'
 import prisma from '~/lib/prisma'
 import { workspaceAccessWhere } from '~/server/utils/access'
 import { assertCanCreateWorkspace } from '~/server/utils/billing'
+import { workspaceCreateSchema } from '~/server/utils/schemas'
 
-export const createWorkspace = async (input: {
-  userId: string
-  name: string
-  description?: string | null
-}) => {
-  await assertCanCreateWorkspace(input.userId)
+export const createWorkspace = async (
+  userId: string,
+  input: z.infer<typeof workspaceCreateSchema>,
+) => {
+  await assertCanCreateWorkspace(userId)
   return prisma.workspace.create({
     data: {
       name: input.name,
-      description: input.description || null,
-      createdBy: input.userId,
+      description: input.description ?? null,
+      createdBy: userId,
       members: {
-        create: { userId: input.userId, role: 'OWNER' },
+        create: { userId, role: 'OWNER' },
       },
       settings: { create: {} },
     },

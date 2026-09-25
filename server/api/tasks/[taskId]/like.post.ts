@@ -25,7 +25,7 @@ export default defineApi({
       })
     } else {
       await prisma.taskLike.create({
-        data: { userId: user.id, taskId },
+        data: { userId: user.id, taskId, workspaceId: task.project.workspaceId },
       })
       await logActivity({
         workspaceId: task.project.workspaceId,

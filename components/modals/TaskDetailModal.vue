@@ -8,6 +8,7 @@ import {
   MessageSquareIcon,
   PaperclipIcon,
   PlusIcon,
+  SparklesIcon,
   UserIcon,
   XIcon,
 } from "lucide-vue-next";
@@ -27,10 +28,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type TaskTab = "details" | "members" | "files" | "comments" | "activity";
+type TaskTab = "details" | "summary" | "members" | "files" | "comments" | "activity";
 
 const TABS: { id: TaskTab; label: string; icon: typeof UserIcon }[] = [
   { id: "details", label: "Details", icon: AlignLeftIcon },
+  { id: "summary", label: "Summary", icon: SparklesIcon },
   { id: "members", label: "Members", icon: UserIcon },
   { id: "files", label: "Files", icon: PaperclipIcon },
   { id: "comments", label: "Comments", icon: MessageSquareIcon },
@@ -235,14 +237,24 @@ const setSprint = async (value: unknown) => {
   await boardStore.patchTask(task.value.id, { sprintId });
 };
 
-const toggleComplete = async () => {
-  if (!task.value) return;
-  await boardStore.patchTask(task.value.id, {
-    completed: task.value.status !== "DONE",
-  });
-};
-
 const isComplete = computed(() => task.value?.status === "DONE");
+const completing = ref(false);
+
+const toggleComplete = async () => {
+  if (!task.value || completing.value) return;
+  completing.value = true;
+  try {
+    await boardStore.patchTask(task.value.id, {
+      completed: task.value.status !== "DONE",
+    });
+  } catch (error: any) {
+    toast.error("Could not update the card", {
+      description: error?.data?.message || "Please try again.",
+    });
+  } finally {
+    completing.value = false;
+  }
+};
 
 const submitComment = async () => {
   const content = commentDraft.value.trim();
@@ -329,7 +341,7 @@ const ignoreSelectOutside = (event: Event) => {
   <Dialog :open="open" @update:open="open = $event">
     <DialogContent
       v-if="task"
-      class="flex max-h-[min(720px,90vh)] w-full max-w-2xl flex-col overflow-hidden p-0 gap-0 [&>button]:hidden"
+      class="flex h-[min(720px,90vh)] w-full max-w-2xl flex-col overflow-hidden p-0 gap-0 [&>button]:hidden"
       @pointer-down-outside="ignoreSelectOutside"
       @focus-outside="ignoreSelectOutside"
       @interact-outside="ignoreSelectOutside"
@@ -382,15 +394,19 @@ const ignoreSelectOutside = (event: Event) => {
             type="button"
             class="h-6 w-6 shrink-0 inline-flex items-center justify-center rounded-full border transition-colors"
             :class="
-              isComplete
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-muted-foreground/35 text-transparent hover:border-primary hover:text-primary'
+              completing
+                ? 'border-primary text-primary'
+                : isComplete
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-muted-foreground/35 text-transparent hover:border-primary hover:text-primary'
             "
             :aria-label="isComplete ? 'Reopen card' : 'Mark as complete'"
             :title="isComplete ? 'Reopen' : 'Mark as complete'"
+            :disabled="completing"
             @click="toggleComplete"
           >
-            <CheckIcon class="h-3.5 w-3.5" />
+            <Loader2Icon v-if="completing" class="h-3.5 w-3.5 animate-spin" />
+            <CheckIcon v-else class="h-3.5 w-3.5" />
           </button>
           <input
             v-model="titleDraft"
@@ -628,6 +644,8 @@ const ignoreSelectOutside = (event: Event) => {
           </div>
         </div>
 
+        <TaskSummary v-else-if="activeTab === 'summary'" :task="task" />
+
         <div v-else-if="activeTab === 'members'" class="space-y-2">
           <p class="text-sm text-muted-foreground mb-3">
             Add or remove people on this card. People come from the project member list.
@@ -678,6 +696,26 @@ const ignoreSelectOutside = (event: Event) => {
             {{ comments.length }}
             {{ comments.length === 1 ? "comment" : "comments" }}
           </p>
+
+          <div class="mt-4">
+            <textarea
+              v-model="commentDraft"
+              placeholder="Write a comment…"
+              rows="3"
+              class="min-h-[88px] w-full resize-none rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none border-0 focus:outline-none focus:ring-0"
+              @keydown.enter.exact.prevent="submitComment"
+            />
+            <div class="mt-2 flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                :disabled="savingComment"
+                @click="submitComment"
+              >
+                Comment
+              </Button>
+            </div>
+          </div>
 
           <div v-if="comments.length" class="mt-4">
             <article
@@ -730,26 +768,6 @@ const ignoreSelectOutside = (event: Event) => {
             <p class="mt-1 max-w-xs text-sm text-muted-foreground">
               Leave a note for the team. Comments stay on this card.
             </p>
-          </div>
-
-          <div class="pt-4">
-            <textarea
-              v-model="commentDraft"
-              placeholder="Write a comment…"
-              rows="3"
-              class="min-h-[88px] w-full resize-none rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none border-0 focus:outline-none focus:ring-0"
-              @keydown.enter.exact.prevent="submitComment"
-            />
-            <div class="mt-2 flex justify-end">
-              <Button
-                type="button"
-                size="sm"
-                :disabled="savingComment"
-                @click="submitComment"
-              >
-                Comment
-              </Button>
-            </div>
           </div>
         </div>
 

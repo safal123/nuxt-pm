@@ -77,7 +77,12 @@ export default defineApi({
 
     let nextSprintId: string | null = null
     if (unfinishedDestination === 'next') {
-      const next = await findOrCreateNextSprint(projectId, existing, user.id)
+      const next = await findOrCreateNextSprint(
+        projectId,
+        existing,
+        user.id,
+        project.workspaceId,
+      )
       nextSprintId = next.sprint.id
       if (next.created) {
         await logActivity({
