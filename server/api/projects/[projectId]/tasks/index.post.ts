@@ -47,7 +47,7 @@ export default defineApi({
         status: 'TODO',
         order: await nextOrderInColumnSprint(body.columnId, sprintId),
         members: {
-          create: { userId: user.id, workspaceId: project.workspaceId },
+          create: { userId: user.id },
         },
       },
     })

@@ -74,11 +74,7 @@ describe("createProject", () => {
         description: "Launch",
         createdBy: "user_1",
         members: {
-          create: {
-            userId: "user_1",
-            role: "OWNER",
-            workspaceId: "ws_1",
-          },
+          create: { userId: "user_1", role: "OWNER" },
         },
       },
     });

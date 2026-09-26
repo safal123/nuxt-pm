@@ -37,11 +37,7 @@ export const createProject = async (options: {
         description: options.description || '',
         createdBy: options.createdBy,
         members: {
-          create: {
-            userId: options.createdBy,
-            role: 'OWNER',
-            workspaceId: options.workspaceId,
-          },
+          create: { userId: options.createdBy, role: 'OWNER' },
         },
       },
     })
