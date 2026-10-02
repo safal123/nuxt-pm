@@ -1,8 +1,5 @@
-import {
-  BaseRealtime,
-  FetchRequest,
-  WebSocketTransport,
-} from "ably/modular";
+import type { BaseRealtime } from "ably/modular";
+import type { TokenRequest } from "ably";
 import { api } from "~/lib/api";
 import { realtimeClientId } from "~/utils/realtime";
 
@@ -61,7 +58,9 @@ const detach = (subscriber: Subscriber) => {
   subscriber.listener = undefined;
 };
 
-const syncClient = () => {
+let connecting: Promise<void> | null = null;
+
+const syncClient = async () => {
   const config = useRuntimeConfig();
   if (!import.meta.client || !config.public.ablyEnabled || !subscribers.size) {
     teardownClient();
@@ -71,6 +70,25 @@ const syncClient = () => {
   const scope = aggregateScope();
   const key = scopeKey(scope);
   if (client && connectedKey === key) return;
+  if (connecting) {
+    await connecting;
+    return syncClient();
+  }
+
+  connecting = connect(key);
+  try {
+    await connecting;
+  } finally {
+    connecting = null;
+  }
+};
+
+// Loaded lazily so SSR never pulls in Ably's browser bundle.
+const connect = async (key: string) => {
+  const { BaseRealtime, FetchRequest, WebSocketTransport } = await import(
+    "ably/modular"
+  );
+  if (!subscribers.size || scopeKey(aggregateScope()) !== key) return;
 
   teardownClient();
   const clientId = realtimeClientId();
@@ -87,7 +105,7 @@ const syncClient = () => {
           workspaceId: current.workspaceId || undefined,
         },
       })
-        .then((tokenRequest) => callback(null, tokenRequest))
+        .then((tokenRequest) => callback(null, tokenRequest as TokenRequest))
         .catch((error) =>
           callback(
             error instanceof Error ? error.message : "Token request failed",
@@ -144,7 +162,7 @@ export const useRealtimeChannel = (
       attach(subscriber);
       return;
     }
-    syncClient();
+    void syncClient();
   };
 
   watch(

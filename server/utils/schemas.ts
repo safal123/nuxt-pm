@@ -302,6 +302,12 @@ export const billingQuerySchema = z.object({
   workspaceId: optionalId,
 })
 
+export const billingEventsQuerySchema = z.object({
+  workspaceId: optionalId,
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(20).optional().default(5),
+})
+
 export const ablyTokenSchema = z.object({
   clientId: z
     .string()

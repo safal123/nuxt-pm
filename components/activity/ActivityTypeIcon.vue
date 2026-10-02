@@ -18,6 +18,7 @@ import {
   PencilIcon,
   PlusIcon,
   RotateCcwIcon,
+  SparklesIcon,
   TagIcon,
   UserMinusIcon,
   UserPlusIcon,
@@ -54,6 +55,7 @@ const ICONS: Record<string, typeof HistoryIcon> = {
   TASK_REMOVED_FROM_SPRINT: ZapIcon,
   EMAIL_SENT: MailIcon,
   EMAIL_FAILED: MailXIcon,
+  SUMMARY_GENERATED: SparklesIcon,
 };
 
 defineProps<{

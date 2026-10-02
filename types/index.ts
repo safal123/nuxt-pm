@@ -91,6 +91,8 @@ export type BillingOverview = BillingSubscription & {
   invoices: BillingInvoice[]
   upcoming: BillingInvoice | null
   events: BillingEventItem[]
+  eventsTotal: number
+  eventsHasMore: boolean
   canManage: boolean
   totalPaid: number
   remainingValue: number
@@ -212,6 +214,7 @@ export type ActivityType =
   | 'TASK_REMOVED_FROM_SPRINT'
   | 'EMAIL_SENT'
   | 'EMAIL_FAILED'
+  | 'SUMMARY_GENERATED'
 
 export interface Activity {
   id: string

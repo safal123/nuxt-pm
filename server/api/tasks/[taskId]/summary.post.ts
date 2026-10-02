@@ -9,6 +9,7 @@ export default defineApi({
       taskId,
       user.id,
       user.email,
+      user.name,
     )
 
     return {

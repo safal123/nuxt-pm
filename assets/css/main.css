@@ -122,9 +122,9 @@
  * declaration below invalid at computed-value time, so the plain
  * `hsl(var(--token))` fallbacks in tailwind.config.js take over untouched.
  *
- * Light mode only tints interactive chrome (accent, active nav, focus). Page,
- * card, sidebar, and border surfaces stay on the plain tokens. Dark mode still
- * tints the whole surface ramp so the workspace colour remains visible.
+ * Light mode only tints interactive chrome (accent, active nav). Page, card,
+ * sidebar, and border surfaces stay on the plain tokens. Dark mode still tints
+ * the whole surface ramp so the workspace colour remains visible.
  *
  * Lightness is driven by the ramp rather than the workspace colour, so a
  * workspace barely changes how readable the UI is — the dark "Black" and the
@@ -137,10 +137,10 @@
  */
 @layer base {
   :root {
-    --accent-color: oklch(calc(86% + var(--ws-lift) * 0.8) calc(0.064 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-accent-color: oklch(calc(85% + var(--ws-lift) * 0.86) calc(0.068 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-active-color: oklch(calc(81.5% + var(--ws-lift)) calc(0.085 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-active-hover-color: oklch(calc(78% + var(--ws-lift)) calc(0.1 * var(--ws-chroma)) var(--ws-hue));
+    --accent-color: oklch(calc(86% + var(--ws-lift) * 0.8) calc(0.12 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-accent-color: oklch(calc(85% + var(--ws-lift) * 0.86) calc(0.13 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-active-color: oklch(calc(81.5% + var(--ws-lift)) calc(0.16 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-active-hover-color: oklch(calc(78% + var(--ws-lift)) calc(0.185 * var(--ws-chroma)) var(--ws-hue));
   }
 
   .dark {
@@ -149,14 +149,14 @@
     --background-color: oklch(25.5% calc(0.042 * var(--ws-chroma)) var(--ws-hue));
     --muted-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
     --secondary-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
-    --accent-color: oklch(37.5% calc(0.062 * var(--ws-chroma)) var(--ws-hue));
+    --accent-color: oklch(37.5% calc(0.11 * var(--ws-chroma)) var(--ws-hue));
     --border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
     --input-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
 
     --sidebar-background-color: oklch(22% calc(0.035 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-accent-color: oklch(30% calc(0.05 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-active-color: oklch(38% calc(0.062 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-active-hover-color: oklch(43% calc(0.07 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-accent-color: oklch(30% calc(0.09 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-active-color: oklch(38% calc(0.125 * var(--ws-chroma)) var(--ws-hue));
+    --sidebar-active-hover-color: oklch(43% calc(0.14 * var(--ws-chroma)) var(--ws-hue));
     --sidebar-border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
 
     --dropzone-color: oklch(35% calc(0.058 * var(--ws-chroma)) var(--ws-hue));
@@ -206,13 +206,13 @@
       --background-color: oklch(25.5% calc(0.042 * var(--ws-chroma)) var(--ws-hue));
       --muted-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
       --secondary-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
-      --accent-color: oklch(37.5% calc(0.062 * var(--ws-chroma)) var(--ws-hue));
+      --accent-color: oklch(37.5% calc(0.11 * var(--ws-chroma)) var(--ws-hue));
       --border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
       --input-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
       --sidebar-background-color: oklch(22% calc(0.035 * var(--ws-chroma)) var(--ws-hue));
-      --sidebar-accent-color: oklch(30% calc(0.05 * var(--ws-chroma)) var(--ws-hue));
-      --sidebar-active-color: oklch(38% calc(0.062 * var(--ws-chroma)) var(--ws-hue));
-      --sidebar-active-hover-color: oklch(43% calc(0.07 * var(--ws-chroma)) var(--ws-hue));
+      --sidebar-accent-color: oklch(30% calc(0.09 * var(--ws-chroma)) var(--ws-hue));
+      --sidebar-active-color: oklch(38% calc(0.125 * var(--ws-chroma)) var(--ws-hue));
+      --sidebar-active-hover-color: oklch(43% calc(0.14 * var(--ws-chroma)) var(--ws-hue));
       --sidebar-border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
       --dropzone-color: oklch(35% calc(0.058 * var(--ws-chroma)) var(--ws-hue));
     }

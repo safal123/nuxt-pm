@@ -22,8 +22,7 @@ const projectId = computed(() => String(route.params.projectId || ""));
 
 const activeProject = computed(() =>
   workspaceStore.getActiveWorkspace?.projects?.find(
-    (project: Project) =>
-      project.id === projectId.value && !project.archivedAt,
+    (project: Project) => project.id === projectId.value && !project.archivedAt,
   ),
 );
 
@@ -140,7 +139,7 @@ const saveTitle = async () => {
           <button
             v-else
             type="button"
-            class="group inline-flex max-w-full items-center gap-2 rounded-md px-1 py-0.5 -ml-1 text-left hover:bg-accent"
+            class="group inline-flex max-w-2xl items-center gap-2 rounded-md px-1 py-0.5 -ml-1 text-left hover:bg-accent"
             title="Rename project"
             @click="startEditing"
           >

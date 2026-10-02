@@ -18,14 +18,22 @@ const userIdFromSubscription = async (subscription: Stripe.Subscription) => {
   return userIdFromStripeCustomer(customerId ?? null);
 };
 
-const syncSubscription = async (subscription: Stripe.Subscription) => {
+const syncSubscription = async (
+  subscription: Stripe.Subscription,
+  stripeEventId?: string,
+) => {
   const userId = await userIdFromSubscription(subscription);
   const customerId =
     typeof subscription.customer === "string"
       ? subscription.customer
       : subscription.customer?.id;
   if (!userId || !customerId) return;
-  await upsertSubscriptionFromStripe(userId, customerId, subscription);
+  await upsertSubscriptionFromStripe(
+    userId,
+    customerId,
+    subscription,
+    stripeEventId,
+  );
 };
 
 const customerIdFrom = (value: string | Stripe.Customer | Stripe.DeletedCustomer | null) => {
@@ -74,7 +82,7 @@ export default defineEventHandler(async (event) => {
           ? session.subscription
           : session.subscription.id;
       const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
-      await syncSubscription(subscription);
+      await syncSubscription(subscription, stripeEvent.id);
       const userId =
         session.client_reference_id ||
         (await userIdFromStripeCustomer(customerIdFrom(session.customer)));
@@ -125,12 +133,15 @@ export default defineEventHandler(async (event) => {
     }
     case "customer.subscription.created":
     case "customer.subscription.updated": {
-      await syncSubscription(stripeEvent.data.object as Stripe.Subscription);
+      await syncSubscription(
+        stripeEvent.data.object as Stripe.Subscription,
+        stripeEvent.id,
+      );
       break;
     }
     case "customer.subscription.deleted": {
       const subscription = stripeEvent.data.object as Stripe.Subscription;
-      await markSubscriptionCanceled(subscription.id);
+      await markSubscriptionCanceled(subscription.id, stripeEvent.id);
       break;
     }
     default:

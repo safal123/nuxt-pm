@@ -1,5 +1,5 @@
 import prisma from '~/lib/prisma'
-import { workspaceAccessWhere } from '~/server/utils/access'
+import { workspaceAccessWhere } from '~/server/utils/workspace'
 
 export default defineApi({
   handler: async ({ user }) => {

@@ -54,6 +54,7 @@ const ACTIVITY_TONES: Record<string, Tone> = {
   TASK_REMOVED_FROM_SPRINT: 'orange',
   EMAIL_SENT: 'emerald',
   EMAIL_FAILED: 'rose',
+  SUMMARY_GENERATED: 'violet',
 }
 
 export const activityTypeChip = (type: string) =>
@@ -118,6 +119,8 @@ const BILLING_EVENT_TONES: Record<string, Tone> = {
   invoice_paid: 'emerald',
   invoice_failed: 'rose',
   canceled: 'orange',
+  cancel_scheduled: 'amber',
+  cancel_reversed: 'teal',
   portal_opened: 'slate',
   seats_updated: 'amber',
 }

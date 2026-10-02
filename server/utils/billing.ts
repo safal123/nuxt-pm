@@ -9,6 +9,7 @@ import {
   type PlanId,
 } from "~/utils/plans";
 import { canBypassSummaryLimit } from "~/utils/ai-summary";
+import { BILLING_EVENTS_PAGE_SIZE } from "~/utils/billing";
 import {
   getStripe,
   intervalFromSubscription,
@@ -16,6 +17,7 @@ import {
   planFromSubscription,
 } from "~/server/utils/stripe";
 
+export { BILLING_EVENTS_PAGE_SIZE };
 export const countOwnedWorkspaces = (userId: string) =>
   prisma.workspace.count({ where: { createdBy: userId } });
 
@@ -84,21 +86,45 @@ export const logBillingEvent = async (input: {
   });
 };
 
-export const listBillingEvents = async (userId: string) => {
-  const events = await prisma.billingEvent.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
-  return events.map((event) => ({
-    id: event.id,
-    type: event.type,
-    message: event.message,
-    amount: event.amount,
-    currency: event.currency,
-    createdAt: event.createdAt.toISOString(),
-    metadata: (event.metadata as Record<string, unknown> | null) ?? null,
-  }));
+const serializeBillingEvent = (event: {
+  id: string;
+  type: string;
+  message: string;
+  amount: number | null;
+  currency: string | null;
+  createdAt: Date;
+  metadata: unknown;
+}) => ({
+  id: event.id,
+  type: event.type,
+  message: event.message,
+  amount: event.amount,
+  currency: event.currency,
+  createdAt: event.createdAt.toISOString(),
+  metadata: (event.metadata as Record<string, unknown> | null) ?? null,
+});
+
+export const listBillingEvents = async (
+  userId: string,
+  options: { page?: number; limit?: number } = {},
+) => {
+  const limit = options.limit ?? BILLING_EVENTS_PAGE_SIZE;
+  const page = Math.max(1, options.page ?? 1);
+  const [events, total] = await Promise.all([
+    prisma.billingEvent.findMany({
+      where: { userId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.billingEvent.count({ where: { userId } }),
+  ]);
+  return {
+    events: events.map(serializeBillingEvent),
+    total,
+    page,
+    hasMore: page * limit < total,
+  };
 };
 
 export const billingReturnPath = async (userId: string) => {
@@ -186,6 +212,7 @@ export const upsertSubscriptionFromStripe = async (
   userId: string,
   customerId: string,
   subscription: Stripe.Subscription,
+  stripeEventId?: string | null,
 ) => {
   const previous = await getSubscriptionRecord(userId);
   const plan = planFromSubscription(subscription);
@@ -193,6 +220,8 @@ export const upsertSubscriptionFromStripe = async (
   const paid = isPaidPlan(plan) && (status === "active" || status === "trialing" || status === "past_due");
   const nextPlan = paid ? plan : "free";
   const seats = subscription.items.data[0]?.quantity ?? 1;
+  const periodEnd = periodEndFromSubscription(subscription);
+  const cancelAtPeriodEnd = subscription.cancel_at_period_end;
 
   const next = await prisma.subscription.upsert({
     where: { userId },
@@ -205,8 +234,8 @@ export const upsertSubscriptionFromStripe = async (
       status,
       interval: intervalFromSubscription(subscription),
       seats,
-      currentPeriodEnd: periodEndFromSubscription(subscription),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      currentPeriodEnd: periodEnd,
+      cancelAtPeriodEnd,
     },
     update: {
       stripeCustomerId: customerId,
@@ -216,8 +245,8 @@ export const upsertSubscriptionFromStripe = async (
       status,
       interval: intervalFromSubscription(subscription),
       seats,
-      currentPeriodEnd: periodEndFromSubscription(subscription),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      currentPeriodEnd: periodEnd,
+      cancelAtPeriodEnd,
     },
   });
 
@@ -228,6 +257,7 @@ export const upsertSubscriptionFromStripe = async (
         userId,
         type: "subscribed",
         message: `Subscribed to ${nextPlan}`,
+        stripeEventId,
         metadata: { plan: nextPlan, interval: next.interval },
       });
     } else if (nextPlan === "free") {
@@ -235,6 +265,7 @@ export const upsertSubscriptionFromStripe = async (
         userId,
         type: "canceled",
         message: `Subscription moved from ${previousPlan} to Free`,
+        stripeEventId,
         metadata: { from: previousPlan, to: nextPlan },
       });
     } else {
@@ -242,6 +273,7 @@ export const upsertSubscriptionFromStripe = async (
         userId,
         type: "plan_changed",
         message: `Changed plan from ${previousPlan} to ${nextPlan}`,
+        stripeEventId,
         metadata: { from: previousPlan, to: nextPlan, interval: next.interval },
       });
     }
@@ -250,7 +282,41 @@ export const upsertSubscriptionFromStripe = async (
       userId,
       type: "seats_updated",
       message: `Updated seats from ${previous.seats} to ${seats}`,
+      stripeEventId,
       metadata: { from: previous.seats, to: seats },
+    });
+  }
+
+  const wasCanceling = previous?.cancelAtPeriodEnd ?? false;
+  if (paid && !wasCanceling && cancelAtPeriodEnd) {
+    const when = periodEnd
+      ? periodEnd.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "the end of the period";
+    await logBillingEvent({
+      userId,
+      type: "cancel_scheduled",
+      message: `Cancellation scheduled for ${when}`,
+      stripeEventId: stripeEventId
+        ? `${stripeEventId}:cancel_scheduled`
+        : null,
+      metadata: {
+        plan: nextPlan,
+        currentPeriodEnd: periodEnd?.toISOString() ?? null,
+      },
+    });
+  } else if (paid && wasCanceling && !cancelAtPeriodEnd) {
+    await logBillingEvent({
+      userId,
+      type: "cancel_reversed",
+      message: `Cancellation undone — ${nextPlan} continues`,
+      stripeEventId: stripeEventId
+        ? `${stripeEventId}:cancel_reversed`
+        : null,
+      metadata: { plan: nextPlan },
     });
   }
 
@@ -262,8 +328,10 @@ const priceIdFromSubscription = (subscription: Stripe.Subscription) => {
   return typeof price === "string" ? price : price?.id ?? null;
 };
 
-// TODO: use this to mark a subscription as canceled
-export const markSubscriptionCanceled = async (subscriptionId: string) => {
+export const markSubscriptionCanceled = async (
+  subscriptionId: string,
+  stripeEventId?: string | null,
+) => {
   const existing = await prisma.subscription.findUnique({
     where: { stripeSubscriptionId: subscriptionId },
   });
@@ -282,6 +350,7 @@ export const markSubscriptionCanceled = async (subscriptionId: string) => {
       userId: existing.userId,
       type: "canceled",
       message: `Canceled the ${existing.plan} plan`,
+      stripeEventId,
       metadata: { from: existing.plan },
     });
   }

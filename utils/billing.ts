@@ -1,0 +1,1 @@
+export const BILLING_EVENTS_PAGE_SIZE = 5

@@ -1,5 +1,5 @@
 import prisma from '~/lib/prisma'
-import { workspaceAccessWhere } from '~/server/utils/access'
+import { workspaceAccessWhere } from '~/server/utils/workspace'
 import { assertCanCreateProject } from '~/server/utils/billing'
 import { createDefaultColumns } from '~/server/utils/column'
 

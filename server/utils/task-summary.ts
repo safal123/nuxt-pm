@@ -1,6 +1,7 @@
 import { format } from 'date-fns'
 import prisma from '~/lib/prisma'
 import { completeChat } from '~/server/utils/ai'
+import { logActivity } from '~/server/utils/activity'
 import { assertCanUseAiSummaries } from '~/server/utils/billing'
 import { personSelect } from '~/server/utils/person'
 import { getTaskWithDetails, personName, validateTaskAccess } from '~/server/utils/task'
@@ -281,9 +282,11 @@ export const generateTaskSummary = async (
   taskId: string,
   userId: string,
   email?: string | null,
+  actorName?: string | null,
 ) => {
   const access = await validateTaskAccess(taskId, userId)
-  await assertCanUseAiSummaries(access.workspaceId, email)
+  const workspaceId = access.workspaceId || access.project.workspaceId
+  await assertCanUseAiSummaries(workspaceId, email)
   const existing = await findLatestAiSummary('Task', taskId)
 
   if (existing && isSummaryLimitedToday(existing.generatedAt, email)) {
@@ -299,13 +302,26 @@ export const generateTaskSummary = async (
 
   await prisma.aiSummary.create({
     data: {
-      workspaceId: access.workspaceId,
+      workspaceId,
       attachableType: 'Task',
       attachableId: taskId,
       progress: generated.progress,
       furtherAction: generated.furtherAction,
       generatedAt,
       generatedBy: userId,
+    },
+  })
+
+  await logActivity({
+    workspaceId,
+    projectId: access.projectId,
+    taskId,
+    userId,
+    type: 'SUMMARY_GENERATED',
+    message: `${actorName || 'Someone'} generated an AI summary`,
+    metadata: {
+      progress: generated.progress,
+      furtherAction: generated.furtherAction,
     },
   })
 

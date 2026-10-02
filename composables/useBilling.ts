@@ -2,16 +2,20 @@ import { toast } from "vue-sonner";
 import { api } from "~/lib/api";
 import type {
   BillingCheckoutResponse,
+  BillingEventItem,
   BillingInterval,
   BillingOverview,
   BillingPlan,
 } from "~/types";
+import { BILLING_EVENTS_PAGE_SIZE } from "~/utils/billing";
 
 export const useBilling = () => {
   const workspaceStore = useWorkspaceStore();
   const billing = ref<BillingOverview | null>(null);
   const loading = ref(false);
   const acting = ref(false);
+  const loadingMoreEvents = ref(false);
+  const eventsPage = ref(1);
 
   const fetchBilling = async () => {
     loading.value = true;
@@ -21,9 +25,41 @@ export const useBilling = () => {
         query: workspaceId ? { workspaceId } : {},
       });
       billing.value = result.billing;
+      eventsPage.value = 1;
       return result.billing;
     } finally {
       loading.value = false;
+    }
+  };
+
+  const loadMoreEvents = async () => {
+    if (!billing.value?.eventsHasMore || loadingMoreEvents.value) return;
+    loadingMoreEvents.value = true;
+    try {
+      const workspaceId = workspaceStore.activeWorkspaceId;
+      const nextPage = eventsPage.value + 1;
+      const result = await api<{
+        events: BillingEventItem[];
+        total: number;
+        page: number;
+        hasMore: boolean;
+      }>("/api/billing/events", {
+        query: {
+          ...(workspaceId ? { workspaceId } : {}),
+          page: nextPage,
+          limit: BILLING_EVENTS_PAGE_SIZE,
+        },
+      });
+      if (!billing.value) return;
+      billing.value = {
+        ...billing.value,
+        events: [...billing.value.events, ...(result.events ?? [])],
+        eventsTotal: result.total,
+        eventsHasMore: result.hasMore,
+      };
+      eventsPage.value = nextPage;
+    } finally {
+      loadingMoreEvents.value = false;
     }
   };
 
@@ -64,7 +100,9 @@ export const useBilling = () => {
     billing,
     loading,
     acting,
+    loadingMoreEvents,
     fetchBilling,
+    loadMoreEvents,
     startCheckout,
     openPortal,
   };

@@ -1,5 +1,6 @@
 import { billingQuerySchema } from "~/server/utils/schemas";
 import {
+  BILLING_EVENTS_PAGE_SIZE,
   billingMoneySummary,
   listBillingDocuments,
   listBillingEvents,
@@ -23,12 +24,22 @@ export default defineApi({
       canManage = true;
     }
 
-    const [billing, documents, events] = await Promise.all([
+    const [billing, documents, activity] = await Promise.all([
       serializeBilling(billedUserId, query.workspaceId),
       canManage
         ? listBillingDocuments(billedUserId)
         : Promise.resolve({ invoices: [], upcoming: null }),
-      canManage ? listBillingEvents(billedUserId) : Promise.resolve([]),
+      canManage
+        ? listBillingEvents(billedUserId, {
+            page: 1,
+            limit: BILLING_EVENTS_PAGE_SIZE,
+          })
+        : Promise.resolve({
+            events: [],
+            total: 0,
+            page: 1,
+            hasMore: false,
+          }),
     ]);
 
     return {
@@ -37,7 +48,9 @@ export default defineApi({
           ...billing,
           ...documents,
           ...billingMoneySummary(billing, documents),
-          events,
+          events: activity.events,
+          eventsTotal: activity.total,
+          eventsHasMore: activity.hasMore,
           canManage,
         },
       },

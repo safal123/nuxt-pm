@@ -11,11 +11,7 @@ const props = defineProps<{
 const boardStore = useBoardStore();
 const overlayEl = ref<HTMLElement | null>(null);
 const scrollerEl = ref<HTMLElement | null>(null);
-const {
-  isFiltered,
-  canDrag,
-  visibleTasksFor,
-} = useBoardQuery();
+const { isFiltered, canDrag, visibleTasksFor } = useBoardQuery();
 
 const archiveTask = async (taskId: string) => {
   try {
@@ -163,7 +159,10 @@ const edgeScrollSpeed = () => {
     return -Math.ceil(t * t * SCROLL_MAX_SPEED);
   }
   if (pointerX > rect.right - SCROLL_EDGE && scroller.scrollLeft < max) {
-    const t = Math.min(1, (pointerX - (rect.right - SCROLL_EDGE)) / SCROLL_EDGE);
+    const t = Math.min(
+      1,
+      (pointerX - (rect.right - SCROLL_EDGE)) / SCROLL_EDGE,
+    );
     return Math.ceil(t * t * SCROLL_MAX_SPEED);
   }
   return 0;

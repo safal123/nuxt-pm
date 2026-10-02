@@ -213,6 +213,17 @@ export const activityChangePreview = (
     };
   }
 
+  if (activity.type === "SUMMARY_GENERATED") {
+    const progress = activity.metadata?.progress;
+    if (typeof progress === "string" && progress.trim()) {
+      const first = progress
+        .split("\n")
+        .map((line) => line.trim())
+        .find(Boolean);
+      if (first) return { kind: "note", text: first };
+    }
+  }
+
   return null;
 };
 

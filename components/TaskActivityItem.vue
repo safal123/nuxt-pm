@@ -50,11 +50,24 @@ const commentText = computed(() => {
   return typeof content === "string" ? content : null;
 });
 
+const summaryPreview = computed(() => {
+  if (props.activity.type !== "SUMMARY_GENERATED") return null;
+  const progress = props.activity.metadata?.progress;
+  if (typeof progress !== "string" || !progress.trim()) return null;
+  return (
+    progress
+      .split("\n")
+      .map((line) => line.trim())
+      .find(Boolean) || null
+  );
+});
+
 const headline = computed(() => {
   if (props.activity.type === "DATES_UPDATED") {
     return props.activity.message || "updated the due date";
   }
   if (props.activity.type === "COMMENT") return "commented";
+  if (props.activity.type === "SUMMARY_GENERATED") return "generated an AI summary";
   return props.activity.message;
 });
 </script>
@@ -127,6 +140,12 @@ const headline = computed(() => {
         class="mt-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground whitespace-pre-wrap"
       >
         {{ commentText }}
+      </p>
+      <p
+        v-else-if="summaryPreview"
+        class="mt-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground"
+      >
+        {{ summaryPreview }}
       </p>
     </div>
   </div>

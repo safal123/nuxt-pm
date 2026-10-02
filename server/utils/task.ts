@@ -1,6 +1,6 @@
 import { format } from 'date-fns'
 import prisma from '~/lib/prisma'
-import { workspaceAccessWhere } from '~/server/utils/access'
+import { workspaceAccessWhere } from '~/server/utils/workspace'
 import { serializeActivity } from '~/server/utils/activity'
 import { personSelect, serializePerson } from '~/server/utils/person'
 import { assertSameProject } from '~/server/utils/sprint'
