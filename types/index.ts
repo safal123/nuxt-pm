@@ -28,6 +28,7 @@ export interface User {
   name: string | null
   image: string | null
   imageUrl?: string | null
+  subdomain?: string | null
   activeWorkspaceId: string | null
   activeProjectId: string | null
   createdAt?: Date | string

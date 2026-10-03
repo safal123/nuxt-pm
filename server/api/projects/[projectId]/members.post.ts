@@ -23,7 +23,6 @@ export default defineApi({
         if (project) {
           const settings = await ensureWorkspaceSettings(project.workspaceId)
           if (settings.emailOnProjectAdd) {
-            const requestUrl = getRequestURL(event)
             await sendProjectMemberAddedEmail({
               to: member.email,
               memberName: member.name || member.email,
@@ -32,7 +31,7 @@ export default defineApi({
               projectName: project.name,
               workspaceId: project.workspaceId,
               workspaceName: project.workspace.name,
-              dashboardUrl: `${requestUrl.protocol}//${requestUrl.host}/w/${project.workspaceId}/dashboard`,
+              dashboardUrl: `${sharedAppOrigin(event)}/w/${project.workspaceId}/dashboard`,
               createdBy: user.id,
             })
           }

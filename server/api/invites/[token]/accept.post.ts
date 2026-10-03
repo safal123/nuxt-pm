@@ -9,8 +9,7 @@ export default defineApi({
     })
 
     if (!result.alreadyMember) {
-      const requestUrl = getRequestURL(event)
-      const dashboardUrl = `${requestUrl.protocol}//${requestUrl.host}/w/${result.workspaceId}/dashboard`
+      const dashboardUrl = `${sharedAppOrigin(event)}/w/${result.workspaceId}/dashboard`
 
       try {
         await sendWorkspaceWelcomeEmail({

@@ -3,6 +3,7 @@ import type { FileRouter } from 'uploadthing/h3'
 import { UploadThingError } from 'uploadthing/server'
 import { z } from 'zod'
 import prisma from '~/lib/prisma'
+import { runAsTenant } from '~/lib/tenant-context'
 import { validateAttachableAccess } from '~/server/utils/attachment'
 import { ATTACHABLE_TYPES } from '~/server/utils/attachable-types'
 import { validateAndGetUser } from '~/server/utils/user'
@@ -44,7 +45,7 @@ export const uploadRouter = {
         throw new UploadThingError(error?.message || 'Unauthorized')
       }
     })
-    .onUploadComplete(async ({ metadata, file }) => {
+    .onUploadComplete(({ metadata, file }) => runAsTenant(metadata.userId, async () => {
       await prisma.attachment.create({
         data: {
           name: file.name,
@@ -70,7 +71,7 @@ export const uploadRouter = {
       })
 
       return { uploadedBy: metadata.userId }
-    }),
+    })),
 
   avatar: f(
     {

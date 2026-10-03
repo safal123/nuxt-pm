@@ -14,7 +14,8 @@
     "test:unit": "vitest run tests/unit",
     "test:nuxt": "vitest run tests/nuxt",
     "test:coverage": "vitest run --coverage",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:verify-rls": "tsx --env-file=.env scripts/verify-tenant-isolation.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

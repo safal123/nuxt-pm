@@ -1,6 +1,7 @@
 import prisma from '~/lib/prisma'
 import type { H3Event } from 'h3'
 import { auth } from '~/lib/auth'
+import { generateSubdomain } from '~/lib/subdomain'
 import { ensureDefaultWorkspace } from '~/server/utils/workspace'
 
 /**
@@ -19,7 +20,14 @@ export const validateAndGetUser = async (event: H3Event) => {
     })
   }
 
-  const user = await prisma.user.findUnique({ where: { id: session.user.id } })
+  let user = await prisma.user.findUnique({ where: { id: session.user.id } })
+  if (user && !user.subdomain) {
+    // Accounts created before per-user subdomains existed.
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { subdomain: await generateSubdomain(user.name || user.email) },
+    })
+  }
   if (!user) {
     // Session cookie outlived its user row.
     throw createError({

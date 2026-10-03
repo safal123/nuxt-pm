@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import type { z } from 'zod'
 import type { User } from '@prisma/client'
 import { validateAndGetUser } from '~/server/utils/user'
+import { runAsTenant } from '~/lib/tenant-context'
 import { publishRealtime } from '~/server/utils/ably'
 import { REALTIME_CLIENT_HEADER } from '~/utils/realtime'
 import type { RealtimePublish } from '~/utils/realtime'
@@ -67,12 +68,14 @@ export function defineApi<
         query = parsed.data as InferSchema<TQuerySchema>
       }
 
-      const result = await options.handler({
-        event,
-        user: user as TAuth extends false ? null : User,
-        body: body as InferSchema<TBodySchema>,
-        query: query as InferSchema<TQuerySchema>,
-      })
+      const run = () =>
+        options.handler({
+          event,
+          user: user as TAuth extends false ? null : User,
+          body: body as InferSchema<TBodySchema>,
+          query: query as InferSchema<TQuerySchema>,
+        })
+      const result = user ? await runAsTenant(user.id, run) : await run()
 
       if (result.status) {
         setResponseStatus(event, result.status)

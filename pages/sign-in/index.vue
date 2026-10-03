@@ -8,6 +8,7 @@ useHead({ title: "Sign in — Northstar" });
 
 const route = useRoute();
 const { fetchSession } = useAuth();
+const { goToSubdomain } = useSubdomain();
 
 const redirectUrl = computed(() =>
   typeof route.query.redirect_url === "string" ? route.query.redirect_url : "/w",
@@ -41,8 +42,8 @@ async function onSubmit(values: any) {
     return;
   }
 
-  await fetchSession();
-  await navigateTo(redirectUrl.value);
+  const session = await fetchSession();
+  await goToSubdomain(session?.user?.subdomain, redirectUrl.value);
 }
 
 async function continueWithGoogle() {

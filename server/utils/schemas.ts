@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { ATTACHABLE_TYPES } from '~/server/utils/attachable-types'
 import { isWorkspaceColorId } from '~/utils/task-colors'
 import { TASK_STATUS_IDS } from '~/utils/task-status'
+import { normalizeSubdomain, subdomainError } from '~/utils/subdomain'
 
 export const idSchema = z.string().trim().min(1, 'id is required')
 
@@ -38,6 +39,23 @@ const optionalString = z
     const trimmed = value.trim()
     return trimmed || null
   })
+
+export const subdomainSchema = z
+  .string()
+  .transform(normalizeSubdomain)
+  .superRefine((value, ctx) => {
+    const message = subdomainError(value)
+    if (message) ctx.addIssue({ code: z.ZodIssueCode.custom, message })
+  })
+
+export const signUpSchema = z.object({
+  name: trimmedName('Name'),
+  email: emailSchema,
+  password: z.string().min(8, 'Use at least 8 characters'),
+  subdomain: subdomainSchema,
+})
+
+export const subdomainCheckSchema = z.object({ subdomain: subdomainSchema })
 
 export const userUpdateSchema = z
   .object({

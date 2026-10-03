@@ -6,12 +6,11 @@ export default defineApi({
     const workspaceId = getRouterParam(event, 'workspaceId') as string
     await validateWorkspaceAccess(workspaceId, user.id)
 
-    const requestUrl = getRequestURL(event)
     const invite = await createWorkspaceInvite({
       workspaceId,
       createdBy: user.id,
       email: body.email,
-      origin: `${requestUrl.protocol}//${requestUrl.host}`,
+      origin: sharedAppOrigin(event),
     })
 
     let emailed = false

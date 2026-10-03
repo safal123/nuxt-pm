@@ -18,6 +18,7 @@ withDefaults(
 
 const route = useRoute();
 const { user, clearSession } = useAuth();
+const { enabled, apexUrl } = useSubdomain();
 const userStore = useUserStore();
 const modalsStore = useModalsStore();
 const { preference, setPreference } = useTheme();
@@ -53,7 +54,7 @@ async function handleSignOut() {
   await authClient.signOut();
   clearSession();
   userStore.clearUser();
-  await navigateTo("/sign-in");
+  await navigateTo(apexUrl("/"), { external: enabled });
 }
 </script>
 

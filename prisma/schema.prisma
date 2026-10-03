@@ -48,6 +48,8 @@ model User {
   emailVerified     Boolean  @default(false) @map("email_verified")
   name              String?
   image             String?
+  /// Personal host label: `john` → john.<APP_DOMAIN>.
+  subdomain         String?  @unique
   activeWorkspaceId String?  @map("active_workspace_id")
   activeProjectId   String?  @map("active_project_id")
   createdAt         DateTime @default(now())

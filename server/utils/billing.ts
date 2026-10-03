@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import prisma from "~/lib/prisma";
+import { runAsSystem } from "~/lib/tenant-context";
 import {
   canAddWithinLimit,
   effectivePlan,
@@ -385,7 +386,12 @@ export const ensureStripeCustomer = async (user: {
   return customer.id;
 };
 
-export const syncSeatQuantity = async (ownerId: string) => {
+// Seats span every workspace the owner has; a member triggering this can only
+// see their own, so the count must bypass row-level security.
+export const syncSeatQuantity = (ownerId: string) =>
+  runAsSystem(() => syncSeatQuantityForOwner(ownerId));
+
+const syncSeatQuantityForOwner = async (ownerId: string) => {
   const record = await getSubscriptionRecord(ownerId);
   if (!record?.stripeSubscriptionId || !hasPaidAccessSafe(record)) return;
 

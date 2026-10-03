@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import prisma from '~/lib/prisma'
+import { runAsSystem } from '~/lib/tenant-context'
 import { addWorkspaceMember } from '~/server/utils/member'
 import { assertCanAddMember } from '~/server/utils/billing'
 
@@ -90,7 +91,14 @@ export const getInviteByToken = async (token: string) => {
   }
 }
 
-export const acceptWorkspaceInvite = async (
+// The user is not a member until this finishes, so it cannot run under
+// row-level security; the token and email checks below are the access check.
+export const acceptWorkspaceInvite = (
+  token: string,
+  user: { id: string; email: string; name?: string | null }
+) => runAsSystem(() => acceptInvite(token, user))
+
+const acceptInvite = async (
   token: string,
   user: { id: string; email: string; name?: string | null }
 ) => {

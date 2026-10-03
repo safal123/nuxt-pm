@@ -69,7 +69,13 @@ export const realtimeClientId = () => {
   if (!import.meta.client) return "";
   let id = sessionStorage.getItem(REALTIME_CLIENT_STORAGE_KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    // randomUUID only exists in secure contexts (HTTPS / localhost), not http://*.lvh.me.
+    id =
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+            byte.toString(16).padStart(2, "0"),
+          ).join("");
     sessionStorage.setItem(REALTIME_CLIENT_STORAGE_KEY, id);
   }
   return id;

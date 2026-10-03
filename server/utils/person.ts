@@ -39,6 +39,7 @@ export const serializeAppUser = (user: {
   emailVerified: boolean
   name: string | null
   image: string | null
+  subdomain: string | null
   activeWorkspaceId: string | null
   activeProjectId: string | null
 }) => ({
@@ -48,6 +49,7 @@ export const serializeAppUser = (user: {
   name: user.name ?? null,
   image: user.image ?? null,
   imageUrl: user.image ?? null,
+  subdomain: user.subdomain ?? null,
   activeWorkspaceId: user.activeWorkspaceId,
   activeProjectId: user.activeProjectId,
 })

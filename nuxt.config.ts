@@ -45,6 +45,9 @@ export default defineNuxtConfig({
     geminiApiKey: process.env.GEMINI_API_KEY,
     deepseekApiKey: process.env.DEEPSEEK_API_KEY,
     public: {
+      /** `workflow.com` in production, `lvh.me:3000` locally. Empty disables subdomains. */
+      appDomain: process.env.APP_DOMAIN || '',
+      appProtocol: process.env.BETTER_AUTH_URL?.startsWith('https') ? 'https' : 'http',
       stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
       ablyEnabled: Boolean(process.env.ABLY_API_KEY || process.env.NUXT_ABLY_API_KEY),
     },
@@ -75,7 +78,11 @@ export default defineNuxtConfig({
       },
     },
     server: {
-      allowedHosts: ['https://82ec-2403-4800-2590-b591-c14a-3d28-b356-27b6.ngrok-free.app']
+      allowedHosts: [
+        'https://82ec-2403-4800-2590-b591-c14a-3d28-b356-27b6.ngrok-free.app',
+        // Leading dot = the domain and every subdomain (john.lvh.me).
+        ...(process.env.APP_DOMAIN ? [`.${process.env.APP_DOMAIN.split(':')[0]}`] : []),
+      ],
     }
   },
 })
