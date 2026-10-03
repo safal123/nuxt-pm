@@ -5,4 +5,5 @@
   <WorkspaceInviteModal />
   <ActivityTimelineModal />
   <ProjectAiSheet />
+  <AiTaskPlanModal />
 </template>

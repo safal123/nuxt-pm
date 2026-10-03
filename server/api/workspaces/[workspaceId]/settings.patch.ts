@@ -18,6 +18,7 @@ export default defineApi({
       ...(body.emailOnInvite !== undefined ? { emailOnInvite: body.emailOnInvite } : {}),
       ...(body.emailOnProjectAdd !== undefined ? { emailOnProjectAdd: body.emailOnProjectAdd } : {}),
       ...(body.weekStartsOnMonday !== undefined ? { weekStartsOnMonday: body.weekStartsOnMonday } : {}),
+      ...(body.emailReminders !== undefined ? { emailReminders: body.emailReminders } : {}),
       ...(body.backgroundColor !== undefined ? { backgroundColor: body.backgroundColor } : {}),
     }
 

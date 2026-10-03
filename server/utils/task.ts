@@ -1,9 +1,14 @@
 import { format } from 'date-fns'
 import prisma from '~/lib/prisma'
 import { workspaceAccessWhere } from '~/server/utils/workspace'
-import { serializeActivity } from '~/server/utils/activity'
+import { logActivity, serializeActivity } from '~/server/utils/activity'
 import { personSelect, serializePerson } from '~/server/utils/person'
-import { assertSameProject } from '~/server/utils/sprint'
+import {
+  assertSameProject,
+  isClosedSprintStatus,
+  nextOrderInColumnSprint,
+  validateSprintAccess,
+} from '~/server/utils/sprint'
 
 export const taskBoardInclude = (userId: string) => ({
   creator: { select: personSelect },
@@ -61,6 +66,7 @@ export const serializeTask = (task: any, options?: { compact?: boolean }) => {
     id: task.id,
     title: task.title,
     description: compact ? null : (task.description ?? null),
+    aiPlanGoal: compact ? null : (task.aiPlanGoal ?? null),
     order: task.order,
     priority: task.priority ?? 'MEDIUM',
     status: task.status ?? 'TODO',
@@ -391,4 +397,96 @@ export const moveTaskToIndex = async (
   }
 
   await prisma.$transaction(updates)
+}
+
+/**
+ * Shared by manual "Add task" and AI planning: validates the list/sprint,
+ * creates the card at the end of the list, and logs activity.
+ */
+export const resolveTaskTarget = async (
+  projectId: string,
+  columnId: string,
+  sprintId?: string | null,
+) => {
+  const column = await prisma.taskColumn.findFirst({
+    where: { id: columnId, projectId },
+  })
+  if (!column) {
+    throw createError({ statusCode: 404, message: 'Column not found.' })
+  }
+
+  if (!sprintId) {
+    assertSameProject(projectId, [column])
+    return { column, sprintId: null }
+  }
+
+  const sprint = await validateSprintAccess(sprintId, projectId)
+  assertSameProject(projectId, [column, sprint])
+  if (isClosedSprintStatus(sprint.status)) {
+    throw createError({
+      statusCode: 400,
+      message: 'Cards cannot be added to a completed sprint.',
+    })
+  }
+  return { column, sprintId: sprint.id }
+}
+
+export const createColumnTask = async (input: {
+  projectId: string
+  workspaceId: string
+  columnId: string
+  sprintId: string | null
+  userId: string
+  title: string
+  description?: string | null
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  aiPlanGoal?: string | null
+  activityMessage?: string
+}) => {
+  const created = await prisma.task.create({
+    data: {
+      title: input.title,
+      description: input.description || null,
+      aiPlanGoal: input.aiPlanGoal || null,
+      columnId: input.columnId,
+      projectId: input.projectId,
+      workspaceId: input.workspaceId,
+      sprintId: input.sprintId,
+      createdBy: input.userId,
+      assigneeId: input.userId,
+      priority: input.priority ?? 'MEDIUM',
+      status: 'TODO',
+      order: await nextOrderInColumnSprint(input.columnId, input.sprintId),
+      members: {
+        create: { userId: input.userId },
+      },
+    },
+  })
+
+  await logActivity({
+    workspaceId: input.workspaceId,
+    projectId: input.projectId,
+    taskId: created.id,
+    userId: input.userId,
+    type: 'CREATED',
+    message: input.activityMessage ?? 'created this card',
+    ...(input.aiPlanGoal ? { metadata: { aiPlanGoal: input.aiPlanGoal } } : {}),
+  })
+  if (input.sprintId) {
+    await logActivity({
+      workspaceId: input.workspaceId,
+      projectId: input.projectId,
+      taskId: created.id,
+      userId: input.userId,
+      type: 'TASK_ADDED_TO_SPRINT',
+      message: 'added this card to the sprint',
+      metadata: { sprintId: input.sprintId },
+    })
+  }
+
+  const task = await prisma.task.findUniqueOrThrow({
+    where: { id: created.id },
+    include: taskBoardInclude(input.userId),
+  })
+  return serializeTask(task)
 }

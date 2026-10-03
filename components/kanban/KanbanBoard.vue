@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { visibleDropIndex } from "~/utils/board-query";
+import { planningColumnId } from "~/utils/ai-plan";
 import type { Task } from "@/types";
 import AddKanbanColumn from "~/components/kanban/AddKanbanColumn.vue";
 import { toast } from "vue-sonner";
@@ -37,6 +38,13 @@ const archiveList = async (columnId: string) => {
 };
 
 const sprintStore = useSprintStore();
+const modalsStore = useModalsStore();
+
+const aiPlanColumnId = computed(() => planningColumnId(boardStore.columns));
+const openAiPlan = (columnId: string) => {
+  const column = boardStore.columns.find((item) => item.id === columnId);
+  modalsStore.openModal("aiTaskPlan", { columnId, columnName: column?.name });
+};
 useBoardRealtime(() => props.projectId);
 
 watch(
@@ -289,8 +297,10 @@ const { view } = useProjectView();
 
 <template>
   <div class="w-full min-w-0">
-    <KanbanToolbar />
+    <ProjectCalendar v-if="view === 'calendar'" :project-id="projectId" />
+    <KanbanToolbar v-if="view !== 'calendar'" />
     <TaskTable v-if="view === 'table'" />
+    <template v-else-if="view === 'calendar'" />
     <div
       v-else-if="boardStore.loading && !boardStore.columns.length"
       class="flex gap-4 overflow-x-auto items-start pb-2 w-full min-w-0"
@@ -352,9 +362,11 @@ const { view } = useProjectView();
         :filtered="isFiltered"
         :can-drag="canDrag && !sprintStore.viewingClosed"
         :can-add="sprintStore.canAddCards"
+        :can-plan="sprintStore.canAddCards && column.id === aiPlanColumnId"
         :is-first="index === 0"
         :is-last="index === boardStore.columns.length - 1"
         @add-task="boardStore.addTask"
+        @plan="openAiPlan"
         @rename="boardStore.renameColumn"
         @move="boardStore.moveColumn"
         @set-color="boardStore.setColumnColor"

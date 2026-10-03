@@ -20,6 +20,11 @@ export const EMAIL_TEMPLATES = [
     description: 'Sent when someone is added to a project.',
   },
   {
+    id: 'reminder-digest',
+    label: 'Daily reminder',
+    description: 'Sent once a day with upcoming events and cards due.',
+  },
+  {
     id: 'custom',
     label: 'Custom',
     description: 'A branded message you write and send from Emails.',
@@ -112,6 +117,22 @@ export const sampleEmailHtml = (id: EmailTemplateId) => {
       actionUrl: 'https://example.com/dashboard',
     })
   }
+  if (id === 'reminder-digest') {
+    return reminderDigestHtml({
+      greeting: 'Hi Jordan,',
+      title: 'Tomorrow: 1 event, 2 cards due',
+      summary: "Here's what's coming up on Monday, 5 October.",
+      events: [
+        { kind: 'event', when: '10:00 AM – 11:00 AM', title: 'Sprint review', meta: 'Website launch · Zoom', url: 'https://example.com', accent: '#c377e0' },
+      ],
+      tasks: [
+        { kind: 'task', when: 'Due · Urgent', title: 'Ship pricing page', meta: 'Website launch · In Progress', url: 'https://example.com', accent: '#ef4444' },
+        { kind: 'task', when: 'Due · Medium', title: 'Write FAQ copy', meta: 'Website launch · To Do', url: 'https://example.com', accent: '#14b8a6' },
+      ],
+      actionUrl: 'https://example.com/dashboard',
+      settingsUrl: 'https://example.com/settings',
+    })
+  }
   if (id === 'custom') {
     return customEmailHtml({
       kicker: 'Update',
@@ -201,3 +222,60 @@ export const customEmailStarters = (input: {
     actionUrl: input.dashboardUrl,
   },
 })
+
+export type ReminderDigestRow = {
+  kind: 'event' | 'task'
+  when: string
+  title: string
+  meta: string
+  url: string
+  accent: string
+}
+
+const reminderSection = (heading: string, rows: ReminderDigestRow[]) =>
+  rows.length
+    ? `
+      <p style="margin:24px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;font-weight:600;">${escapeHtml(heading)}</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 8px;">
+        ${rows
+          .map(
+            (row) => `
+          <tr>
+            <td style="width:4px;background:${escapeHtml(row.accent)};border-radius:4px;"></td>
+            <td style="padding:10px 12px;background:#fafafa;border:1px solid #f4f4f5;border-left:0;border-radius:0 10px 10px 0;">
+              <a href="${escapeHtml(row.url)}" style="text-decoration:none;color:#18181b;">
+                <span style="display:block;font-size:12px;font-weight:600;color:#52525b;">${escapeHtml(row.when)}</span>
+                <span style="display:block;margin-top:2px;font-size:15px;font-weight:600;line-height:1.4;">${escapeHtml(row.title)}</span>
+                <span style="display:block;margin-top:2px;font-size:13px;color:#71717a;">${escapeHtml(row.meta)}</span>
+              </a>
+            </td>
+          </tr>`,
+          )
+          .join('')}
+      </table>`
+    : ''
+
+export const reminderDigestHtml = (input: {
+  greeting: string
+  title: string
+  summary: string
+  events: ReminderDigestRow[]
+  tasks: ReminderDigestRow[]
+  actionUrl: string
+  settingsUrl: string
+}) => `
+  <div style="background:#f4f4f5;padding:32px 16px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;">
+    <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e4e4e7;">
+      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#7c3aed;font-weight:600;">Reminder</p>
+      <h1 style="margin:0 0 8px;font-size:22px;line-height:1.3;color:#18181b;">${escapeHtml(input.title)}</h1>
+      <p style="margin:0;font-size:15px;line-height:1.6;color:#3f3f46;">${escapeHtml(input.greeting)} ${escapeHtml(input.summary)}</p>
+      ${reminderSection('Events', input.events)}
+      ${reminderSection('Cards due', input.tasks)}
+      <a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;margin-top:20px;background:#7c3aed;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 18px;border-radius:10px;">Open calendar</a>
+      <p style="margin:28px 0 0;font-size:12px;line-height:1.6;color:#a1a1aa;">
+        You get one reminder a day for events in your projects and cards assigned to you.
+        <a href="${escapeHtml(input.settingsUrl)}" style="color:#71717a;">Turn off reminder emails</a>
+      </p>
+    </div>
+  </div>
+`

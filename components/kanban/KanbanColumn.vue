@@ -8,6 +8,7 @@ import {
   MoreHorizontalIcon,
   PaletteIcon,
   PlusIcon,
+  SparklesIcon,
 } from "lucide-vue-next";
 import type { Task, TaskColumn } from "@/types";
 import { TASK_COLORS, colorValue } from "@/utils/task-colors";
@@ -19,12 +20,14 @@ const props = defineProps<{
   filtered?: boolean;
   canDrag?: boolean;
   canAdd?: boolean;
+  canPlan?: boolean;
   isFirst?: boolean;
   isLast?: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: "add-task", columnId: string, title: string): void;
+  (e: "plan", columnId: string): void;
   (e: "rename", columnId: string, name: string): void;
   (e: "move", columnId: string, direction: "left" | "right"): void;
   (e: "set-color", columnId: string, color: string | null): void;
@@ -217,6 +220,18 @@ const saveName = () => {
         </span>
       </span>
 
+      <button
+        v-if="canPlan"
+        type="button"
+        class="h-7 w-7 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-background/80 hover:text-foreground"
+        aria-label="Plan tasks with AI"
+        title="Plan tasks with AI"
+        @click="emit('plan', column.id)"
+        @pointerdown.stop
+      >
+        <SparklesIcon class="h-4 w-4" />
+      </button>
+
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <button
@@ -237,6 +252,10 @@ const saveName = () => {
           <DropdownMenuItem @select="startAdding">
             <PlusIcon class="h-4 w-4" />
             Add card
+          </DropdownMenuItem>
+          <DropdownMenuItem v-if="canPlan" @select="emit('plan', column.id)">
+            <SparklesIcon class="h-4 w-4" />
+            Plan tasks with AI
           </DropdownMenuItem>
 
           <DropdownMenuSub>

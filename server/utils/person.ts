@@ -42,6 +42,8 @@ export const serializeAppUser = (user: {
   subdomain: string | null
   activeWorkspaceId: string | null
   activeProjectId: string | null
+  timezone?: string | null
+  reminderEmails?: boolean
 }) => ({
   id: user.id,
   email: user.email,
@@ -52,4 +54,6 @@ export const serializeAppUser = (user: {
   subdomain: user.subdomain ?? null,
   activeWorkspaceId: user.activeWorkspaceId,
   activeProjectId: user.activeProjectId,
+  timezone: user.timezone ?? null,
+  reminderEmails: user.reminderEmails ?? true,
 })

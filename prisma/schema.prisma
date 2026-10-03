@@ -42,6 +42,12 @@ enum ProjectRole {
   MEMBER
 }
 
+enum CalendarProvider {
+  LOCAL
+  GOOGLE
+  MICROSOFT
+}
+
 model User {
   id                String   @id @default(cuid())
   email             String   @unique
@@ -52,11 +58,15 @@ model User {
   subdomain         String?  @unique
   activeWorkspaceId String?  @map("active_workspace_id")
   activeProjectId   String?  @map("active_project_id")
+  /// IANA zone from the browser, e.g. "Australia/Sydney". Drives reminder timing.
+  timezone          String?
+  reminderEmails    Boolean  @default(true) @map("reminder_emails")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   // Relationships
   sessions           Session[]
+  reminderDigests    ReminderDigest[]
   accounts           Account[]
   memberships        WorkspaceMember[]
   projectMemberships ProjectMember[]
@@ -77,6 +87,7 @@ model User {
   billingEvents      BillingEvent[]
   aiSummaries        AiSummary[]
   aiChatMessages     AiChatMessage[]
+  calendarEvents     CalendarEvent[]   @relation("CreatedCalendarEvents")
 
   activeWorkspace Workspace? @relation("ActiveWorkspace", fields: [activeWorkspaceId], references: [id])
   activeProject   Project?   @relation("ActiveProject", fields: [activeProjectId], references: [id])
@@ -130,17 +141,17 @@ model Workspace {
   updatedAt   DateTime @updatedAt
 
   // Relationships
-  members     WorkspaceMember[]
-  invites     WorkspaceInvite[]
-  emailLogs   EmailLog[]
-  activities  Activity[]
-  projects    Project[]         @relation("Projects")
-  settings    WorkspaceSetting?
-  attachments Attachment[]
-  aiSummaries AiSummary[]
+  members        WorkspaceMember[]
+  invites        WorkspaceInvite[]
+  emailLogs      EmailLog[]
+  activities     Activity[]
+  projects       Project[]         @relation("Projects")
+  settings       WorkspaceSetting?
+  attachments    Attachment[]
+  aiSummaries    AiSummary[]
   aiChatMessages AiChatMessage[]
-  creator     User              @relation("CreatedWorkspaces", fields: [createdBy], references: [id], onDelete: Cascade)
-  activeUsers User[]            @relation("ActiveWorkspace") // inverse of User.activeWorkspace
+  creator        User              @relation("CreatedWorkspaces", fields: [createdBy], references: [id], onDelete: Cascade)
+  activeUsers    User[]            @relation("ActiveWorkspace") // inverse of User.activeWorkspace
 
   @@map("workspaces")
 }
@@ -151,6 +162,7 @@ model WorkspaceSetting {
   emailOnInvite      Boolean  @default(true) @map("email_on_invite")
   emailOnProjectAdd  Boolean  @default(true) @map("email_on_project_add")
   weekStartsOnMonday Boolean  @default(true) @map("week_starts_on_monday")
+  emailReminders     Boolean  @default(true) @map("email_reminders")
   backgroundColor    String?  @map("background_color")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -161,8 +173,8 @@ model WorkspaceSetting {
 }
 
 model WorkspaceMember {
-  userId      String   @map("user_id")
-  workspaceId String   @map("workspace_id")
+  userId      String        @map("user_id")
+  workspaceId String        @map("workspace_id")
   role        WorkspaceRole @default(MEMBER)
   joinedAt    DateTime      @default(now())
 
@@ -175,15 +187,15 @@ model WorkspaceMember {
 }
 
 model WorkspaceInvite {
-  id          String    @id @default(cuid())
-  workspaceId String    @map("workspace_id")
+  id          String        @id @default(cuid())
+  workspaceId String        @map("workspace_id")
   email       String?
   role        WorkspaceRole @default(MEMBER)
   tokenHash   String        @unique @map("token_hash")
-  expiresAt   DateTime  @map("expires_at")
-  usedAt      DateTime? @map("used_at")
-  createdBy   String    @map("created_by")
-  createdAt   DateTime  @default(now())
+  expiresAt   DateTime      @map("expires_at")
+  usedAt      DateTime?     @map("used_at")
+  createdBy   String        @map("created_by")
+  createdAt   DateTime      @default(now())
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   creator   User      @relation(fields: [createdBy], references: [id], onDelete: Cascade)
@@ -218,16 +230,17 @@ model Project {
   updatedAt   DateTime  @updatedAt
 
   // Relationships
-  creator     User            @relation("CreatedProjects", fields: [createdBy], references: [id], onDelete: Cascade)
-  workspace   Workspace       @relation("Projects", fields: [workspaceId], references: [id], onDelete: Cascade)
-  activeUsers User[]          @relation("ActiveProject") // inverse of User.activeProject
-  members     ProjectMember[]
-  columns     TaskColumn[]
-  tasks       Task[]
-  sprints     Sprint[]
-  labels      Label[]
-  emailLogs   EmailLog[]
-  activities  Activity[]
+  creator        User            @relation("CreatedProjects", fields: [createdBy], references: [id], onDelete: Cascade)
+  workspace      Workspace       @relation("Projects", fields: [workspaceId], references: [id], onDelete: Cascade)
+  activeUsers    User[]          @relation("ActiveProject") // inverse of User.activeProject
+  members        ProjectMember[]
+  columns        TaskColumn[]
+  tasks          Task[]
+  sprints        Sprint[]
+  labels         Label[]
+  emailLogs      EmailLog[]
+  activities     Activity[]
+  calendarEvents CalendarEvent[]
 
   @@unique([id, workspaceId])
   @@unique([workspaceId, name])
@@ -261,15 +274,15 @@ model Sprint {
 }
 
 model TaskColumn {
-  id         String    @id @default(cuid())
-  name       String
-  order      Int       @default(0)
-  color      String?
-  archivedAt DateTime? @map("archived_at")
-  workspaceId String   @map("workspace_id")
-  projectId  String    @map("project_id")
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  name        String
+  order       Int       @default(0)
+  color       String?
+  archivedAt  DateTime? @map("archived_at")
+  workspaceId String    @map("workspace_id")
+  projectId   String    @map("project_id")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relationships
   project Project @relation(fields: [projectId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
@@ -280,51 +293,53 @@ model TaskColumn {
 }
 
 model Task {
-  id          String    @id @default(cuid())
-  title       String
-  description String?   @db.Text
+  id             String       @id @default(cuid())
+  title          String
+  description    String?      @db.Text
+  /// The goal typed into "Plan with AI" when this card came from an AI plan.
+  aiPlanGoal     String?      @map("ai_plan_goal") @db.Text
   // Shared column position for backlog and sprint views. Split later if
   // backlog and sprint need independent ranks in the same list.
-  order       Int          @default(0)
-  priority    TaskPriority @default(MEDIUM)
-  status      TaskStatus   @default(TODO)
-  completedAt DateTime? @map("completed_at")
-  dueDate     DateTime? @map("due_date")
-  startDate   DateTime? @map("start_date")
-  endDate     DateTime? @map("end_date")
-  coverColor     String?   @map("cover_color")
-  coverImage     String?   @map("cover_image")
-  coverThumb     String?   @map("cover_thumb")
-  coverCredit    String?   @map("cover_credit")
-  coverCreditUrl String?   @map("cover_credit_url")
-  archivedAt     DateTime? @map("archived_at")
-  workspaceId String    @map("workspace_id")
-  columnId    String    @map("column_id")
-  projectId   String    @map("project_id")
-  sprintId    String?   @map("sprint_id")
-  createdBy   String    @map("created_by")
-  assigneeId  String?   @map("assignee_id")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  order          Int          @default(0)
+  priority       TaskPriority @default(MEDIUM)
+  status         TaskStatus   @default(TODO)
+  completedAt    DateTime?    @map("completed_at")
+  dueDate        DateTime?    @map("due_date")
+  startDate      DateTime?    @map("start_date")
+  endDate        DateTime?    @map("end_date")
+  coverColor     String?      @map("cover_color")
+  coverImage     String?      @map("cover_image")
+  coverThumb     String?      @map("cover_thumb")
+  coverCredit    String?      @map("cover_credit")
+  coverCreditUrl String?      @map("cover_credit_url")
+  archivedAt     DateTime?    @map("archived_at")
+  workspaceId    String       @map("workspace_id")
+  columnId       String       @map("column_id")
+  projectId      String       @map("project_id")
+  sprintId       String?      @map("sprint_id")
+  createdBy      String       @map("created_by")
+  assigneeId     String?      @map("assignee_id")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   // Relationships
-  column     TaskColumn     @relation(fields: [columnId], references: [id], onDelete: Cascade)
-  project    Project        @relation(fields: [projectId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
-  sprint     Sprint?        @relation(fields: [sprintId], references: [id], onDelete: SetNull)
-  creator    User           @relation("CreatedTasks", fields: [createdBy], references: [id], onDelete: Cascade)
-  assignee   User?          @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
+  column     TaskColumn    @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  project    Project       @relation(fields: [projectId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  sprint     Sprint?       @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  creator    User          @relation("CreatedTasks", fields: [createdBy], references: [id], onDelete: Cascade)
+  assignee   User?         @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
   comments   TaskComment[]
   likes      TaskLike[]
   members    TaskMember[]
   taskLabels TaskLabel[]
   activities Activity[]
 
+  @@unique([id, workspaceId])
   @@index([columnId, archivedAt, order], map: "tasks_column_id_archived_at_order_idx")
   @@index([columnId, archivedAt, status, completedAt], map: "tasks_column_id_archived_at_status_completed_at_idx")
   @@index([projectId, archivedAt, createdAt], map: "tasks_project_id_archived_at_createdAt_idx")
   @@index([sprintId, archivedAt])
   @@index([workspaceId])
-  @@unique([id, workspaceId])
   @@map("tasks")
 }
 
@@ -485,6 +500,54 @@ model Activity {
   @@index([projectId, createdAt])
   @@index([taskId, createdAt])
   @@map("activities")
+}
+
+/// Project calendar entry. `provider` / `externalId` are reserved for Google and
+/// Microsoft sync; events made in the app are LOCAL with no external id.
+/// All-day events store UTC midnight of their first and last day (inclusive).
+model CalendarEvent {
+  id          String           @id @default(cuid())
+  title       String
+  description String?          @db.Text
+  location    String?
+  startAt     DateTime         @map("start_at")
+  endAt       DateTime         @map("end_at")
+  allDay      Boolean          @default(false) @map("all_day")
+  color       String?
+  workspaceId String           @map("workspace_id")
+  projectId   String           @map("project_id")
+  createdBy   String           @map("created_by")
+  provider    CalendarProvider @default(LOCAL)
+  externalId  String?          @map("external_id")
+  externalUrl String?          @map("external_url")
+  syncedAt    DateTime?        @map("synced_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  creator User    @relation("CreatedCalendarEvents", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalId])
+  @@index([projectId, startAt])
+  @@index([workspaceId])
+  @@map("calendar_events")
+}
+
+/// One reminder digest per user per local day; claimed before sending so a
+/// retried or overlapping cron run cannot email twice. System-only table.
+model ReminderDigest {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  /// Local day the digest covers, "yyyy-MM-dd" in the user's timezone.
+  forDate   String   @map("for_date")
+  itemCount Int      @default(0) @map("item_count")
+  status    String   @default("sending")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, forDate])
+  @@map("reminder_digests")
 }
 
 model EmailLog {

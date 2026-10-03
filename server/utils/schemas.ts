@@ -1,9 +1,11 @@
 /** Zod request schemas for `defineApi` `body` / `query`. */
 import { z } from 'zod'
 import { ATTACHABLE_TYPES } from '~/server/utils/attachable-types'
-import { isWorkspaceColorId } from '~/utils/task-colors'
+import { isTaskColorId, isWorkspaceColorId } from '~/utils/task-colors'
 import { TASK_STATUS_IDS } from '~/utils/task-status'
 import { normalizeSubdomain, subdomainError } from '~/utils/subdomain'
+import { isValidTimeZone } from '~/server/utils/reminder-time'
+import { AI_PLAN_GOAL_MAX, AI_PLAN_GOAL_MIN, AI_PLAN_MAX_TASKS } from '~/utils/ai-plan'
 
 export const idSchema = z.string().trim().min(1, 'id is required')
 
@@ -61,10 +63,16 @@ export const userUpdateSchema = z
   .object({
     activeWorkspaceId: z.string().trim().min(1).nullable().optional(),
     activeProjectId: z.string().trim().min(1).nullable().optional(),
+    timezone: z
+      .string()
+      .trim()
+      .max(64)
+      .refine(isValidTimeZone, { message: 'Unknown time zone.' })
+      .optional(),
+    reminderEmails: z.boolean().optional(),
   })
   .refine(
-    (value) =>
-      value.activeWorkspaceId !== undefined || value.activeProjectId !== undefined,
+    (value) => Object.values(value).some((field) => field !== undefined),
     { message: 'Nothing to update.' },
   )
 
@@ -81,6 +89,7 @@ export const workspaceSettingsSchema = z
     emailOnInvite: z.boolean().optional(),
     emailOnProjectAdd: z.boolean().optional(),
     weekStartsOnMonday: z.boolean().optional(),
+    emailReminders: z.boolean().optional(),
     backgroundColor: z
       .string()
       .nullable()
@@ -95,6 +104,7 @@ export const workspaceSettingsSchema = z
       value.emailOnInvite !== undefined ||
       value.emailOnProjectAdd !== undefined ||
       value.weekStartsOnMonday !== undefined ||
+      value.emailReminders !== undefined ||
       value.backgroundColor !== undefined,
     { message: 'Nothing to update.' },
   )
@@ -206,6 +216,85 @@ export const taskCreateSchema = z.object({
   title: trimmedName('Title'),
   description: optionalString,
   sprintId: z.string().trim().min(1).nullable().optional(),
+})
+
+const aiPlanGoalSchema = z
+  .string()
+  .trim()
+  .min(AI_PLAN_GOAL_MIN, 'Describe the work in a sentence or two.')
+  .max(AI_PLAN_GOAL_MAX, `Keep it under ${AI_PLAN_GOAL_MAX} characters.`)
+
+export const aiTaskPlanRequestSchema = z.object({
+  columnId: idSchema,
+  goal: aiPlanGoalSchema,
+})
+
+export const aiPlanTaskSchema = z.object({
+  title: trimmedName('Title').max(120, 'Keep titles under 120 characters.'),
+  description: optionalString,
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
+})
+
+export const aiTaskPlanApplySchema = z.object({
+  columnId: idSchema,
+  goal: aiPlanGoalSchema,
+  sprintId: z.string().trim().min(1).nullable().optional(),
+  tasks: z
+    .array(aiPlanTaskSchema)
+    .min(1, 'Pick at least one task to create.')
+    .max(AI_PLAN_MAX_TASKS, `Create at most ${AI_PLAN_MAX_TASKS} tasks at once.`),
+})
+
+const calendarDateSchema = z.coerce.date({
+  errorMap: () => ({ message: 'A valid date is required.' }),
+})
+
+export const CALENDAR_MAX_RANGE_DAYS = 100
+
+export const calendarRangeQuerySchema = z
+  .object({ from: calendarDateSchema, to: calendarDateSchema })
+  .refine((value) => value.to > value.from, {
+    message: '`to` must be after `from`.',
+  })
+  .refine(
+    (value) =>
+      value.to.getTime() - value.from.getTime() <=
+      CALENDAR_MAX_RANGE_DAYS * 86_400_000,
+    { message: `Ask for at most ${CALENDAR_MAX_RANGE_DAYS} days at once.` },
+  )
+
+export const calendarEventFieldsSchema = z.object({
+  title: trimmedName('Title').max(200, 'Keep titles under 200 characters.'),
+  description: optionalString,
+  location: optionalString,
+  startAt: calendarDateSchema,
+  endAt: calendarDateSchema,
+  allDay: z.boolean().default(false),
+  color: z
+    .string()
+    .refine(isTaskColorId, { message: 'Pick a colour from the palette.' })
+    .nullable()
+    .optional(),
+})
+
+export const calendarEventCreateSchema = calendarEventFieldsSchema.refine(
+  (value) => value.endAt >= value.startAt,
+  { message: 'The event must end after it starts.', path: ['endAt'] },
+)
+
+export const calendarEventUpdateSchema = calendarEventFieldsSchema
+  .partial()
+  .refine((value) => Object.values(value).some((field) => field !== undefined), {
+    message: 'Nothing to update.',
+  })
+
+export const cronRemindersQuerySchema = z.object({
+  dryRun: z
+    .enum(['1', '0', 'true', 'false'])
+    .optional()
+    .transform((value) => value === '1' || value === 'true'),
+  /** Simulated clock for local testing; ignored in production. */
+  now: z.coerce.date().optional(),
 })
 
 export const taskListQuerySchema = z.object({

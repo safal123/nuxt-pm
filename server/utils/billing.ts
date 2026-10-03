@@ -180,6 +180,14 @@ export const assertCanUseAiSummaries = async (
   throw limitError("AI summaries and chat are on Team and Business. Upgrade to use them.");
 };
 
+export const canChangeSubdomain = async (userId: string) =>
+  isPaidPlan(await getEffectivePlanForUser(userId));
+
+export const assertCanChangeSubdomain = async (userId: string) => {
+  if (await canChangeSubdomain(userId)) return;
+  throw limitError("Changing your workspace address is on Team and Business. Upgrade to change it.");
+};
+
 export const assertCanCreateWorkspace = async (userId: string) => {
   const plan = await getEffectivePlanForUser(userId);
   const used = await countOwnedWorkspaces(userId);

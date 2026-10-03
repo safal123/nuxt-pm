@@ -227,6 +227,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     applySettings(workspaceId, {
       emailOnInvite: true,
       emailOnProjectAdd: true,
+      emailReminders: true,
       weekStartsOnMonday: true,
       backgroundColor: null,
       ...previous,

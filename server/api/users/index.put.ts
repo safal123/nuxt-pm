@@ -14,6 +14,10 @@ export default defineApi({
         ...(body.activeProjectId !== undefined
           ? { activeProjectId: body.activeProjectId }
           : {}),
+        ...(body.timezone !== undefined ? { timezone: body.timezone } : {}),
+        ...(body.reminderEmails !== undefined
+          ? { reminderEmails: body.reminderEmails }
+          : {}),
       },
     })
 

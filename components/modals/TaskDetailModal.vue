@@ -569,6 +569,19 @@ const ignoreSelectOutside = (event: Event) => {
             </div>
           </div>
 
+          <div
+            v-if="task.aiPlanGoal"
+            class="rounded-lg border border-border bg-muted/50 px-3 py-2.5"
+          >
+            <p class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <SparklesIcon class="h-3.5 w-3.5" />
+              Created from an AI plan
+            </p>
+            <p class="mt-1.5 whitespace-pre-line text-sm text-foreground">
+              {{ task.aiPlanGoal }}
+            </p>
+          </div>
+
           <div>
             <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Description

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { Task, TaskColumn } from '~/types'
+import type { AiPlanTask, Task, TaskColumn } from '~/types'
 import { BOARD_COMPLETED_LIMIT } from '~/utils/board'
 import { api } from '~/lib/api'
 import { realtimeClientId, type BoardRealtimePayload } from '~/utils/realtime'
@@ -159,6 +159,36 @@ export const useBoardStore = defineStore('board', () => {
     if (task && column && sprintStore.matchesView(task)) {
       column.tasks.push({ ...task, labels: task.labels || [] })
     }
+  }
+
+  const draftAiPlan = async (columnId: string, goal: string) => {
+    if (!projectId.value) return []
+    const { tasks } = await api<{ tasks: AiPlanTask[] }>(
+      `/api/projects/${projectId.value}/ai-plan`,
+      { method: 'POST', body: { columnId, goal } },
+    )
+    return tasks
+  }
+
+  const applyAiPlan = async (columnId: string, goal: string, drafts: AiPlanTask[]) => {
+    if (!projectId.value) return []
+    const sprintStore = useSprintStore()
+    const { tasks } = await api<{ tasks: Task[] }>(
+      `/api/projects/${projectId.value}/ai-plan/apply`,
+      {
+        method: 'POST',
+        body: { columnId, goal, sprintId: sprintStore.createSprintId, tasks: drafts },
+      },
+    )
+    const column = columns.value.find((c) => c.id === columnId)
+    if (column) {
+      for (const task of tasks) {
+        if (!sprintStore.matchesView(task)) continue
+        if (column.tasks.some((existing) => existing.id === task.id)) continue
+        column.tasks.push({ ...task, labels: task.labels || [] })
+      }
+    }
+    return tasks
   }
 
   const takeDragSnapshot = () => {
@@ -713,6 +743,8 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   return {
+    draftAiPlan,
+    applyAiPlan,
     projectId,
     columns,
     listVersion,

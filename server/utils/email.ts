@@ -6,7 +6,12 @@ import {
   escapeHtml,
   workspaceInviteHtml,
   customEmailHtml,
+  reminderDigestHtml,
+  type ReminderDigestRow,
 } from '~/utils/email-templates'
+import { colorValue } from '~/utils/task-colors'
+import { priorityLabel } from '~/utils/task-priority'
+import { CALENDAR_DEFAULT_COLOR, CALENDAR_PRIORITY_COLORS } from '~/utils/calendar'
 
 /** Resend's shared sandbox sender — production must set a verified RESEND_FROM. */
 const TEST_FROM = 'Northstar <onboarding@resend.dev>'
@@ -397,6 +402,120 @@ export const sendCustomEmail = async (input: {
       projectId: input.projectId,
       template: 'custom',
       createdBy: input.createdBy,
+    },
+  })
+}
+
+export type ReminderDigestItem = {
+  kind: 'event' | 'task'
+  id: string
+  title: string
+  startAt: Date
+  endAt: Date
+  allDay: boolean
+  location?: string | null
+  color?: string | null
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  columnName?: string | null
+  projectId: string
+  projectName: string
+  workspaceId: string
+  workspaceName: string
+}
+
+const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`
+
+export const sendReminderDigestEmail = async (input: {
+  to: string
+  name: string | null
+  userId: string
+  forDate: string
+  when: 'today' | 'tomorrow'
+  timeZone: string
+  items: ReminderDigestItem[]
+  origin: string
+}) => {
+  const time = new Intl.DateTimeFormat('en-US', {
+    timeZone: input.timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+  const dayLabel = new Intl.DateTimeFormat('en-AU', {
+    timeZone: 'UTC',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date(`${input.forDate}T00:00:00.000Z`))
+
+  const projectUrl = (item: ReminderDigestItem) =>
+    `${input.origin}/w/${item.workspaceId}/projects/${item.projectId}`
+
+  const toRow = (item: ReminderDigestItem): ReminderDigestRow =>
+    item.kind === 'event'
+      ? {
+          kind: 'event',
+          when: item.allDay
+            ? 'All day'
+            : `${time.format(item.startAt)} – ${time.format(item.endAt)}`,
+          title: item.title,
+          meta: [item.projectName, item.location].filter(Boolean).join(' · '),
+          url: projectUrl(item),
+          accent: colorValue(item.color ?? CALENDAR_DEFAULT_COLOR),
+        }
+      : {
+          kind: 'task',
+          when: `Due · ${priorityLabel(item.priority ?? 'MEDIUM')}`,
+          title: item.title,
+          meta: [item.projectName, item.columnName].filter(Boolean).join(' · '),
+          url: projectUrl(item),
+          accent: CALENDAR_PRIORITY_COLORS[item.priority ?? 'MEDIUM'],
+        }
+
+  const events = input.items.filter((item) => item.kind === 'event').map(toRow)
+  const tasks = input.items.filter((item) => item.kind === 'task').map(toRow)
+  const counts = [
+    events.length ? plural(events.length, 'event') : '',
+    tasks.length ? `${plural(tasks.length, 'card')} due` : '',
+  ]
+    .filter(Boolean)
+    .join(', ')
+  const heading = input.when === 'tomorrow' ? 'Tomorrow' : 'Today'
+  const subject = `${heading}: ${counts}`
+  const greeting = `Hi ${input.name || 'there'},`
+  const summary = `Here's what's coming up on ${dayLabel}.`
+  const first = input.items[0]
+  const settingsUrl = `${input.origin}/w/${first.workspaceId}/settings`
+
+  const text = [
+    greeting,
+    '',
+    summary,
+    ...(events.length ? ['', 'Events:', ...events.map((row) => `- ${row.when}  ${row.title} (${row.meta})`)] : []),
+    ...(tasks.length ? ['', 'Cards due:', ...tasks.map((row) => `- ${row.title} (${row.meta})`)] : []),
+    '',
+    `Open: ${projectUrl(first)}`,
+    `Turn off reminder emails: ${settingsUrl}`,
+  ].join('\n')
+
+  return sendEmail({
+    to: [input.to],
+    subject,
+    html: reminderDigestHtml({
+      greeting,
+      title: subject,
+      summary,
+      events,
+      tasks,
+      actionUrl: projectUrl(first),
+      settingsUrl,
+    }),
+    text,
+    idempotencyKey: `reminder-digest/${input.userId}/${input.forDate}`,
+    tags: [{ name: 'category', value: 'reminder-digest' }],
+    log: {
+      workspaceId: first.workspaceId,
+      projectId: first.projectId,
+      template: 'reminder-digest',
     },
   })
 }

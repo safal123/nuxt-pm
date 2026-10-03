@@ -2,6 +2,7 @@ export interface WorkspaceSetting {
   emailOnInvite: boolean
   emailOnProjectAdd: boolean
   weekStartsOnMonday: boolean
+  emailReminders: boolean
   backgroundColor: string | null
 }
 
@@ -29,8 +30,12 @@ export interface User {
   image: string | null
   imageUrl?: string | null
   subdomain?: string | null
+  /** Paid plan only; set by GET /api/users. */
+  canChangeSubdomain?: boolean
   activeWorkspaceId: string | null
   activeProjectId: string | null
+  timezone?: string | null
+  reminderEmails?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -156,6 +161,13 @@ export interface Member {
 export type TaskAssignee = Member
 
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+
+/** A drafted card from POST /api/projects/:id/ai-plan, not yet saved. */
+export interface AiPlanTask {
+  title: string
+  description: string | null
+  priority: TaskPriority
+}
 
 export interface TaskComment {
   id: string
@@ -327,6 +339,8 @@ export interface Task {
   id: string
   title: string
   description: string | null
+  /** Goal typed into "Plan with AI" when the card came from an AI plan. */
+  aiPlanGoal?: string | null
   order: number
   priority: TaskPriority
   status: TaskStatus
@@ -358,6 +372,68 @@ export interface Task {
   likedByMe: boolean
   summary?: TaskSummary | null
   summaries?: TaskSummary[]
+}
+
+export type CalendarProvider = 'LOCAL' | 'GOOGLE' | 'MICROSOFT'
+
+export type CalendarViewMode = 'month' | 'week' | 'agenda'
+
+export interface CalendarEvent {
+  id: string
+  title: string
+  description: string | null
+  location: string | null
+  startAt: string
+  endAt: string
+  /** All-day events hold UTC midnight of the first and last day (inclusive). */
+  allDay: boolean
+  color: string | null
+  projectId: string
+  workspaceId: string
+  provider: CalendarProvider
+  externalUrl: string | null
+  createdBy: string
+  creator: Member | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type CalendarEventInput = {
+  title: string
+  description?: string | null
+  location?: string | null
+  startAt: string
+  endAt: string
+  allDay: boolean
+  color?: string | null
+}
+
+/** Where a new event starts when created from a calendar click. */
+export type CalendarEventDraft = {
+  day: string
+  startMinutes?: number
+  allDay?: boolean
+}
+
+/** One thing drawn on the project calendar: an event or a card's due date. */
+export type CalendarEntry = {
+  key: string
+  kind: 'event' | 'task'
+  id: string
+  title: string
+  startAt: string
+  endAt: string
+  allDay: boolean
+  /** Hex colour for the chip accent. */
+  color: string
+  done: boolean
+  /** Open card whose due date has passed. */
+  overdue: boolean
+  editable: boolean
+  /** Local day keys ("yyyy-MM-dd") the entry is drawn on. */
+  days: string[]
+  event?: CalendarEvent
+  task?: Task
 }
 
 export interface TaskColumn {

@@ -45,17 +45,12 @@ export const auth = betterAuth({
         },
       },
       update: {
-        before: async (user, ctx) => {
+        // Changing it is a paid feature owned by PUT /api/users/subdomain.
+        before: async (user) => {
           if (user.subdomain === undefined) return
-          const requested =
-            typeof user.subdomain === 'string' ? normalizeSubdomain(user.subdomain) : ''
-          const message = subdomainError(requested)
-          if (message) throw new APIError('BAD_REQUEST', { message })
-          const userId = ctx?.context.session?.user.id
-          if (await isSubdomainTaken(requested, userId)) {
-            throw new APIError('BAD_REQUEST', { message: 'That subdomain is already taken.' })
-          }
-          return { data: { ...user, subdomain: requested } }
+          throw new APIError('FORBIDDEN', {
+            message: 'Change your subdomain from Settings.',
+          })
         },
       },
     },

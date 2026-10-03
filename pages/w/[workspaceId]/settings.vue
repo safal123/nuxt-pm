@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { toast } from "vue-sonner";
+import { toTypedSchema } from "@vee-validate/zod";
 import { formatDate } from "@/utils/date";
+import { subdomainCheckSchema } from "~/server/utils/schemas";
 import {
   BellIcon,
+  GlobeIcon,
   Columns3Icon,
   SunIcon,
   Table2Icon,
@@ -49,6 +52,7 @@ const settings = computed(
     workspace.value?.settings ?? {
       emailOnInvite: true,
       emailOnProjectAdd: true,
+      emailReminders: true,
       weekStartsOnMonday: true,
       backgroundColor: null,
     },
@@ -94,6 +98,53 @@ const saveSetting = async (patch: Partial<WorkspaceSetting>) => {
     saving.value = false;
   }
 };
+
+const savingReminders = ref(false);
+const setReminderEmails = async (reminderEmails: boolean) => {
+  savingReminders.value = true;
+  try {
+    await userStore.updateUser({ reminderEmails });
+    toast.success(reminderEmails ? "Reminder emails on" : "Reminder emails off");
+  } catch (error: any) {
+    toast.error(error?.data?.message || "Could not update reminder emails");
+  } finally {
+    savingReminders.value = false;
+  }
+};
+
+const route = useRoute();
+const {
+  enabled: subdomainsEnabled,
+  appDomain,
+  subdomainUrl,
+  goToSubdomain,
+} = useSubdomain();
+
+const subdomain = computed(() => user.value?.subdomain || "");
+const addressLabel = computed(() =>
+  subdomainsEnabled && subdomain.value
+    ? `${subdomain.value}.${appDomain}`
+    : subdomain.value || "—",
+);
+const canChangeSubdomain = computed(() => !!user.value?.canChangeSubdomain);
+const editingSubdomain = ref(false);
+const savingSubdomain = ref(false);
+const subdomainFormSchema = toTypedSchema(subdomainCheckSchema);
+
+async function onSubdomainSubmit(values: any) {
+  if (savingSubdomain.value) return;
+  savingSubdomain.value = true;
+  try {
+    const next = await userStore.updateSubdomain(values.subdomain);
+    toast.success("Workspace address updated");
+    editingSubdomain.value = false;
+    if (next.subdomain) await goToSubdomain(next.subdomain, route.fullPath);
+  } catch (error: any) {
+    toast.error(error?.data?.message || "Could not change your workspace address");
+  } finally {
+    savingSubdomain.value = false;
+  }
+}
 
 const usingBackground = computed(() => !!settings.value.backgroundColor);
 
@@ -200,6 +251,20 @@ const setBackgroundColor = async (colorId: string) => {
             <Switch
               :checked="showEmailsInActivity"
               @update:checked="showEmailsInActivity = $event"
+            />
+          </div>
+          <div class="flex items-center justify-between gap-4 border-t border-border px-4 py-4">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-foreground">Reminder emails</p>
+              <p class="mt-0.5 text-sm text-muted-foreground">
+                A daily email with tomorrow's events and your cards due, sent
+                around 9am{{ user?.timezone ? ` (${user.timezone})` : "" }}.
+              </p>
+            </div>
+            <Switch
+              :checked="user?.reminderEmails !== false"
+              :disabled="savingReminders"
+              @update:checked="setReminderEmails"
             />
           </div>
         </div>
@@ -310,6 +375,21 @@ const setBackgroundColor = async (colorId: string) => {
               </TableRow>
               <TableRow class="hover:bg-transparent">
                 <TableCell class="align-top">
+                  <p class="text-sm text-muted-foreground">Reminder emails</p>
+                  <p class="mt-0.5 text-xs text-muted-foreground">
+                    Daily digest of upcoming events and cards due.
+                  </p>
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    :checked="settings.emailReminders"
+                    :disabled="!isOwner || saving"
+                    @update:checked="saveSetting({ emailReminders: $event })"
+                  />
+                </TableCell>
+              </TableRow>
+              <TableRow class="hover:bg-transparent">
+                <TableCell class="align-top">
                   <p class="text-sm text-muted-foreground">
                     Week starts on Monday
                   </p>
@@ -384,11 +464,121 @@ const setBackgroundColor = async (colorId: string) => {
               {{ user?.name || "—" }}
             </p>
           </div>
-          <div class="grid gap-1 px-4 py-4 sm:grid-cols-[140px_1fr]">
+          <div
+            class="grid gap-1 border-b border-border px-4 py-4 sm:grid-cols-[140px_1fr]"
+          >
             <p class="text-sm text-muted-foreground">Email</p>
             <p class="text-sm font-medium text-foreground">
               {{ user?.email || "—" }}
             </p>
+          </div>
+          <div class="grid gap-3 px-4 py-4 sm:grid-cols-[140px_1fr]">
+            <div>
+              <p class="text-sm text-muted-foreground">Workspace address</p>
+              <p class="mt-0.5 text-xs text-muted-foreground">
+                Where you land after signing in.
+              </p>
+            </div>
+
+            <div class="min-w-0 space-y-2">
+              <Form
+                v-if="editingSubdomain"
+                v-slot="{ handleSubmit }"
+                as=""
+                :validation-schema="subdomainFormSchema"
+                :initial-values="{ subdomain }"
+              >
+                <form
+                  class="flex flex-col gap-2 sm:flex-row sm:items-start"
+                  @submit="handleSubmit($event, onSubdomainSubmit)"
+                >
+                  <FormField v-slot="{ componentField }" name="subdomain">
+                    <FormItem class="min-w-0 flex-1">
+                      <FormControl>
+                        <div
+                          class="flex h-9 items-center overflow-hidden rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background"
+                        >
+                          <Input
+                            type="text"
+                            class="h-full border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                            autocomplete="off"
+                            autocapitalize="none"
+                            spellcheck="false"
+                            v-bind="componentField"
+                            :disabled="savingSubdomain"
+                          />
+                          <span
+                            v-if="subdomainsEnabled"
+                            class="shrink-0 pr-3 text-sm text-muted-foreground"
+                          >
+                            .{{ appDomain }}
+                          </span>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  </FormField>
+                  <div class="flex gap-2">
+                    <Button type="submit" size="sm" class="h-9" :disabled="savingSubdomain">
+                      {{ savingSubdomain ? "Saving…" : "Save" }}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      class="h-9"
+                      :disabled="savingSubdomain"
+                      @click="editingSubdomain = false"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+
+              <div v-else class="flex flex-wrap items-center gap-3">
+                <a
+                  v-if="subdomainsEnabled && subdomain"
+                  :href="subdomainUrl(subdomain, '/w')"
+                  class="inline-flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  <GlobeIcon class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <span class="truncate">{{ addressLabel }}</span>
+                </a>
+                <span v-else class="text-sm font-medium text-foreground">
+                  {{ addressLabel }}
+                </span>
+                <Button
+                  v-if="canChangeSubdomain"
+                  size="sm"
+                  variant="outline"
+                  class="h-8"
+                  @click="editingSubdomain = true"
+                >
+                  Change
+                </Button>
+              </div>
+
+              <p
+                v-if="!canChangeSubdomain && !editingSubdomain"
+                class="text-xs text-muted-foreground"
+              >
+                Changing your address is on Team and Business.
+                <NuxtLink
+                  v-if="isOwner && workspace"
+                  :to="{ name: 'workspace-billing', params: { workspaceId: workspace.id } }"
+                  class="font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  Upgrade
+                </NuxtLink>
+              </p>
+              <p
+                v-else-if="editingSubdomain"
+                class="text-xs text-muted-foreground"
+              >
+                Your old address stops working right away.
+              </p>
+            </div>
           </div>
         </div>
       </section>
