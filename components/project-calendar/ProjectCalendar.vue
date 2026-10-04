@@ -45,6 +45,7 @@ import ProjectCalendarAgenda from "./ProjectCalendarAgenda.vue";
 import ProjectCalendarEventDialog from "./ProjectCalendarEventDialog.vue";
 import ProjectCalendarMiniMonth from "./ProjectCalendarMiniMonth.vue";
 import ProjectCalendarMonth from "./ProjectCalendarMonth.vue";
+import ProjectCalendarSync from "./ProjectCalendarSync.vue";
 import ProjectCalendarWeek from "./ProjectCalendarWeek.vue";
 
 const props = defineProps<{ projectId: string }>();
@@ -53,11 +54,6 @@ const MODES: { id: CalendarViewMode; label: string; shortcut: string }[] = [
   { id: "month", label: "Month", shortcut: "M" },
   { id: "week", label: "Week", shortcut: "W" },
   { id: "agenda", label: "Agenda", shortcut: "A" },
-];
-
-const SYNC_PROVIDERS = [
-  { id: "google", name: "Google Calendar", initial: "G", color: "#4285F4" },
-  { id: "microsoft", name: "Microsoft Outlook", initial: "O", color: "#0078D4" },
 ];
 
 const SHORTCUTS = [
@@ -75,6 +71,19 @@ const mode = useLocalStorage<CalendarViewMode>("project-calendar-mode", "month")
 const showEvents = useLocalStorage("project-calendar-show-events", true);
 const showTasks = useLocalStorage("project-calendar-show-tasks", true);
 const cursor = ref(new Date());
+const connectOpen = ref(false);
+
+// Google sends the user back here after granting calendar access.
+const route = useRoute();
+const router = useRouter();
+onMounted(() => {
+  const result = route.query.calendarConnect;
+  if (!result) return;
+  if (result === "google") connectOpen.value = true;
+  else toast.error(`Google Calendar was not connected${route.query.error ? `: ${route.query.error}` : "."}`);
+  const { calendarConnect: _, error: __, ...query } = route.query;
+  router.replace({ query });
+});
 
 const weekStartsOn = computed<WeekStart>(() =>
   workspaceStore.activeWorkspace?.settings?.weekStartsOnMonday === false ? 0 : 1,
@@ -394,28 +403,7 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
 
         <Separator />
 
-        <section class="space-y-2 p-4">
-          <p class="text-xs font-semibold text-muted-foreground">Sync</p>
-          <div
-            v-for="provider in SYNC_PROVIDERS"
-            :key="provider.id"
-            class="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5"
-          >
-            <span
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm font-bold text-white"
-              :style="{ backgroundColor: provider.color }"
-            >
-              {{ provider.initial }}
-            </span>
-            <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm font-medium leading-tight">{{ provider.name }}</span>
-              <span class="block text-xs text-muted-foreground">Coming soon</span>
-            </span>
-            <Button variant="outline" size="sm" class="h-7 px-2.5 text-xs" disabled>
-              Connect
-            </Button>
-          </div>
-        </section>
+        <ProjectCalendarSync v-model:connect-open="connectOpen" />
 
         <div class="mt-auto p-4">
           <div class="rounded-lg border border-dashed border-border px-3 py-2.5">

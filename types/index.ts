@@ -391,11 +391,44 @@ export interface CalendarEvent {
   projectId: string
   workspaceId: string
   provider: CalendarProvider
+  /** Set on events imported from a connected calendar. */
+  connectionId: string | null
   externalUrl: string | null
   createdBy: string
   creator: Member | null
   createdAt: string
   updatedAt: string
+}
+
+/** An external calendar shown read-only inside a project calendar. */
+export interface CalendarConnection {
+  id: string
+  provider: CalendarProvider
+  externalCalendarId: string
+  name: string
+  color: string | null
+  projectId: string
+  userId: string
+  owner: Member | null
+  lastSyncedAt: string | null
+  lastError: string | null
+  createdAt: string
+}
+
+export interface GoogleCalendarStatus {
+  /** Google OAuth is configured on this server. */
+  available: boolean
+  linked: boolean
+  /** The linked account granted calendar read access. */
+  authorized: boolean
+}
+
+export interface GoogleCalendarSummary {
+  id: string
+  name: string
+  primary: boolean
+  color: string | null
+  accessRole: string
 }
 
 export type CalendarEventInput = {

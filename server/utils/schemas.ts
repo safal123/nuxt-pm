@@ -277,6 +277,11 @@ export const calendarEventFieldsSchema = z.object({
     .optional(),
 })
 
+export const calendarConnectionCreateSchema = z.object({
+  calendarId: z.string().trim().min(1, 'Pick a calendar.').max(1024),
+  color: calendarEventFieldsSchema.shape.color,
+})
+
 export const calendarEventCreateSchema = calendarEventFieldsSchema.refine(
   (value) => value.endAt >= value.startAt,
   { message: 'The event must end after it starts.', path: ['endAt'] },

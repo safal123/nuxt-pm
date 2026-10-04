@@ -1,14 +1,26 @@
 import { defineStore } from 'pinia'
-import type { CalendarEvent, CalendarEventInput, Task } from '~/types'
+import type {
+  CalendarConnection,
+  CalendarEvent,
+  CalendarEventInput,
+  GoogleCalendarStatus,
+  GoogleCalendarSummary,
+  Task,
+} from '~/types'
 import { api } from '~/lib/api'
 
-type CalendarResponse = { events: CalendarEvent[]; tasks: Task[] }
+type CalendarResponse = {
+  events: CalendarEvent[]
+  tasks: Task[]
+  connections: CalendarConnection[]
+}
 
 export const useCalendarStore = defineStore('calendar', () => {
   const projectId = ref<string | null>(null)
   const range = ref<{ from: Date; to: Date } | null>(null)
   const events = ref<CalendarEvent[]>([])
   const tasks = ref<Task[]>([])
+  const connections = ref<CalendarConnection[]>([])
   const loading = ref(false)
   let requestId = 0
 
@@ -22,6 +34,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     if (projectId.value !== nextProjectId) {
       events.value = []
       tasks.value = []
+      connections.value = []
     }
     projectId.value = nextProjectId
     range.value = { from, to }
@@ -34,6 +47,7 @@ export const useCalendarStore = defineStore('calendar', () => {
       if (id !== requestId) return
       events.value = data.events ?? []
       tasks.value = data.tasks ?? []
+      connections.value = data.connections ?? []
     } finally {
       if (id === requestId) loading.value = false
     }
@@ -81,6 +95,53 @@ export const useCalendarStore = defineStore('calendar', () => {
     events.value = events.value.filter((item) => item.id !== eventId)
   }
 
+  const fetchGoogleStatus = async () => {
+    const { status } = await api<{ status: GoogleCalendarStatus }>(
+      '/api/integrations/google/status',
+    )
+    return status
+  }
+
+  const fetchGoogleCalendars = async () => {
+    const { calendars } = await api<{ calendars: GoogleCalendarSummary[] }>(
+      '/api/integrations/google/calendars',
+    )
+    return calendars
+  }
+
+  const upsertConnection = (connection: CalendarConnection) => {
+    const index = connections.value.findIndex((item) => item.id === connection.id)
+    if (index === -1) connections.value.push(connection)
+    else connections.value.splice(index, 1, connection)
+  }
+
+  const connectGoogleCalendar = async (input: { calendarId: string; color?: string | null }) => {
+    if (!projectId.value) throw new Error('No project selected')
+    const { connection } = await api<{ connection: CalendarConnection }>(
+      `/api/projects/${projectId.value}/calendar-connections`,
+      { method: 'POST', body: input },
+    )
+    upsertConnection(connection)
+    await refresh()
+    return connection
+  }
+
+  const syncConnection = async (connectionId: string) => {
+    const { connection } = await api<{ connection: CalendarConnection }>(
+      `/api/calendar-connections/${connectionId}/sync`,
+      { method: 'POST' },
+    )
+    upsertConnection(connection)
+    await refresh()
+    return connection
+  }
+
+  const disconnect = async (connectionId: string) => {
+    await api(`/api/calendar-connections/${connectionId}`, { method: 'DELETE' })
+    connections.value = connections.value.filter((item) => item.id !== connectionId)
+    events.value = events.value.filter((item) => item.connectionId !== connectionId)
+  }
+
   /** Keeps the calendar copy of a card in step with edits made elsewhere. */
   const syncTask = (task: Task) => {
     const index = tasks.value.findIndex((item) => item.id === task.id)
@@ -111,6 +172,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     range,
     events,
     tasks,
+    connections,
     loading,
     fetchRange,
     refresh,
@@ -119,5 +181,10 @@ export const useCalendarStore = defineStore('calendar', () => {
     deleteEvent,
     syncTask,
     rescheduleTask,
+    fetchGoogleStatus,
+    fetchGoogleCalendars,
+    connectGoogleCalendar,
+    syncConnection,
+    disconnect,
   }
 })

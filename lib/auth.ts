@@ -96,6 +96,9 @@ export const auth = betterAuth({
       // Password sign-up does not verify email, so require that or Google
       // cannot attach to an existing account with the same address.
       requireLocalEmailVerified: false,
+      // Connecting a calendar links a Google account while signed in, and that
+      // account is often not the address the user signed up with.
+      allowDifferentEmails: true,
     },
   },
   user: {

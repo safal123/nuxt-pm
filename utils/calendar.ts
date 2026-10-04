@@ -15,6 +15,10 @@ export type WeekStart = 0 | 1
 export const CALENDAR_AGENDA_DAYS = 30
 export const CALENDAR_SLOT_MINUTES = 30
 export const CALENDAR_DEFAULT_COLOR = 'blue'
+export const CALENDAR_CONNECTION_DEFAULT_COLOR = 'sky'
+
+/** Read-only access is all the project calendar needs from Google. */
+export const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly'
 
 /** Card due dates are coloured by priority; overdue cards always read red. */
 export const CALENDAR_PRIORITY_COLORS: Record<TaskPriority, string> = {

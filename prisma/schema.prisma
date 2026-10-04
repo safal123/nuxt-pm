@@ -65,29 +65,30 @@ model User {
   updatedAt         DateTime @updatedAt
 
   // Relationships
-  sessions           Session[]
-  reminderDigests    ReminderDigest[]
-  accounts           Account[]
-  memberships        WorkspaceMember[]
-  projectMemberships ProjectMember[]
-  createdInvites     WorkspaceInvite[]
-  createdWorkspaces  Workspace[]       @relation("CreatedWorkspaces")
-  createdProjects    Project[]         @relation("CreatedProjects")
-  createdTasks       Task[]            @relation("CreatedTasks")
-  assignedTasks      Task[]            @relation("AssignedTasks")
-  taskComments       TaskComment[]
-  attachments        Attachment[]
-  taskLikes          TaskLike[]
-  taskMemberships    TaskMember[]
-  activities         Activity[]
-  createdLabels      Label[]
-  createdSprints     Sprint[]          @relation("CreatedSprints")
-  sentEmails         EmailLog[]        @relation("CreatedEmails")
-  subscription       Subscription?
-  billingEvents      BillingEvent[]
-  aiSummaries        AiSummary[]
-  aiChatMessages     AiChatMessage[]
-  calendarEvents     CalendarEvent[]   @relation("CreatedCalendarEvents")
+  sessions            Session[]
+  reminderDigests     ReminderDigest[]
+  calendarConnections CalendarConnection[]
+  accounts            Account[]
+  memberships         WorkspaceMember[]
+  projectMemberships  ProjectMember[]
+  createdInvites      WorkspaceInvite[]
+  createdWorkspaces   Workspace[]          @relation("CreatedWorkspaces")
+  createdProjects     Project[]            @relation("CreatedProjects")
+  createdTasks        Task[]               @relation("CreatedTasks")
+  assignedTasks       Task[]               @relation("AssignedTasks")
+  taskComments        TaskComment[]
+  attachments         Attachment[]
+  taskLikes           TaskLike[]
+  taskMemberships     TaskMember[]
+  activities          Activity[]
+  createdLabels       Label[]
+  createdSprints      Sprint[]             @relation("CreatedSprints")
+  sentEmails          EmailLog[]           @relation("CreatedEmails")
+  subscription        Subscription?
+  billingEvents       BillingEvent[]
+  aiSummaries         AiSummary[]
+  aiChatMessages      AiChatMessage[]
+  calendarEvents      CalendarEvent[]      @relation("CreatedCalendarEvents")
 
   activeWorkspace Workspace? @relation("ActiveWorkspace", fields: [activeWorkspaceId], references: [id])
   activeProject   Project?   @relation("ActiveProject", fields: [activeProjectId], references: [id])
@@ -230,17 +231,18 @@ model Project {
   updatedAt   DateTime  @updatedAt
 
   // Relationships
-  creator        User            @relation("CreatedProjects", fields: [createdBy], references: [id], onDelete: Cascade)
-  workspace      Workspace       @relation("Projects", fields: [workspaceId], references: [id], onDelete: Cascade)
-  activeUsers    User[]          @relation("ActiveProject") // inverse of User.activeProject
-  members        ProjectMember[]
-  columns        TaskColumn[]
-  tasks          Task[]
-  sprints        Sprint[]
-  labels         Label[]
-  emailLogs      EmailLog[]
-  activities     Activity[]
-  calendarEvents CalendarEvent[]
+  creator             User                 @relation("CreatedProjects", fields: [createdBy], references: [id], onDelete: Cascade)
+  workspace           Workspace            @relation("Projects", fields: [workspaceId], references: [id], onDelete: Cascade)
+  activeUsers         User[]               @relation("ActiveProject") // inverse of User.activeProject
+  members             ProjectMember[]
+  columns             TaskColumn[]
+  tasks               Task[]
+  sprints             Sprint[]
+  labels              Label[]
+  emailLogs           EmailLog[]
+  activities          Activity[]
+  calendarEvents      CalendarEvent[]
+  calendarConnections CalendarConnection[]
 
   @@unique([id, workspaceId])
   @@unique([workspaceId, name])
@@ -506,31 +508,64 @@ model Activity {
 /// Microsoft sync; events made in the app are LOCAL with no external id.
 /// All-day events store UTC midnight of their first and last day (inclusive).
 model CalendarEvent {
-  id          String           @id @default(cuid())
-  title       String
-  description String?          @db.Text
-  location    String?
-  startAt     DateTime         @map("start_at")
-  endAt       DateTime         @map("end_at")
-  allDay      Boolean          @default(false) @map("all_day")
-  color       String?
-  workspaceId String           @map("workspace_id")
-  projectId   String           @map("project_id")
-  createdBy   String           @map("created_by")
-  provider    CalendarProvider @default(LOCAL)
-  externalId  String?          @map("external_id")
-  externalUrl String?          @map("external_url")
-  syncedAt    DateTime?        @map("synced_at")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
+  id           String           @id @default(cuid())
+  title        String
+  description  String?          @db.Text
+  location     String?
+  startAt      DateTime         @map("start_at")
+  endAt        DateTime         @map("end_at")
+  allDay       Boolean          @default(false) @map("all_day")
+  color        String?
+  workspaceId  String           @map("workspace_id")
+  projectId    String           @map("project_id")
+  createdBy    String           @map("created_by")
+  /// Set for events imported from a connected external calendar.
+  connectionId String?          @map("connection_id")
+  provider     CalendarProvider @default(LOCAL)
+  externalId   String?          @map("external_id")
+  externalUrl  String?          @map("external_url")
+  syncedAt     DateTime?        @map("synced_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
 
-  project Project @relation(fields: [projectId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
-  creator User    @relation("CreatedCalendarEvents", fields: [createdBy], references: [id], onDelete: Cascade)
+  project    Project             @relation(fields: [projectId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  creator    User                @relation("CreatedCalendarEvents", fields: [createdBy], references: [id], onDelete: Cascade)
+  connection CalendarConnection? @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
-  @@unique([provider, externalId])
+  @@unique([connectionId, externalId])
+  @@index([connectionId, startAt])
   @@index([projectId, startAt])
   @@index([workspaceId])
   @@map("calendar_events")
+}
+
+/// An external calendar (e.g. one Google calendar) shown inside a project.
+/// Events are pulled into `calendar_events` on demand, for the window the
+/// project calendar is looking at; disconnecting removes the imported rows.
+model CalendarConnection {
+  id                 String           @id @default(cuid())
+  projectId          String           @map("project_id")
+  workspaceId        String           @map("workspace_id")
+  /// Whose OAuth account is used to read the calendar.
+  userId             String           @map("user_id")
+  provider           CalendarProvider
+  externalCalendarId String           @map("external_calendar_id")
+  name               String
+  color              String?
+  syncedFrom         DateTime?        @map("synced_from")
+  syncedTo           DateTime?        @map("synced_to")
+  lastSyncedAt       DateTime?        @map("last_synced_at")
+  lastError          String?          @map("last_error") @db.Text
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  project Project         @relation(fields: [projectId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events  CalendarEvent[]
+
+  @@unique([projectId, provider, externalCalendarId])
+  @@index([workspaceId])
+  @@map("calendar_connections")
 }
 
 /// One reminder digest per user per local day; claimed before sending so a
