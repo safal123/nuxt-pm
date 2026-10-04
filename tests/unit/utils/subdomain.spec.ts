@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import {
+  normalizeAppDomain,
   apexOrigin,
   appCookieDomain,
   slugifySubdomain,
@@ -48,5 +49,18 @@ describe("subdomain helpers", () => {
     expect(subdomainOrigin("john", "lvh.me:3000", "http:")).toBe("http://john.lvh.me:3000");
     expect(apexOrigin("workflow.com", "https")).toBe("https://workflow.com");
     expect(appCookieDomain("lvh.me:3000")).toBe("lvh.me");
+  });
+});
+
+describe("normalizeAppDomain", () => {
+  it("accepts a bare host or a pasted URL", () => {
+    expect(normalizeAppDomain("workflow.com")).toBe("workflow.com");
+    expect(normalizeAppDomain(" https://Workflow.com/ ")).toBe("workflow.com");
+    expect(normalizeAppDomain("http://lvh.me:3000")).toBe("lvh.me:3000");
+  });
+
+  it("turns subdomains off for hosts without wildcard support", () => {
+    expect(normalizeAppDomain("https://nuxt-pm.vercel.app")).toBe("");
+    expect(normalizeAppDomain(undefined)).toBe("");
   });
 });

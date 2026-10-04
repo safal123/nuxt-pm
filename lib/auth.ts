@@ -4,7 +4,12 @@ import { prismaAdapter } from 'better-auth/adapters/prisma'
 // Relative, not aliased: the `auth` CLI loads this file outside the Nuxt build.
 import { systemPrisma as prisma } from './prisma'
 import { generateSubdomain, isSubdomainTaken } from './subdomain'
-import { appCookieDomain, normalizeSubdomain, subdomainError } from '../utils/subdomain'
+import {
+  appCookieDomain,
+  normalizeAppDomain,
+  normalizeSubdomain,
+  subdomainError,
+} from '../utils/subdomain'
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
@@ -13,7 +18,7 @@ const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
 export const googleEnabled = Boolean(googleClientId && googleClientSecret)
 
 /** e.g. `workflow.com` or `lvh.me:3000`. Unset = single-host mode, no subdomains. */
-const appDomain = process.env.APP_DOMAIN || ''
+const appDomain = normalizeAppDomain(process.env.APP_DOMAIN)
 const appProtocol = process.env.BETTER_AUTH_URL?.startsWith('https') ? 'https' : 'http'
 
 export const auth = betterAuth({

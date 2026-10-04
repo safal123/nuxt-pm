@@ -54,6 +54,25 @@ export const slugifySubdomain = (input: string) => {
 }
 
 /** `APP_DOMAIN` without a port, for cookie `Domain`. */
+/** Hosts that cannot serve `*.host` wildcards, so per-user subdomains stay off. */
+const NO_WILDCARD_SUFFIXES = ['.vercel.app']
+
+/**
+ * `APP_DOMAIN` as a bare `host[:port]`. Tolerates a pasted URL
+ * ("https://app.com/") and returns "" for hosts without wildcard support.
+ */
+export const normalizeAppDomain = (value: string | undefined | null) => {
+  const host = (value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/^[a-z]+:\/\//, '')
+    .replace(/\/.*$/, '')
+  if (!host) return ''
+  const hostname = host.split(':')[0]!
+  if (NO_WILDCARD_SUFFIXES.some((suffix) => hostname.endsWith(suffix))) return ''
+  return host
+}
+
 export const appCookieDomain = (appDomain: string) => appDomain.split(':')[0]!
 
 /**
