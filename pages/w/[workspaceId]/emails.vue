@@ -342,7 +342,7 @@ const counterpart = (item: EmailLogItem) =>
               @click="openEmail(item)"
             >
               <div
-                class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-violet-100 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
+                class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 text-[11px] font-semibold text-orange-700 dark:bg-orange-500/20 dark:text-orange-300"
               >
                 {{ personInitials({ name: counterpart(item), email: item.toEmail }) }}
               </div>

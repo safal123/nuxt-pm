@@ -130,7 +130,7 @@ const saveTitle = async () => {
             ref="titleInput"
             v-model="nameDraft"
             aria-label="Project name"
-            class="h-8 w-full max-w-xl rounded-md border border-input bg-background px-2 text-base font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-violet-400"
+            class="h-8 w-full max-w-xl rounded-md border border-input bg-background px-2 text-base font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-orange-400"
             :disabled="saving"
             @blur="saveTitle"
             @keyup.enter="saveTitle"

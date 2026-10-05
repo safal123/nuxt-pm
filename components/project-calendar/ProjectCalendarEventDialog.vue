@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { addMinutes, format } from "date-fns";
 import {
+  AlignLeftIcon,
   CalendarClockIcon,
   CheckIcon,
   ExternalLinkIcon,
@@ -65,6 +66,12 @@ const confirmDelete = ref(false);
 const editing = computed(() => Boolean(props.event));
 const readOnly = computed(() => Boolean(props.event && props.event.provider !== "LOCAL"));
 const busy = computed(() => saving.value || deleting.value);
+const providerName = computed(() =>
+  props.event?.provider === "GOOGLE" ? "Google Calendar" : "Microsoft Outlook",
+);
+const sourceCalendar = computed(() =>
+  calendarStore.connections.find((item) => item.id === props.event?.connectionId)?.name,
+);
 
 const setEnd = (date: Date) => {
   endDay.value = dayKey(date);
@@ -239,7 +246,9 @@ const removeEvent = async () => {
             />
           </div>
           <div class="space-y-1 text-left">
-            <DialogTitle>{{ editing ? "Edit event" : "New event" }}</DialogTitle>
+            <DialogTitle>
+              {{ readOnly ? event?.title : editing ? "Edit event" : "New event" }}
+            </DialogTitle>
             <DialogDescription>
               {{ summaryLabel }}<template v-if="durationHint"> · {{ durationHint }}</template>
             </DialogDescription>
@@ -247,7 +256,30 @@ const removeEvent = async () => {
         </div>
       </DialogHeader>
 
+      <div v-if="readOnly" class="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5 text-sm">
+        <p class="text-xs text-muted-foreground">
+          From {{ providerName }}<template v-if="sourceCalendar"> · {{ sourceCalendar }}</template>.
+          Changes are made in {{ providerName }}.
+        </p>
+        <div v-if="event?.location" class="flex gap-3">
+          <MapPinIcon class="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <a
+            v-if="/^https?:\/\//.test(event.location)"
+            :href="event.location"
+            target="_blank"
+            rel="noopener"
+            class="break-all hover:underline"
+          >{{ event.location }}</a>
+          <span v-else class="break-words">{{ event.location }}</span>
+        </div>
+        <div v-if="event?.description" class="flex gap-3">
+          <AlignLeftIcon class="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <p class="whitespace-pre-line break-words">{{ event.description }}</p>
+        </div>
+      </div>
+
       <Form
+        v-else
         :key="formKey"
         v-slot="{ handleSubmit }"
         as=""
@@ -259,24 +291,6 @@ const removeEvent = async () => {
           class="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5"
           @submit="handleSubmit($event, onSubmit)"
         >
-          <p
-            v-if="readOnly"
-            class="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground"
-          >
-            This event is synced from
-            {{ event?.provider === "GOOGLE" ? "Google Calendar" : "Microsoft Outlook" }}.
-            Edit it there.
-            <a
-              v-if="event?.externalUrl"
-              :href="event.externalUrl"
-              target="_blank"
-              rel="noopener"
-              class="ml-auto inline-flex items-center gap-1 font-medium text-foreground hover:underline"
-            >
-              Open <ExternalLinkIcon class="h-3 w-3" />
-            </a>
-          </p>
-
           <FormField v-slot="{ componentField }" name="title">
             <FormItem>
               <FormControl>
@@ -425,6 +439,12 @@ const removeEvent = async () => {
         <div class="flex items-center gap-2">
           <Button type="button" variant="outline" :disabled="busy" @click="close">
             {{ readOnly ? "Close" : "Cancel" }}
+          </Button>
+          <Button v-if="readOnly && event?.externalUrl" as-child>
+            <a :href="event.externalUrl" target="_blank" rel="noopener">
+              Open in {{ providerName }}
+              <ExternalLinkIcon class="h-4 w-4" />
+            </a>
           </Button>
           <Button
             v-if="!readOnly"

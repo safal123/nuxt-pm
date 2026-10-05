@@ -53,10 +53,10 @@ export const emailCardHtml = (input: {
 }) => `
   <div style="background:#f4f4f5;padding:32px 16px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;">
     <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e4e4e7;">
-      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#7c3aed;font-weight:600;">${escapeHtml(input.kicker)}</p>
+      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#ea580c;font-weight:600;">${escapeHtml(input.kicker)}</p>
       <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#18181b;">${input.title}</h1>
       <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#3f3f46;">${input.body}</p>
-      <a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 18px;border-radius:10px;">
+      <a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;background:#ea580c;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 18px;border-radius:10px;">
         ${escapeHtml(input.actionLabel)}
       </a>
     </div>
@@ -71,13 +71,13 @@ export const workspaceInviteHtml = (input: {
 }) => `
   <div style="background:#f4f4f5;padding:32px 16px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;">
     <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e4e4e7;">
-      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#7c3aed;font-weight:600;">Workspace invite</p>
+      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#ea580c;font-weight:600;">Workspace invite</p>
       <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#18181b;">Join ${escapeHtml(input.workspaceName)}</h1>
       <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#3f3f46;">
         ${escapeHtml(input.inviterName)} invited you to collaborate on
         <strong>${escapeHtml(input.workspaceName)}</strong>.
       </p>
-      <a href="${escapeHtml(input.inviteUrl)}" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 18px;border-radius:10px;">
+      <a href="${escapeHtml(input.inviteUrl)}" style="display:inline-block;background:#ea580c;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 18px;border-radius:10px;">
         Accept invite
       </a>
       <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#71717a;">
@@ -177,7 +177,7 @@ export const customEmailHtml = (input: {
   return `
   <div style="background:#f4f4f5;padding:32px 16px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;">
     <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e4e4e7;">
-      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#7c3aed;font-weight:600;">${escapeHtml(kicker)}</p>
+      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#ea580c;font-weight:600;">${escapeHtml(kicker)}</p>
       <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#18181b;">${title}</h1>
       <p style="margin:0;font-size:15px;line-height:1.6;color:#3f3f46;">${body}</p>
     </div>
@@ -266,12 +266,12 @@ export const reminderDigestHtml = (input: {
 }) => `
   <div style="background:#f4f4f5;padding:32px 16px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;">
     <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e4e4e7;">
-      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#7c3aed;font-weight:600;">Reminder</p>
+      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#ea580c;font-weight:600;">Reminder</p>
       <h1 style="margin:0 0 8px;font-size:22px;line-height:1.3;color:#18181b;">${escapeHtml(input.title)}</h1>
       <p style="margin:0;font-size:15px;line-height:1.6;color:#3f3f46;">${escapeHtml(input.greeting)} ${escapeHtml(input.summary)}</p>
       ${reminderSection('Events', input.events)}
       ${reminderSection('Cards due', input.tasks)}
-      <a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;margin-top:20px;background:#7c3aed;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 18px;border-radius:10px;">Open calendar</a>
+      <a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;margin-top:20px;background:#ea580c;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 18px;border-radius:10px;">Open calendar</a>
       <p style="margin:28px 0 0;font-size:12px;line-height:1.6;color:#a1a1aa;">
         You get one reminder a day for events in your projects and cards assigned to you.
         <a href="${escapeHtml(input.settingsUrl)}" style="color:#71717a;">Turn off reminder emails</a>

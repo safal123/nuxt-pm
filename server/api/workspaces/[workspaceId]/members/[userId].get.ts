@@ -1,7 +1,6 @@
 import prisma from '~/lib/prisma'
 import { listWorkspaceMembers } from '~/server/utils/member'
-import { serializeFeedActivity } from '~/server/utils/activity'
-import { personSelect } from '~/server/utils/person'
+import { listMemberActivities } from '~/server/utils/activity'
 
 export default defineApi({
   handler: async ({ user, event }) => {
@@ -61,16 +60,7 @@ export default defineApi({
           orderBy: { updatedAt: 'desc' },
           take: 12,
         }),
-        prisma.activity.findMany({
-          where: { workspaceId, userId },
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-          include: {
-            user: { select: personSelect },
-            task: { select: { id: true, title: true } },
-            project: { select: { id: true, name: true } },
-          },
-        }),
+        listMemberActivities(workspaceId, userId),
       ])
 
     const open = assigned.filter((task) => task.status !== 'DONE').length
@@ -96,7 +86,8 @@ export default defineApi({
           projectId: task.projectId,
           projectName: task.project.name,
         })),
-        activities: activities.map((activity) => serializeFeedActivity(activity)),
+        activities: activities.activities,
+        activitiesCursor: activities.nextCursor,
       },
       message: 'Member profile fetched successfully',
     }

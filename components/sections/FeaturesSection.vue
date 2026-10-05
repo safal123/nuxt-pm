@@ -69,7 +69,7 @@ const features = [
           class="rounded-xl border border-border bg-card p-6 shadow-sm"
         >
           <div
-            class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
+            class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300"
           >
             <component :is="feature.icon" class="h-5 w-5" />
           </div>

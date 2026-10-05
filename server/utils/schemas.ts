@@ -1,7 +1,7 @@
 /** Zod request schemas for `defineApi` `body` / `query`. */
 import { z } from 'zod'
 import { ATTACHABLE_TYPES } from '~/server/utils/attachable-types'
-import { isTaskColorId, isWorkspaceColorId } from '~/utils/task-colors'
+import { isTaskColorId } from '~/utils/task-colors'
 import { TASK_STATUS_IDS } from '~/utils/task-status'
 import { normalizeSubdomain, subdomainError } from '~/utils/subdomain'
 import { isValidTimeZone } from '~/server/utils/reminder-time'
@@ -90,22 +90,13 @@ export const workspaceSettingsSchema = z
     emailOnProjectAdd: z.boolean().optional(),
     weekStartsOnMonday: z.boolean().optional(),
     emailReminders: z.boolean().optional(),
-    backgroundColor: z
-      .string()
-      .nullable()
-      .optional()
-      .refine(
-        (value) => value === undefined || value === null || isWorkspaceColorId(value),
-        { message: 'Pick one of the workspace background colors.' },
-      ),
   })
   .refine(
     (value) =>
       value.emailOnInvite !== undefined ||
       value.emailOnProjectAdd !== undefined ||
       value.weekStartsOnMonday !== undefined ||
-      value.emailReminders !== undefined ||
-      value.backgroundColor !== undefined,
+      value.emailReminders !== undefined,
     { message: 'Nothing to update.' },
   )
 
@@ -166,6 +157,10 @@ export const activitiesQuerySchema = z.object({
   kind: z.string().optional().default('all'),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(200).optional().default(12),
+})
+
+export const memberActivitiesQuerySchema = z.object({
+  cursor: z.string().trim().min(1).max(64).optional(),
 })
 
 export const emailsQuerySchema = z.object({

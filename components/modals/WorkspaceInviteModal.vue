@@ -72,7 +72,7 @@ const copyInvite = async () => {
           v-model="email"
           type="email"
           placeholder="name@example.com"
-          class="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+          class="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
         />
       </label>
 

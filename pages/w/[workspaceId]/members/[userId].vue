@@ -5,9 +5,10 @@ import {
   HistoryIcon,
   LayoutGridIcon,
   ListTodoIcon,
+  Loader2Icon,
 } from "lucide-vue-next";
-import { api } from "~/lib/api";
-import type { MemberProfile, WorkspaceActivity } from "@/types";
+import { toast } from "vue-sonner";
+import type { WorkspaceActivity } from "@/types";
 import { personInitials } from "@/utils/activity";
 import { formatDate, relativeDate } from "@/utils/date";
 import { statusChip, statusLabel } from "@/utils/task-status";
@@ -25,28 +26,22 @@ const userStore = useUserStore();
 const workspaceId = computed(() => String(route.params.workspaceId || ""));
 const userId = computed(() => String(route.params.userId || ""));
 
-const profile = ref<MemberProfile | null>(null);
-const loading = ref(true);
-const error = ref<string | null>(null);
 const selected = ref<WorkspaceActivity | null>(null);
+const {
+  profile,
+  loading,
+  loadingMore,
+  error,
+  hasMoreActivities,
+  load,
+  loadMoreActivities,
+} = useMemberProfile(workspaceId, userId);
 
-const load = async () => {
-  if (!workspaceId.value || !userId.value) {
-    loading.value = false;
-    return;
-  }
-  loading.value = true;
-  error.value = null;
+const onLoadMore = async () => {
   try {
-    profile.value = await api<MemberProfile>(
-      `/api/workspaces/${workspaceId.value}/members/${userId.value}`,
-    );
+    await loadMoreActivities();
   } catch (err: any) {
-    profile.value = null;
-    error.value =
-      err?.data?.message || err?.message || "Could not load this profile.";
-  } finally {
-    loading.value = false;
+    toast.error(err?.data?.message || "Could not load more activity.");
   }
 };
 
@@ -112,7 +107,7 @@ const roleLabel = computed(() =>
           <Skeleton v-if="loading && !member" class="h-14 w-14 rounded-full" />
           <div
             v-else
-            class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-violet-100 text-base font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
+            class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 text-base font-semibold text-orange-700 dark:bg-orange-500/20 dark:text-orange-300"
           >
             <img
               v-if="member?.imageUrl"
@@ -242,17 +237,36 @@ const roleLabel = computed(() =>
           </section>
         </div>
 
-        <section class="overflow-hidden rounded-xl border border-border bg-card lg:col-span-3">
-          <div class="flex items-center justify-between border-b border-border px-4 py-3">
+        <section
+          class="flex max-h-[42rem] flex-col overflow-hidden rounded-xl border border-border bg-card lg:col-span-3"
+        >
+          <div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
             <h2 class="text-sm font-semibold text-foreground">Recent activity</h2>
+            <span
+              v-if="profile?.activities.length"
+              class="text-xs tabular-nums text-muted-foreground"
+            >
+              {{ profile.activities.length }} shown
+            </span>
           </div>
-          <div class="px-4 py-4">
+          <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
             <ActivityTimeline
               :activities="profile?.activities ?? []"
               :loading="loading && !profile"
               compact
               @select="selected = $event"
             />
+            <div v-if="hasMoreActivities" class="mt-4 flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="loadingMore"
+                @click="onLoadMore"
+              >
+                <Loader2Icon v-if="loadingMore" class="mr-2 h-3.5 w-3.5 animate-spin" />
+                {{ loadingMore ? "Loading…" : "Load more" }}
+              </Button>
+            </div>
           </div>
         </section>
       </div>

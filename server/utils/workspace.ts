@@ -62,13 +62,11 @@ export const serializeWorkspaceSettings = (settings: {
   emailOnProjectAdd: boolean
   weekStartsOnMonday: boolean
   emailReminders: boolean
-  backgroundColor: string | null
 }) => ({
   emailOnInvite: settings.emailOnInvite,
   emailOnProjectAdd: settings.emailOnProjectAdd,
   weekStartsOnMonday: settings.weekStartsOnMonday,
   emailReminders: settings.emailReminders,
-  backgroundColor: settings.backgroundColor ?? null,
 })
 
 export const ensureWorkspaceSettings = async (workspaceId: string) => {

@@ -73,7 +73,7 @@ const highlights = [
 
       <div class="relative mx-auto mt-14 max-w-5xl pb-8">
         <div
-          class="pointer-events-none absolute -inset-x-10 -bottom-8 -top-4 -z-10 rounded-[2rem] bg-gradient-to-b from-violet-500/15 via-transparent to-transparent blur-2xl"
+          class="pointer-events-none absolute -inset-x-10 -bottom-8 -top-4 -z-10 rounded-[2rem] bg-gradient-to-b from-orange-500/15 via-transparent to-transparent blur-2xl"
         />
         <LandingBoardPreview />
       </div>

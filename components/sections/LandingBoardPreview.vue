@@ -66,7 +66,7 @@ const dueClass: Record<string, string> = {
 
 <template>
   <div
-    class="overflow-hidden rounded-xl border border-border bg-card shadow-2xl shadow-violet-950/10 ring-1 ring-black/5 dark:shadow-black/40"
+    class="overflow-hidden rounded-xl border border-border bg-card shadow-2xl shadow-orange-950/10 ring-1 ring-black/5 dark:shadow-black/40"
   >
     <div
       class="flex items-center gap-2 border-b border-border bg-muted/60 px-3 py-2"
@@ -89,7 +89,7 @@ const dueClass: Record<string, string> = {
           Projects
         </p>
         <div
-          class="mt-1.5 rounded-md bg-violet-100 px-2 py-1.5 text-[12px] font-medium text-violet-900 dark:bg-violet-500/20 dark:text-violet-100"
+          class="mt-1.5 rounded-md bg-orange-100 px-2 py-1.5 text-[12px] font-medium text-orange-900 dark:bg-orange-500/20 dark:text-orange-100"
         >
           Website launch
         </div>

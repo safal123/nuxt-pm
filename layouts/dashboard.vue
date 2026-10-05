@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const workspaceStore = useWorkspaceStore();
 const userStore = useUserStore();
-const { isTinted, pageTitle, initialize } = useWorkspaceLayout();
+const { pageTitle, initialize } = useWorkspaceLayout();
 const { consume } = useBillingReturn();
 
 await initialize();
@@ -34,12 +34,7 @@ await consume();
 
     <SidebarInset class="min-w-0 overflow-hidden">
       <header
-        class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b px-3 backdrop-blur md:px-6"
-        :class="
-          isTinted
-            ? 'bg-background/55 supports-[backdrop-filter]:bg-background/40'
-            : 'bg-background/95 supports-[backdrop-filter]:bg-background/80'
-        "
+        class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-6"
       >
         <SidebarTrigger class="-ml-1 shrink-0" />
         <Separator orientation="vertical" class="hidden h-4 sm:block" />

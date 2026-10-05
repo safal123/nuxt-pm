@@ -112,7 +112,7 @@ const onSelect = (item: WorkspaceActivity) => {
             <div class="flex items-start justify-between gap-3">
               <div class="flex min-w-0 items-start gap-2">
                 <span
-                  class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-violet-100 text-[9px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
+                  class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 text-[9px] font-semibold text-orange-700 dark:bg-orange-500/20 dark:text-orange-300"
                 >
                   <img
                     v-if="item.user.imageUrl"

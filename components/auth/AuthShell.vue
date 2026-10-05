@@ -39,7 +39,7 @@ const highlights = [
 
         <div class="max-w-md">
           <p
-            class="text-xs font-medium uppercase tracking-[0.18em] text-violet-300"
+            class="text-xs font-medium uppercase tracking-[0.18em] text-orange-300"
           >
             Product teams
           </p>
@@ -55,7 +55,7 @@ const highlights = [
               class="flex items-start gap-3 text-sm leading-6 text-zinc-300"
             >
               <span
-                class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-300"
+                class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-500/20 text-orange-300"
               >
                 <CheckIcon class="h-3 w-3" />
               </span>

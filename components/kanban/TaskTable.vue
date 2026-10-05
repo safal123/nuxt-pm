@@ -210,7 +210,7 @@ const initials = (person: TaskAssignee | null) => {
               class="flex items-center gap-2 min-w-0"
             >
               <div
-                class="h-6 w-6 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 text-[10px] font-semibold overflow-hidden shrink-0 flex items-center justify-center"
+                class="h-6 w-6 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300 text-[10px] font-semibold overflow-hidden shrink-0 flex items-center justify-center"
               >
                 <img
                   v-if="task.assignee.imageUrl"

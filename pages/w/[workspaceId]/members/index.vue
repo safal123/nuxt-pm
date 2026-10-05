@@ -89,7 +89,7 @@ const openAdd = () => modalsStore.openModal("workspaceMembers");
           class="flex items-center gap-3 px-4 py-3.5 hover:bg-accent/50"
         >
           <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-violet-100 text-[12px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300"
+            class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 text-[12px] font-semibold text-orange-700 dark:bg-orange-500/20 dark:text-orange-300"
           >
             <img
               v-if="person.imageUrl"

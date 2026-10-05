@@ -3,7 +3,6 @@ export interface WorkspaceSetting {
   emailOnProjectAdd: boolean
   weekStartsOnMonday: boolean
   emailReminders: boolean
-  backgroundColor: string | null
 }
 
 export interface Workspace {
@@ -319,6 +318,8 @@ export type MemberProfile = {
   projects: { id: string; name: string }[]
   tasks: MemberProfileTask[]
   activities: WorkspaceActivity[]
+  /** Pass to the member activities endpoint for the next page; null when done. */
+  activitiesCursor: string | null
 }
 
 export type TaskSummary = {

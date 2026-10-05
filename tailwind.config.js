@@ -16,19 +16,17 @@ module.exports = {
     },
     extend: {
       colors: {
-        border: "var(--border-color, hsl(var(--border)))",
-        input: "var(--input-color, hsl(var(--input)))",
-        ring: "var(--ring-color, hsl(var(--ring)))",
-        background: "var(--background-color, hsl(var(--background)))",
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          // color-mix so opacity modifiers (bg-primary/10) work with the workspace colour var.
-          DEFAULT:
-            "color-mix(in oklab, var(--primary-color, hsl(var(--primary))) calc(<alpha-value> * 100%), transparent)",
-          foreground: "var(--primary-foreground-color, hsl(var(--primary-foreground)))",
+          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
+          foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "var(--secondary-color, hsl(var(--secondary)))",
+          DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
         },
         destructive: {
@@ -36,35 +34,35 @@ module.exports = {
           foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
-          DEFAULT: "var(--muted-color, hsl(var(--muted)))",
+          DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "var(--accent-color, hsl(var(--accent)))",
+          DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
-          DEFAULT: "var(--popover-color, hsl(var(--popover)))",
+          DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
         },
         card: {
-          DEFAULT: "var(--card-color, hsl(var(--card)))",
+          DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
         dropzone: {
-          DEFAULT: "var(--dropzone-color, hsl(var(--dropzone)))",
-          border: "var(--dropzone-border-color, hsl(var(--dropzone-border)))",
+          DEFAULT: "hsl(var(--dropzone))",
+          border: "hsl(var(--dropzone-border))",
         },
         sidebar: {
-          DEFAULT: "var(--sidebar-background-color, hsl(var(--sidebar-background)))",
+          DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
-          primary: "var(--sidebar-primary-color, hsl(var(--sidebar-primary)))",
-          "primary-foreground": "var(--sidebar-primary-foreground-color, hsl(var(--sidebar-primary-foreground)))",
-          accent: "var(--sidebar-accent-color, hsl(var(--sidebar-accent)))",
+          primary: "hsl(var(--sidebar-primary))",
+          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
+          accent: "hsl(var(--sidebar-accent))",
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          active: "var(--sidebar-active-color, hsl(var(--sidebar-active)))",
-          "active-hover": "var(--sidebar-active-hover-color, hsl(var(--sidebar-active-hover)))",
-          border: "var(--sidebar-border-color, hsl(var(--sidebar-border)))",
+          active: "hsl(var(--sidebar-active))",
+          "active-hover": "hsl(var(--sidebar-active-hover))",
+          border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
       },

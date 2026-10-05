@@ -6,13 +6,15 @@
  * Color mode is stored in the `nuxt-color-mode` cookie. This script must read
  * that cookie first — if it defaults to system and writes the cookie, the
  * color-mode client plugin (unknown: true) overwrites the settings select
- * on every refresh.
+ * on every refresh. Browsers list the most specific path first, so the first
+ * cookie is the user's latest pick; scoped copies are then expired and the
+ * value is rewritten at `/`.
  *
  * Also merge the resolved theme onto <html> from cookies so SSR HTML already
  * has class="dark" / color-scheme, and Unhead hydration cannot wipe a class
  * that was only added by the inline script.
  */
-const THEME_SCRIPT = `(function(){try{var k='nuxt-color-mode';function u(v){if(!v)return'';try{var p=JSON.parse(v);if(typeof p==='string')v=p}catch(e){}return String(v).replace(/^"|"$/g,'')}function n(v){v=u(v);if(v==='light'||v==='dark'||v==='system')return v;return v==='auto'?'system':''}function c(name){var parts=('; '+document.cookie).split('; '+name+'=');if(parts.length<2)return'';var raw=parts.pop().split(';').shift()||'';try{return n(decodeURIComponent(raw))}catch(e){return n(raw)}}var s=c(k)||n(localStorage.getItem(k))||'system';try{localStorage.setItem(k,s)}catch(e){}var d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var e=document.documentElement;e.classList.add(d?'dark':'light');e.classList.remove(d?'light':'dark');e.style.colorScheme=d?'dark':'light';document.cookie='ns-theme='+(d?'dark':'light')+'; path=/; max-age=31536000; samesite=lax';document.cookie=k+'='+s+'; path=/; max-age=31536000; samesite=lax'}catch(e){}})();`
+const THEME_SCRIPT = `(function(){try{var k='nuxt-color-mode';function u(v){if(!v)return'';try{var p=JSON.parse(v);if(typeof p==='string')v=p}catch(e){}return String(v).replace(/^"|"$/g,'')}function n(v){v=u(v);if(v==='light'||v==='dark'||v==='system')return v;return v==='auto'?'system':''}function c(name){var parts=('; '+document.cookie).split('; '+name+'=');if(parts.length<2)return'';var raw=parts[1].split(';').shift()||'';try{return n(decodeURIComponent(raw))}catch(e){return n(raw)}}var s=c(k)||n(localStorage.getItem(k))||'system';try{localStorage.setItem(k,s)}catch(e){}var d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var e=document.documentElement;e.classList.add(d?'dark':'light');e.classList.remove(d?'light':'dark');e.style.colorScheme=d?'dark':'light';document.cookie='ns-theme='+(d?'dark':'light')+'; path=/; max-age=31536000; samesite=lax';var g=location.pathname.split('/').filter(Boolean);for(var i=g.length;i>0;i--){var q='/'+g.slice(0,i).join('/');document.cookie=k+'=; path='+q+'; max-age=0';document.cookie=k+'=; path='+q+'/; max-age=0'}document.cookie=k+'='+s+'; path=/; max-age=31536000; samesite=lax'}catch(e){}})();`
 
 const unwrapCookie = (value: string | undefined) => {
   if (!value) return ''

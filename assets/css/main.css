@@ -19,8 +19,8 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
 
-    --primary: 262.1 83.3% 57.8%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 24.6 95% 53.1%;
+    --primary-foreground: 60 9.1% 97.8%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -31,23 +31,23 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --ring: 262.1 83.3% 57.8%;
+    --ring: 24.6 95% 53.1%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 262.1 83.3% 57.8%;
+    --sidebar-primary: 24.6 95% 53.1%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-active: 251.4 91.4% 95.5%;
-    --sidebar-active-hover: 250.5 95.3% 91.8%;
+    --sidebar-active: 33.3 100% 96.5%;
+    --sidebar-active-hover: 34.3 100% 91.8%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 262.1 83.3% 57.8%;
+    --sidebar-ring: 24.6 95% 53.1%;
 
-    --dropzone: 250 100% 97.6%;
-    --dropzone-border: 255 92% 76%;
+    --dropzone: 33.3 100% 96.5%;
+    --dropzone-border: 27 96% 61%;
 
     --shadow-drag: 0 18px 40px rgba(15, 23, 42, 0.18);
 
@@ -78,8 +78,8 @@
     --border: 220 12% 28%;
     --input: 220 12% 28%;
 
-    --primary: 263.4 70% 58%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 20.5 90.2% 48.2%;
+    --primary-foreground: 60 9.1% 97.8%;
 
     --secondary: 220 14% 22%;
     --secondary-foreground: 210 20% 96%;
@@ -90,21 +90,21 @@
     --destructive: 0 55% 48%;
     --destructive-foreground: 210 40% 98%;
 
-    --ring: 263.4 70% 58%;
+    --ring: 20.5 90.2% 48.2%;
 
     --sidebar-background: 220 16% 14%;
     --sidebar-foreground: 210 20% 94%;
-    --sidebar-primary: 263.4 70% 58%;
+    --sidebar-primary: 20.5 90.2% 48.2%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 14% 20%;
     --sidebar-accent-foreground: 210 20% 94%;
-    --sidebar-active: 250 28% 25%;
-    --sidebar-active-hover: 254 34% 30%;
+    --sidebar-active: 20 32% 23%;
+    --sidebar-active-hover: 20 38% 28%;
     --sidebar-border: 220 12% 26%;
-    --sidebar-ring: 263.4 70% 58%;
+    --sidebar-ring: 20.5 90.2% 48.2%;
 
-    --dropzone: 253.5 37% 21%;
-    --dropzone-border: 263.4 70% 50.4%;
+    --dropzone: 20 30% 20%;
+    --dropzone-border: 20.5 90.2% 48.2%;
 
     --shadow-drag: 0 18px 40px rgba(0, 0, 0, 0.45);
 
@@ -114,54 +114,7 @@
   }
 }
 
-/*
- * Workspace tint ramp.
- *
- * useWorkspaceLayout injects `--ws-hue` and `--ws-chroma` onto <html> from the
- * workspace colour. When no colour is picked both are absent, which makes every
- * declaration below invalid at computed-value time, so the plain
- * `hsl(var(--token))` fallbacks in tailwind.config.js take over untouched.
- *
- * Light mode only tints interactive chrome (accent, active nav). Page, card,
- * sidebar, and border surfaces stay on the plain tokens. Dark mode still tints
- * the whole surface ramp so the workspace colour remains visible.
- *
- * Lightness is driven by the ramp rather than the workspace colour, so a
- * workspace barely changes how readable the UI is — the dark "Black" and the
- * bright "Yellow" both land on near-identical surface lightness. Chroma is set
- * explicitly in OKLCH so every colour reads at the same intensity.
- *
- * `--ws-lift` nudges the light interactive tokens up for hues that are
- * naturally light (yellow, lime), which would otherwise turn khaki when pinned
- * to a mid lightness.
- */
 @layer base {
-  :root {
-    --accent-color: oklch(calc(86% + var(--ws-lift) * 0.8) calc(0.12 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-accent-color: oklch(calc(85% + var(--ws-lift) * 0.86) calc(0.13 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-active-color: oklch(calc(81.5% + var(--ws-lift)) calc(0.16 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-active-hover-color: oklch(calc(78% + var(--ws-lift)) calc(0.185 * var(--ws-chroma)) var(--ws-hue));
-  }
-
-  .dark {
-    --card-color: oklch(29.5% calc(0.047 * var(--ws-chroma)) var(--ws-hue));
-    --popover-color: oklch(29.5% calc(0.047 * var(--ws-chroma)) var(--ws-hue));
-    --background-color: oklch(25.5% calc(0.042 * var(--ws-chroma)) var(--ws-hue));
-    --muted-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
-    --secondary-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
-    --accent-color: oklch(37.5% calc(0.11 * var(--ws-chroma)) var(--ws-hue));
-    --border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
-    --input-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
-
-    --sidebar-background-color: oklch(22% calc(0.035 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-accent-color: oklch(30% calc(0.09 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-active-color: oklch(38% calc(0.125 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-active-hover-color: oklch(43% calc(0.14 * var(--ws-chroma)) var(--ws-hue));
-    --sidebar-border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
-
-    --dropzone-color: oklch(35% calc(0.058 * var(--ws-chroma)) var(--ws-hue));
-  }
-
   /*
    * OS-dark users paint with dark tokens before <html class="dark"> exists.
    * Body uses bg-background, so html background-color alone still flashed white.
@@ -179,42 +132,28 @@
       --card-foreground: 210 20% 96%;
       --border: 220 12% 28%;
       --input: 220 12% 28%;
-      --primary: 263.4 70% 58%;
-      --primary-foreground: 210 40% 98%;
+      --primary: 20.5 90.2% 48.2%;
+      --primary-foreground: 60 9.1% 97.8%;
       --secondary: 220 14% 22%;
       --secondary-foreground: 210 20% 96%;
       --accent: 220 14% 24%;
       --accent-foreground: 210 20% 96%;
       --destructive: 0 55% 48%;
       --destructive-foreground: 210 40% 98%;
-      --ring: 263.4 70% 58%;
+      --ring: 20.5 90.2% 48.2%;
       --sidebar-background: 220 16% 14%;
       --sidebar-foreground: 210 20% 94%;
-      --sidebar-primary: 263.4 70% 58%;
+      --sidebar-primary: 20.5 90.2% 48.2%;
       --sidebar-primary-foreground: 0 0% 100%;
       --sidebar-accent: 220 14% 20%;
       --sidebar-accent-foreground: 210 20% 94%;
-      --sidebar-active: 250 28% 25%;
-      --sidebar-active-hover: 254 34% 30%;
+      --sidebar-active: 20 32% 23%;
+      --sidebar-active-hover: 20 38% 28%;
       --sidebar-border: 220 12% 26%;
-      --sidebar-ring: 263.4 70% 58%;
-      --dropzone: 253.5 37% 21%;
-      --dropzone-border: 263.4 70% 50.4%;
+      --sidebar-ring: 20.5 90.2% 48.2%;
+      --dropzone: 20 30% 20%;
+      --dropzone-border: 20.5 90.2% 48.2%;
       --shadow-drag: 0 18px 40px rgba(0, 0, 0, 0.45);
-      --card-color: oklch(29.5% calc(0.047 * var(--ws-chroma)) var(--ws-hue));
-      --popover-color: oklch(29.5% calc(0.047 * var(--ws-chroma)) var(--ws-hue));
-      --background-color: oklch(25.5% calc(0.042 * var(--ws-chroma)) var(--ws-hue));
-      --muted-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
-      --secondary-color: oklch(33.5% calc(0.055 * var(--ws-chroma)) var(--ws-hue));
-      --accent-color: oklch(37.5% calc(0.11 * var(--ws-chroma)) var(--ws-hue));
-      --border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
-      --input-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
-      --sidebar-background-color: oklch(22% calc(0.035 * var(--ws-chroma)) var(--ws-hue));
-      --sidebar-accent-color: oklch(30% calc(0.09 * var(--ws-chroma)) var(--ws-hue));
-      --sidebar-active-color: oklch(38% calc(0.125 * var(--ws-chroma)) var(--ws-hue));
-      --sidebar-active-hover-color: oklch(43% calc(0.14 * var(--ws-chroma)) var(--ws-hue));
-      --sidebar-border-color: oklch(41.5% calc(0.068 * var(--ws-chroma)) var(--ws-hue));
-      --dropzone-color: oklch(35% calc(0.058 * var(--ws-chroma)) var(--ws-hue));
     }
   }
 }

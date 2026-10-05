@@ -112,7 +112,7 @@ const removeMember = async (person: Member) => {
           v-model="email"
           type="email"
           placeholder="name@example.com (optional for a link)"
-          class="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+          class="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
         />
         <Button type="submit" size="sm" :disabled="!email.trim() || saving">
           <UserPlusIcon class="h-4 w-4 mr-1" />
@@ -150,7 +150,7 @@ const removeMember = async (person: Member) => {
           class="flex items-center gap-3 rounded-lg px-2 py-2"
         >
           <div
-            class="h-8 w-8 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 text-[11px] font-semibold overflow-hidden flex items-center justify-center"
+            class="h-8 w-8 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300 text-[11px] font-semibold overflow-hidden flex items-center justify-center"
           >
             <img v-if="person.imageUrl" :src="person.imageUrl" class="h-full w-full object-cover" />
             <span v-else>{{ initials(person) }}</span>
@@ -167,7 +167,7 @@ const removeMember = async (person: Member) => {
           </NuxtLink>
           <span
             v-if="person.isOwner"
-            class="text-[11px] font-semibold uppercase tracking-wide text-violet-700 bg-violet-50 dark:text-violet-300 dark:bg-violet-500/20 px-2 py-0.5 rounded"
+            class="text-[11px] font-semibold uppercase tracking-wide text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/20 px-2 py-0.5 rounded"
           >
             Owner
           </span>

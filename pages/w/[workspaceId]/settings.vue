@@ -30,7 +30,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { WorkspaceSetting } from "@/types";
-import { WORKSPACE_COLORS } from "@/utils/task-colors";
 
 definePageMeta({
   layout: "dashboard",
@@ -54,7 +53,6 @@ const settings = computed(
       emailOnProjectAdd: true,
       emailReminders: true,
       weekStartsOnMonday: true,
-      backgroundColor: null,
     },
 );
 const isOwner = computed(
@@ -146,18 +144,6 @@ async function onSubdomainSubmit(values: any) {
   }
 }
 
-const usingBackground = computed(() => !!settings.value.backgroundColor);
-
-const toggleBackground = async (enabled: boolean) => {
-  await saveSetting({
-    backgroundColor: enabled ? settings.value.backgroundColor || "white" : null,
-  });
-};
-
-const setBackgroundColor = async (colorId: string) => {
-  if (settings.value.backgroundColor === colorId) return;
-  await saveSetting({ backgroundColor: colorId });
-};
 </script>
 
 <template>
@@ -405,44 +391,6 @@ const setBackgroundColor = async (colorId: string) => {
                       saveSetting({ weekStartsOnMonday: $event })
                     "
                   />
-                </TableCell>
-              </TableRow>
-              <TableRow class="hover:bg-transparent">
-                <TableCell class="align-top">
-                  <p class="text-sm text-muted-foreground">Background color</p>
-                  <p class="mt-0.5 text-xs text-muted-foreground">
-                    Tint the dashboard for everyone in this workspace.
-                  </p>
-                </TableCell>
-                <TableCell>
-                  <div class="flex flex-col gap-3">
-                    <Switch
-                      :checked="usingBackground"
-                      :disabled="!isOwner || saving"
-                      @update:checked="toggleBackground"
-                    />
-                    <div
-                      v-if="usingBackground"
-                      class="flex flex-wrap gap-1.5"
-                    >
-                      <button
-                        v-for="color in WORKSPACE_COLORS"
-                        :key="color.id"
-                        type="button"
-                        class="h-6 w-6 rounded-full ring-offset-2"
-                        :class="[
-                          settings.backgroundColor === color.id
-                            ? 'ring-2 ring-foreground'
-                            : 'hover:opacity-90',
-                          color.id === 'white' ? 'border border-border' : '',
-                        ]"
-                        :style="{ backgroundColor: color.value }"
-                        :title="color.name"
-                        :disabled="!isOwner || saving"
-                        @click="setBackgroundColor(color.id)"
-                      />
-                    </div>
-                  </div>
                 </TableCell>
               </TableRow>
             </TableBody>

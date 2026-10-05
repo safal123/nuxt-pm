@@ -164,7 +164,6 @@ model WorkspaceSetting {
   emailOnProjectAdd  Boolean  @default(true) @map("email_on_project_add")
   weekStartsOnMonday Boolean  @default(true) @map("week_starts_on_monday")
   emailReminders     Boolean  @default(true) @map("email_reminders")
-  backgroundColor    String?  @map("background_color")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

@@ -118,7 +118,7 @@ const products = [
                 class="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-md border border-border px-3 py-2"
               >
                 <span
-                  class="rounded-md bg-violet-50 px-1.5 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-inset ring-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-800"
+                  class="rounded-md bg-orange-50 px-1.5 py-0.5 text-[11px] font-medium text-orange-700 ring-1 ring-inset ring-orange-100 dark:bg-orange-950/50 dark:text-orange-300 dark:ring-orange-800"
                 >
                   Card
                 </span>
@@ -145,7 +145,7 @@ const products = [
                   <p class="text-[11px] text-muted-foreground">Website launch · 2h ago</p>
                 </div>
                 <span
-                  class="shrink-0 rounded-md bg-indigo-50 px-1.5 py-0.5 text-[11px] font-medium text-indigo-700 ring-1 ring-inset ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:ring-indigo-800"
+                  class="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-100 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-800"
                 >
                   Moved
                 </span>
@@ -186,7 +186,7 @@ const products = [
                 </p>
                 <div class="mt-3 flex gap-2">
                   <span
-                    class="rounded-md bg-violet-50 px-1.5 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-inset ring-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-800"
+                    class="rounded-md bg-orange-50 px-1.5 py-0.5 text-[11px] font-medium text-orange-700 ring-1 ring-inset ring-orange-100 dark:bg-orange-950/50 dark:text-orange-300 dark:ring-orange-800"
                   >
                     workspace-invite
                   </span>

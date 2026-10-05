@@ -1,5 +1,4 @@
 import type { Project, Workspace } from "~/types";
-import { hasWorkspaceTint, workspaceThemeCss } from "~/utils/task-colors";
 
 export const useWorkspaceLayout = () => {
   const route = useRoute();
@@ -24,20 +23,6 @@ export const useWorkspaceLayout = () => {
         (item: Workspace) => item.id === workspaceId.value,
       ) || workspaceStore.activeWorkspace;
     return workspace?.createdBy === userId;
-  });
-
-  const workspaceColorId = computed(
-    () => workspaceStore.activeWorkspace?.settings?.backgroundColor,
-  );
-
-  // Surfaces themselves are driven by CSS from the variables below; the layout
-  // only needs to know whether a tint is active to pick header translucency.
-  const isTinted = computed(() => hasWorkspaceTint(workspaceColorId.value));
-
-  useHead({
-    htmlAttrs: {
-      style: computed(() => workspaceThemeCss(workspaceColorId.value)),
-    },
   });
 
   const pageTitle = computed(() => {
@@ -83,7 +68,6 @@ export const useWorkspaceLayout = () => {
   return {
     workspaceId,
     isOwner,
-    isTinted,
     pageTitle,
     openMembers,
     openInvite,

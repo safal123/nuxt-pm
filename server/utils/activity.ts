@@ -69,3 +69,29 @@ export const logActivity = async (input: {
   )
   return activity
 }
+
+export const MEMBER_ACTIVITY_PAGE_SIZE = 10
+
+/** One page of a member's activity, newest first, keyed by the last row's id. */
+export const listMemberActivities = async (
+  workspaceId: string,
+  userId: string,
+  cursor?: string,
+) => {
+  const rows = await prisma.activity.findMany({
+    where: { workspaceId, userId },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: MEMBER_ACTIVITY_PAGE_SIZE + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    include: {
+      user: { select: personSelect },
+      task: { select: { id: true, title: true } },
+      project: { select: { id: true, name: true } },
+    },
+  })
+  const page = rows.slice(0, MEMBER_ACTIVITY_PAGE_SIZE)
+  return {
+    activities: page.map((activity) => serializeFeedActivity(activity)),
+    nextCursor: rows.length > MEMBER_ACTIVITY_PAGE_SIZE ? page[page.length - 1].id : null,
+  }
+}
