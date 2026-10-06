@@ -181,16 +181,10 @@ const deleteCopy = computed(() => {
 
 <template>
   <div class="h-full min-w-0 overflow-y-auto">
-    <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="text-xl font-semibold tracking-tight text-foreground">
-          Archive
-        </h1>
-        <p class="mt-1 text-sm text-muted-foreground">
-          Restore lists, cards, and projects to the board, or delete them for
-          good.
-        </p>
-      </div>
+    <PageHeader
+      title="Archive"
+      description="Restore lists, cards, and projects to the board, or delete them for good."
+    >
       <Tabs :model-value="filter" @update:model-value="onFilter">
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
@@ -199,11 +193,11 @@ const deleteCopy = computed(() => {
           <TabsTrigger value="project">Projects</TabsTrigger>
         </TabsList>
       </Tabs>
-    </div>
+    </PageHeader>
 
     <PageStats :items="statItems" :loading="workspaceStore.archiveLoading" />
 
-    <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
+    <div class="mt-4 overflow-hidden rounded-xl border border-border bg-card">
       <div
         v-if="workspaceStore.archiveLoading"
         class="divide-y divide-border"
@@ -211,9 +205,9 @@ const deleteCopy = computed(() => {
         <div
           v-for="index in 5"
           :key="index"
-          class="flex items-start gap-3 px-4 py-3.5"
+          class="flex items-start gap-2.5 px-3 py-2.5"
         >
-          <Skeleton class="h-9 w-9 shrink-0 rounded-lg" />
+          <Skeleton class="size-7 shrink-0 rounded-lg" />
           <div class="min-w-0 flex-1 space-y-2">
             <Skeleton class="h-4 w-2/3" />
             <Skeleton class="h-3 w-1/3" />
@@ -230,8 +224,8 @@ const deleteCopy = computed(() => {
         >
           <ArchiveIcon class="h-5 w-5" />
         </div>
-        <p class="mt-3 text-sm font-medium text-foreground">Archive is empty</p>
-        <p class="mt-1 max-w-sm text-sm text-muted-foreground">
+        <p class="mt-2.5 text-[13px] font-medium text-foreground">Archive is empty</p>
+        <p class="mt-1 max-w-sm text-[12px] text-muted-foreground">
           Archived lists, cards, and projects will show up here so you can
           restore or permanently delete them.
         </p>
@@ -252,10 +246,10 @@ const deleteCopy = computed(() => {
             <div
               v-for="row in group.items"
               :key="row.id"
-              class="flex items-start gap-3 px-4 py-3.5"
+              class="flex items-start gap-2.5 px-3 py-2.5"
             >
               <div
-                class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+                class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
               >
                 <Columns3Icon v-if="row.kind === 'list'" class="h-4 w-4" />
                 <SquareIcon v-else-if="row.kind === 'card'" class="h-4 w-4" />

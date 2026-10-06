@@ -95,28 +95,30 @@ const initials = (person: Member) =>
 <template>
   <div class="relative h-full min-h-0 overflow-y-auto">
     <div
-      class="sticky top-0 z-20 flex h-12 items-center gap-3 border-b border-border bg-card/95 px-5 backdrop-blur supports-[backdrop-filter]:bg-card/80"
+      class="sticky top-0 z-20 flex h-10 items-center gap-2.5 border-b border-border bg-card/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-card/80"
     >
       <div class="min-w-0">
-        <p class="text-sm font-semibold leading-tight">Next {{ CALENDAR_AGENDA_DAYS }} days</p>
-        <p class="text-xs text-muted-foreground">
+        <p class="text-[13px] font-semibold leading-tight tracking-tight">
+          Next {{ CALENDAR_AGENDA_DAYS }} days
+        </p>
+        <p class="text-[11px] text-muted-foreground">
           {{ format(from, "d MMM") }} – {{ format(to, "d MMM yyyy") }}
         </p>
       </div>
-      <div class="ml-auto flex flex-wrap items-center justify-end gap-1.5 text-xs">
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 font-medium">
-          <span class="h-2 w-2 rounded-full bg-[#0079bf]" />
+      <div class="ml-auto flex flex-wrap items-center justify-end gap-1 text-[11px]">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 font-medium">
+          <span class="size-1.5 rounded-full bg-[#0079bf]" />
           {{ stats.events }} {{ stats.events === 1 ? "event" : "events" }}
         </span>
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 font-medium">
-          <span class="h-2 w-2 rounded-full bg-[#14b8a6]" />
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 font-medium">
+          <span class="size-1.5 rounded-full bg-[#14b8a6]" />
           {{ stats.due }} due
         </span>
         <span
           v-if="stats.overdue"
-          class="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 font-medium text-red-700 dark:bg-red-950/50 dark:text-red-300"
+          class="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2 py-0.5 font-medium text-red-700 dark:bg-red-950/50 dark:text-red-300"
         >
-          <AlertCircleIcon class="h-3 w-3" />
+          <AlertCircleIcon class="size-3" />
           {{ stats.overdue }} overdue
         </span>
       </div>
@@ -124,29 +126,29 @@ const initials = (person: Member) =>
 
     <div
       v-if="!groups.length"
-      class="flex min-h-[calc(100%-3rem)] flex-col items-center justify-center gap-4 px-6 py-16 text-center"
+      class="flex min-h-[calc(100%-2.5rem)] flex-col items-center justify-center gap-3 px-4 py-12 text-center"
     >
-      <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-        <CalendarPlusIcon class="h-6 w-6 text-muted-foreground" />
+      <div class="flex size-10 items-center justify-center rounded-xl bg-muted">
+        <CalendarPlusIcon class="size-4 text-muted-foreground" />
       </div>
-      <div class="space-y-1">
-        <p class="text-base font-semibold">A clear runway</p>
-        <p class="max-w-xs text-sm text-muted-foreground">
+      <div class="space-y-0.5">
+        <p class="text-[13px] font-semibold tracking-tight">A clear runway</p>
+        <p class="max-w-xs text-[12px] text-muted-foreground">
           No events or due cards in the next {{ CALENDAR_AGENDA_DAYS }} days. Plan a
           meeting or milestone to get started.
         </p>
       </div>
-      <Button size="sm" @click="emit('create', dayKey(from))">New event</Button>
+      <Button variant="outline" @click="emit('create', dayKey(from))">New event</Button>
     </div>
 
     <section v-for="group in groups" :key="group.key">
       <header
-        class="sticky top-12 z-10 flex items-center gap-3 border-b border-border bg-card/95 px-5 py-2 backdrop-blur supports-[backdrop-filter]:bg-card/85"
+        class="sticky top-10 z-10 flex items-center gap-2.5 border-b border-border bg-card/95 px-3 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/85"
       >
         <div
           :class="
             cn(
-              'flex w-11 shrink-0 flex-col items-center overflow-hidden rounded-lg border text-center leading-none',
+              'flex w-9 shrink-0 flex-col items-center overflow-hidden rounded-md border text-center leading-none',
               isToday(group.date)
                 ? 'border-primary bg-primary text-primary-foreground'
                 : 'border-border bg-background',
@@ -156,32 +158,34 @@ const initials = (person: Member) =>
           <span
             :class="
               cn(
-                'w-full py-0.5 text-[9px] font-semibold uppercase tracking-wider',
+                'w-full py-px text-[9px] font-medium uppercase tracking-wider',
                 isToday(group.date) ? 'bg-black/10' : 'bg-muted text-muted-foreground',
               )
             "
           >
             {{ format(group.date, "MMM") }}
           </span>
-          <span class="py-1 text-base font-bold tabular-nums">{{ group.date.getDate() }}</span>
+          <span class="py-0.5 text-[13px] font-semibold tabular-nums">{{ group.date.getDate() }}</span>
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-semibold leading-tight">{{ dayTitle(group.date) }}</p>
-          <p class="text-xs text-muted-foreground">{{ format(group.date, "EEEE, d MMMM") }}</p>
+          <p class="text-[13px] font-semibold leading-tight tracking-tight">
+            {{ dayTitle(group.date) }}
+          </p>
+          <p class="text-[11px] text-muted-foreground">{{ format(group.date, "EEEE, d MMMM") }}</p>
         </div>
-        <span class="text-xs tabular-nums text-muted-foreground">
+        <span class="text-[11px] tabular-nums text-muted-foreground">
           {{ group.entries.length }} {{ group.entries.length === 1 ? "item" : "items" }}
         </span>
       </header>
 
-      <ul class="space-y-1 px-3 py-2">
+      <ul class="space-y-0.5 px-2 py-1.5">
         <li v-for="entry in group.entries" :key="entry.key">
           <button
             type="button"
-            class="group/row grid w-full grid-cols-[5.5rem_auto_minmax(0,1fr)_auto] items-stretch gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[6.5rem_auto_minmax(0,1fr)_auto]"
+            class="group/row grid w-full grid-cols-[4.75rem_auto_minmax(0,1fr)_auto] items-stretch gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[5.5rem_auto_minmax(0,1fr)_auto]"
             @click="emit('open', entry)"
           >
-            <span class="flex flex-col justify-center text-xs tabular-nums">
+            <span class="flex flex-col justify-center text-[11px] tabular-nums">
               <span
                 :class="
                   cn(
@@ -200,16 +204,16 @@ const initials = (person: Member) =>
               :style="{ backgroundColor: entry.done ? tint(entry.color, 35) : entry.color }"
             />
 
-            <span class="min-w-0 space-y-1">
-              <span class="flex min-w-0 items-center gap-2">
+            <span class="min-w-0 space-y-0.5">
+              <span class="flex min-w-0 items-center gap-1.5">
                 <CheckCircle2Icon
                   v-if="entry.done"
-                  class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                  class="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
                 />
                 <span
                   :class="
                     cn(
-                      'truncate text-sm font-medium',
+                      'truncate text-[13px] font-medium',
                       entry.done && 'text-muted-foreground line-through',
                     )
                   "
@@ -217,7 +221,7 @@ const initials = (person: Member) =>
                   {{ entry.title }}
                 </span>
                 <span
-                  class="shrink-0 rounded px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide"
+                  class="shrink-0 rounded px-1.5 py-px text-[10px] font-medium uppercase tracking-wide"
                   :style="{
                     backgroundColor: tint(entry.overdue ? CALENDAR_OVERDUE_COLOR : entry.color, 14),
                     color: `color-mix(in srgb, ${entry.color} 75%, currentColor)`,
@@ -226,17 +230,17 @@ const initials = (person: Member) =>
                   {{ entry.kind === "event" ? "Event" : "Due" }}
                 </span>
               </span>
-              <span class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <span class="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-muted-foreground">
                 <template v-if="entry.event">
                   <span v-if="entry.event.location" class="inline-flex min-w-0 items-center gap-1">
-                    <MapPinIcon class="h-3 w-3 shrink-0" />
+                    <MapPinIcon class="size-3 shrink-0" />
                     <span class="truncate">{{ entry.event.location }}</span>
                   </span>
                   <span
                     v-if="entry.event.provider !== 'LOCAL'"
                     class="inline-flex items-center gap-1"
                   >
-                    <RepeatIcon class="h-3 w-3" />
+                    <RepeatIcon class="size-3" />
                     Synced
                   </span>
                   <span v-if="entry.event.description" class="line-clamp-1 max-w-md">
@@ -245,7 +249,7 @@ const initials = (person: Member) =>
                 </template>
                 <template v-else-if="entry.task">
                   <span v-if="entry.task.columnName" class="inline-flex items-center gap-1">
-                    <Columns3Icon class="h-3 w-3" />
+                    <Columns3Icon class="size-3" />
                     {{ entry.task.columnName }}
                   </span>
                   <span
@@ -262,20 +266,20 @@ const initials = (person: Member) =>
               </span>
             </span>
 
-            <span class="flex items-center gap-2">
-              <span v-if="people(entry).length" class="flex -space-x-1.5">
+            <span class="flex items-center gap-1.5">
+              <span v-if="people(entry).length" class="flex -space-x-1">
                 <Avatar
                   v-for="person in people(entry)"
                   :key="person.id"
-                  class="h-6 w-6 border-2 border-card"
+                  class="size-5 border-2 border-card"
                   :title="person.name || person.email"
                 >
                   <AvatarImage v-if="person.imageUrl" :src="person.imageUrl" :alt="person.name || ''" />
-                  <AvatarFallback class="text-[9px] font-semibold">{{ initials(person) }}</AvatarFallback>
+                  <AvatarFallback class="bg-muted text-[8px] font-medium">{{ initials(person) }}</AvatarFallback>
                 </Avatar>
               </span>
               <ChevronRightIcon
-                class="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100"
+                class="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100"
               />
             </span>
           </button>

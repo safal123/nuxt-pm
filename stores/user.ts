@@ -68,6 +68,29 @@ export const useUserStore = defineStore('user', () => {
     return next
   }
 
+  const updateStatus = async (payload: {
+    availability: NonNullable<User['status']>['availability']
+    emoji: string
+    text: string
+    clearAfter: NonNullable<User['status']>['clearAfter']
+  }) => {
+    const { user: next } = await api<{ user: User }>('/api/users/status', {
+      method: 'PATCH',
+      body: payload,
+    })
+    if (user.value) user.value = { ...user.value, ...next }
+    return next
+  }
+
+  const clearStatus = async () => {
+    return updateStatus({
+      availability: 'online',
+      emoji: '',
+      text: '',
+      clearAfter: 'never',
+    })
+  }
+
   const clearUser = () => {
     user.value = null
     error.value = null
@@ -80,6 +103,8 @@ export const useUserStore = defineStore('user', () => {
     me,
     updateUser,
     updateSubdomain,
+    updateStatus,
+    clearStatus,
     clearUser,
   }
 })

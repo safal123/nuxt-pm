@@ -143,6 +143,46 @@ const plans = computed(() => [
   },
 ]);
 
+const metricItems = computed(() => {
+  const seats = billing.value?.seats ?? 0;
+  const cadence =
+    billing.value?.interval === "year"
+      ? "yearly"
+      : billing.value?.interval === "month"
+        ? "monthly"
+        : null;
+  return [
+    {
+      id: "plan",
+      label: "Current plan",
+      value: planLabel.value,
+      hint: `${seats} ${seats === 1 ? "seat" : "seats"}${cadence ? ` · ${cadence}` : ""}`,
+      badge: isCanceling.value ? "Ending" : undefined,
+    },
+    {
+      id: "paid",
+      label: "Paid so far",
+      value: formatMoney(billing.value?.totalPaid ?? 0, currency.value),
+      hint: "Sum of paid Stripe invoices",
+    },
+    {
+      id: "remaining",
+      label: "Remaining this period",
+      value: formatMoney(billing.value?.remainingValue ?? 0, currency.value),
+      hint: billing.value?.amountDue
+        ? `Unused value already paid · ${formatMoney(billing.value.amountDue, currency.value)} due next`
+        : "Unused value already paid",
+    },
+    {
+      id: "ends",
+      label: "Plan ends",
+      value: billing.value?.daysRemaining ?? 0,
+      suffix: "days",
+      hint: endsLabel.value,
+    },
+  ];
+});
+
 const eventLabel = (type: string) => type.replace(/_/g, " ");
 
 const amountFor = (invoice: NonNullable<BillingOverview["upcoming"]>) => {
@@ -205,133 +245,64 @@ const onLoadMore = async () => {
 
 <template>
   <div class="h-full min-w-0 overflow-y-auto">
-    <div class="flex w-full flex-col gap-8 pb-10">
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 class="text-lg font-semibold tracking-tight text-foreground">
-            Billing
-          </h1>
-          <p class="mt-1 text-sm text-muted-foreground">
-            Manage the subscription, see what was paid, and the trail of plan
-            changes.
-          </p>
-        </div>
-        <div v-if="canManage" class="flex items-center gap-2">
+    <div class="flex w-full flex-col gap-4 pb-8">
+      <PageHeader
+        title="Billing"
+        description="Manage the subscription, see what was paid, and the trail of plan changes."
+      >
+        <template v-if="canManage">
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            class="h-8"
             :disabled="loading || refreshing || acting"
             @click="onRefresh"
           >
-            <RefreshCwIcon
-              class="h-3.5 w-3.5"
-              :class="refreshing || loading ? 'animate-spin' : ''"
-            />
+            <RefreshCwIcon :class="refreshing || loading ? 'animate-spin' : ''" />
             Refresh
           </Button>
           <Button
             v-if="isPaid"
             type="button"
             variant="outline"
-            size="sm"
-            class="h-8"
             :disabled="acting"
             @click="onPortal"
           >
-            <CreditCardIcon class="h-3.5 w-3.5" />
+            <CreditCardIcon />
             Billing portal
           </Button>
-        </div>
-      </div>
+        </template>
+      </PageHeader>
 
       <div
         v-if="isCanceling && canManage"
-        class="flex flex-col gap-3 rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-amber-500/30 dark:bg-amber-500/10"
+        class="flex flex-col gap-2.5 rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between dark:border-amber-500/30 dark:bg-amber-500/10"
       >
-        <div class="flex items-start gap-3">
+        <div class="flex items-start gap-2.5">
           <div
-            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
+            class="flex size-7 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
           >
-            <AlertTriangleIcon class="h-4 w-4" />
+            <AlertTriangleIcon class="size-3.5" />
           </div>
           <div>
-            <p class="text-sm font-medium text-foreground">
+            <p class="text-[13px] font-medium text-foreground">
               Cancellation scheduled
             </p>
-            <p class="mt-0.5 text-sm text-muted-foreground">
+            <p class="mt-0.5 text-[12px] text-muted-foreground">
               You keep {{ planLabel }} until {{ endsLabel.toLowerCase() }}.
               After that the workspace drops back to Free.
             </p>
           </div>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          class="h-8 shrink-0"
-          :disabled="acting"
-          @click="onPortal"
-        >
+        <Button type="button" class="shrink-0" :disabled="acting" @click="onPortal">
           Keep subscription
         </Button>
       </div>
 
-      <div
-        class="grid overflow-hidden rounded-xl border border-border bg-card sm:grid-cols-2 xl:grid-cols-4"
-      >
-        <div class="px-5 py-4 sm:border-r sm:border-border">
-          <p class="text-sm text-muted-foreground">Current plan</p>
-          <div class="mt-3 flex items-center gap-2">
-            <p class="text-2xl font-semibold tracking-tight text-foreground">
-              {{ planLabel }}
-            </p>
-            <span
-              v-if="isCanceling"
-              class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
-            >
-              Ending
-            </span>
-          </div>
-          <p class="mt-1 text-xs text-muted-foreground">
-            {{ billing?.seats ?? 0 }}
-            {{ billing?.seats === 1 ? "seat" : "seats" }}
-            <span v-if="billing?.interval">
-              · {{ billing.interval === "year" ? "yearly" : "monthly" }}
-            </span>
-          </p>
-        </div>
-        <div class="border-t border-border px-5 py-4 sm:border-t-0 xl:border-r">
-          <p class="text-sm text-muted-foreground">Paid so far</p>
-          <p class="mt-3 text-2xl font-semibold tabular-nums text-foreground">
-            {{ formatMoney(billing?.totalPaid ?? 0, currency) }}
-          </p>
-          <p class="mt-1 text-xs text-muted-foreground">
-            Sum of paid Stripe invoices
-          </p>
-        </div>
-        <div class="border-t border-border px-5 py-4 sm:border-r xl:border-t-0">
-          <p class="text-sm text-muted-foreground">Remaining this period</p>
-          <p class="mt-3 text-2xl font-semibold tabular-nums text-foreground">
-            {{ formatMoney(billing?.remainingValue ?? 0, currency) }}
-          </p>
-          <p class="mt-1 text-xs text-muted-foreground">
-            Unused value already paid
-            <span v-if="billing?.amountDue">
-              · {{ formatMoney(billing.amountDue, currency) }} due next
-            </span>
-          </p>
-        </div>
-        <div class="border-t border-border px-5 py-4 xl:border-t-0">
-          <p class="text-sm text-muted-foreground">Plan ends</p>
-          <p class="mt-3 text-2xl font-semibold tabular-nums text-foreground">
-            {{ billing?.daysRemaining ?? 0 }}
-            <span class="text-base font-medium text-muted-foreground">days</span>
-          </p>
-          <p class="mt-1 text-xs text-muted-foreground">{{ endsLabel }}</p>
+      <PageMetrics :items="metricItems">
+        <template #ends>
           <div
             v-if="isPaid"
-            class="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"
+            class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"
           >
             <div
               class="h-full rounded-full transition-all"
@@ -339,30 +310,26 @@ const onLoadMore = async () => {
               :style="{ width: `${periodProgress}%` }"
             />
           </div>
-        </div>
-      </div>
+        </template>
+      </PageMetrics>
 
-      <!-- Usage -->
-      <section class="space-y-3">
-        <div>
-          <h2 class="text-base font-semibold text-foreground">Usage</h2>
-          <p class="mt-0.5 text-sm text-muted-foreground">
-            How this workspace sits against {{ planLabel }} limits.
-          </p>
-        </div>
-        <div class="grid gap-3 sm:grid-cols-3">
+      <PageSection
+        title="Usage"
+        :description="`How this workspace sits against ${planLabel} limits.`"
+      >
+        <div class="grid gap-2.5 sm:grid-cols-3">
           <div
             v-for="row in usageRows"
             :key="row.label"
-            class="rounded-xl border border-border bg-card p-4"
+            class="rounded-xl border border-border bg-card px-3 py-2.5"
           >
             <div class="flex items-center justify-between gap-2">
-              <p class="text-sm text-muted-foreground">{{ row.label }}</p>
-              <p class="text-sm font-medium tabular-nums text-foreground">
+              <p class="text-[12px] text-muted-foreground">{{ row.label }}</p>
+              <p class="text-[12px] font-medium tabular-nums text-foreground">
                 {{ usageLabel(row.used, row.limit) }}
               </p>
             </div>
-            <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
               <div
                 class="h-full rounded-full bg-primary transition-all"
                 :style="{
@@ -375,19 +342,13 @@ const onLoadMore = async () => {
             </div>
           </div>
         </div>
-      </section>
+      </PageSection>
 
-      <!-- Plans -->
-      <section class="space-y-3">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 class="text-base font-semibold text-foreground">
-              Manage subscription
-            </h2>
-            <p class="mt-0.5 text-sm text-muted-foreground">
-              Team and Business are billed per member and include AI summaries.
-            </p>
-          </div>
+      <PageSection
+        title="Manage subscription"
+        description="Team and Business are billed per member and include AI summaries."
+      >
+        <template #actions>
           <Tabs
             v-if="canManage"
             :model-value="interval"
@@ -402,57 +363,53 @@ const onLoadMore = async () => {
               <TabsTrigger value="year">Yearly</TabsTrigger>
             </TabsList>
           </Tabs>
-        </div>
+        </template>
 
-        <div v-if="canManage" class="grid gap-3 sm:grid-cols-2">
+        <div v-if="canManage" class="grid gap-2.5 sm:grid-cols-2">
           <article
             v-for="plan in plans"
             :key="plan.id"
-            class="group relative overflow-hidden rounded-xl border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm"
+            class="group relative overflow-hidden rounded-xl border bg-card p-3 transition hover:border-primary/40 hover:shadow-sm"
             :class="
               billing?.plan === plan.id
                 ? 'border-primary/40 ring-1 ring-primary/20'
                 : 'border-border'
             "
           >
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start justify-between gap-2.5">
               <div>
-                <p class="text-sm font-medium text-foreground">{{ plan.name }}</p>
-                <p class="mt-1 text-2xl font-semibold tracking-tight">
+                <p class="text-[13px] font-medium text-foreground">{{ plan.name }}</p>
+                <p class="mt-0.5 text-[15px] font-semibold tracking-tight">
                   ${{ plan.price }}
-                  <span class="text-sm font-normal text-muted-foreground">
+                  <span class="text-[12px] font-normal text-muted-foreground">
                     / member / month
                   </span>
                 </p>
               </div>
               <span
                 v-if="billing?.plan === plan.id"
-                class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary"
+                class="rounded-md bg-primary/10 px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-primary"
               >
                 Current
               </span>
             </div>
-            <ul class="mt-4 space-y-2">
+            <ul class="mt-2.5 space-y-1.5">
               <li
                 v-for="feature in plan.features"
                 :key="feature"
-                class="flex items-start gap-2 text-sm text-muted-foreground"
+                class="flex items-start gap-1.5 text-[12px] text-muted-foreground"
               >
-                <CheckIcon class="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <CheckIcon class="mt-0.5 size-3.5 shrink-0 text-primary" />
                 {{ feature }}
               </li>
             </ul>
             <Button
-              class="mt-5 w-full"
-              size="sm"
+              class="mt-3 w-full"
               :variant="billing?.plan === plan.id ? 'outline' : 'default'"
               :disabled="acting || loading || billing?.plan === plan.id"
               @click="onCheckout(plan.id, interval)"
             >
-              <SparklesIcon
-                v-if="billing?.plan !== plan.id"
-                class="h-3.5 w-3.5"
-              />
+              <SparklesIcon v-if="billing?.plan !== plan.id" />
               {{
                 billing?.plan === plan.id
                   ? "Current plan"
@@ -463,29 +420,25 @@ const onLoadMore = async () => {
         </div>
         <p
           v-else
-          class="rounded-xl border border-border bg-card px-4 py-4 text-sm text-muted-foreground"
+          class="rounded-xl border border-border bg-card px-3 py-2.5 text-[12px] text-muted-foreground"
         >
           Only the workspace owner can change the plan.
         </p>
-      </section>
+      </PageSection>
 
-      <!-- Invoices -->
-      <section class="space-y-3">
-        <div>
-          <h2 class="text-base font-semibold text-foreground">Invoices</h2>
-          <p class="mt-0.5 text-sm text-muted-foreground">
-            What Stripe has billed, including the next charge.
-          </p>
-        </div>
+      <PageSection
+        title="Invoices"
+        description="What Stripe has billed, including the next charge."
+      >
         <div class="overflow-hidden rounded-xl border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow class="hover:bg-transparent border-border">
-                <TableHead class="h-10">Invoice</TableHead>
-                <TableHead class="h-10">Period ends</TableHead>
-                <TableHead class="h-10">Status</TableHead>
-                <TableHead class="h-10 text-right">Amount</TableHead>
-                <TableHead class="h-10 w-[90px]" />
+                <TableHead>Invoice</TableHead>
+                <TableHead>Period ends</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead class="text-right">Amount</TableHead>
+                <TableHead class="w-[90px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -513,10 +466,10 @@ const onLoadMore = async () => {
                   v-if="billing?.upcoming"
                   class="transition-colors hover:bg-accent/40"
                 >
-                  <TableCell class="text-sm font-medium text-foreground">
+                  <TableCell class="font-medium text-foreground">
                     {{ billing.upcoming.number || "Upcoming" }}
                   </TableCell>
-                  <TableCell class="text-sm text-muted-foreground">
+                  <TableCell class="text-muted-foreground">
                     {{
                       billing.upcoming.periodEnd
                         ? formatDate(billing.upcoming.periodEnd)
@@ -526,7 +479,7 @@ const onLoadMore = async () => {
                   <TableCell>
                     <span :class="invoiceStatusChip('upcoming')">Upcoming</span>
                   </TableCell>
-                  <TableCell class="text-right text-sm tabular-nums">
+                  <TableCell class="text-right tabular-nums">
                     {{ amountFor(billing.upcoming) }}
                   </TableCell>
                   <TableCell />
@@ -536,10 +489,10 @@ const onLoadMore = async () => {
                   :key="invoice.id"
                   class="transition-colors hover:bg-accent/40"
                 >
-                  <TableCell class="text-sm font-medium text-foreground">
+                  <TableCell class="font-medium text-foreground">
                     {{ invoice.number || invoice.id }}
                   </TableCell>
-                  <TableCell class="text-sm text-muted-foreground">
+                  <TableCell class="text-muted-foreground">
                     {{
                       invoice.periodEnd
                         ? formatDate(invoice.periodEnd)
@@ -551,7 +504,7 @@ const onLoadMore = async () => {
                       {{ invoice.status }}
                     </span>
                   </TableCell>
-                  <TableCell class="text-right text-sm tabular-nums">
+                  <TableCell class="text-right tabular-nums">
                     {{ amountFor(invoice) }}
                   </TableCell>
                   <TableCell class="text-right">
@@ -572,45 +525,39 @@ const onLoadMore = async () => {
             </TableBody>
           </Table>
         </div>
-      </section>
+      </PageSection>
 
-      <!-- Activity -->
-      <section class="space-y-3">
-        <div class="flex items-end justify-between gap-3">
-          <div>
-            <h2 class="text-base font-semibold text-foreground">
-              Billing activity
-            </h2>
-            <p class="mt-0.5 text-sm text-muted-foreground">
-              Plan changes, payments, cancellations, and portal visits.
-            </p>
-          </div>
+      <PageSection
+        title="Billing activity"
+        description="Plan changes, payments, cancellations, and portal visits."
+      >
+        <template #actions>
           <p
             v-if="canManage && billing?.eventsTotal"
-            class="text-xs text-muted-foreground"
+            class="text-[11px] text-muted-foreground"
           >
             Showing {{ billing.events.length }} of {{ billing.eventsTotal }}
           </p>
-        </div>
+        </template>
         <div class="overflow-hidden rounded-xl border border-border bg-card">
           <div
             v-if="loading && !billing?.events?.length"
-            class="px-4 py-8 text-center text-sm text-muted-foreground"
+            class="px-3 py-8 text-center text-[12px] text-muted-foreground"
           >
             Loading activity…
           </div>
           <div
             v-else-if="!canManage"
-            class="px-4 py-8 text-center text-sm text-muted-foreground"
+            class="px-3 py-8 text-center text-[12px] text-muted-foreground"
           >
             Billing activity is only visible to the workspace owner.
           </div>
           <div
             v-else-if="!billing?.events?.length"
-            class="flex flex-col items-center gap-2 px-4 py-10 text-center"
+            class="flex flex-col items-center gap-2 px-3 py-8 text-center"
           >
-            <CalendarClockIcon class="h-5 w-5 text-muted-foreground" />
-            <p class="text-sm text-muted-foreground">
+            <CalendarClockIcon class="size-4 text-muted-foreground" />
+            <p class="text-[12px] text-muted-foreground">
               Nothing yet. Upgrade or open the portal and events will land here.
             </p>
           </div>
@@ -618,17 +565,17 @@ const onLoadMore = async () => {
             <li
               v-for="event in billing.events"
               :key="event.id"
-              class="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-accent/40 sm:flex-row sm:items-start sm:justify-between"
+              class="flex flex-col gap-1.5 px-3 py-2.5 transition-colors hover:bg-accent/40 sm:flex-row sm:items-start sm:justify-between"
             >
               <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center gap-1.5">
                   <span :class="billingEventChip(event.type)">
                     {{ eventLabel(event.type) }}
                   </span>
-                  <p class="text-sm text-foreground">{{ event.message }}</p>
+                  <p class="text-[13px] text-foreground">{{ event.message }}</p>
                 </div>
                 <p
-                  class="mt-1 text-xs text-muted-foreground"
+                  class="mt-1 text-[11px] text-muted-foreground"
                   :title="formatDate(event.createdAt, 'd MMM yyyy h:mm a') || ''"
                 >
                   {{ relativeDate(event.createdAt) }}
@@ -636,7 +583,7 @@ const onLoadMore = async () => {
               </div>
               <p
                 v-if="event.amount != null"
-                class="shrink-0 text-sm tabular-nums text-foreground"
+                class="shrink-0 text-[13px] tabular-nums text-foreground"
               >
                 {{ formatMoney(event.amount, event.currency || "usd") }}
               </p>
@@ -644,25 +591,21 @@ const onLoadMore = async () => {
           </ul>
           <div
             v-if="canManage && billing?.eventsHasMore"
-            class="border-t border-border px-4 py-3"
+            class="border-t border-border px-3 py-2"
           >
             <Button
               type="button"
               variant="outline"
-              size="sm"
               class="w-full"
               :disabled="loadingMoreEvents"
               @click="onLoadMore"
             >
-              <Loader2Icon
-                v-if="loadingMoreEvents"
-                class="h-3.5 w-3.5 animate-spin"
-              />
+              <Loader2Icon v-if="loadingMoreEvents" class="animate-spin" />
               {{ loadingMoreEvents ? "Loading…" : "Load more" }}
             </Button>
           </div>
         </div>
-      </section>
+      </PageSection>
     </div>
   </div>
 </template>

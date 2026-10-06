@@ -26,9 +26,9 @@ const emit = defineEmits<{
 <template>
   <div
     v-if="total"
-    class="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+    class="flex flex-col gap-2 border-t border-border px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
   >
-    <p class="text-sm text-muted-foreground">{{ rangeLabel }}</p>
+    <p class="text-[12px] text-muted-foreground">{{ rangeLabel }}</p>
     <Pagination
       v-if="total > pageSize"
       v-slot="{ page: currentPage }"
@@ -49,7 +49,7 @@ const emit = defineEmits<{
             as-child
           >
             <Button
-              class="h-8 w-8 p-0"
+              class="h-7 w-7 p-0 text-[12px]"
               :variant="item.value === currentPage ? 'default' : 'outline'"
             >
               {{ item.value }}

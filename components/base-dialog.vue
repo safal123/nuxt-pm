@@ -21,7 +21,7 @@ const props = defineProps({
   },
   size: {
     type: String as PropType<keyof typeof sizeClasses>,
-    default: "xl",
+    default: "md",
   },
   close: {
     type: Function,
@@ -31,7 +31,7 @@ const props = defineProps({
 
 const sizeClasses = {
   sm: "max-w-sm",
-  md: "max-w-md",
+  md: "max-w-[500px]",
   lg: "max-w-lg",
   xl: "max-w-xl",
   "2xl": "max-w-2xl",

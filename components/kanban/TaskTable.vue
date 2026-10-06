@@ -151,7 +151,7 @@ const initials = (person: TaskAssignee | null) => {
           <TableCell class="align-top">
             <div class="min-w-0">
               <p
-                class="font-medium text-foreground leading-snug"
+                class="text-[13px] font-medium leading-snug text-foreground"
                 :class="task.status === 'DONE' ? 'line-through text-muted-foreground' : ''"
               >
                 {{ task.title }}
@@ -210,7 +210,7 @@ const initials = (person: TaskAssignee | null) => {
               class="flex items-center gap-2 min-w-0"
             >
               <div
-                class="h-6 w-6 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300 text-[10px] font-semibold overflow-hidden shrink-0 flex items-center justify-center"
+                class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[10px] font-semibold text-foreground"
               >
                 <img
                   v-if="task.assignee.imageUrl"
@@ -220,7 +220,7 @@ const initials = (person: TaskAssignee | null) => {
                 />
                 <span v-else>{{ initials(task.assignee) }}</span>
               </div>
-              <span class="truncate text-sm">{{ personName(task.assignee) }}</span>
+              <span class="truncate text-[13px]">{{ personName(task.assignee) }}</span>
             </div>
             <span v-else class="text-muted-foreground">Unassigned</span>
           </TableCell>
@@ -245,9 +245,9 @@ const initials = (person: TaskAssignee | null) => {
 
     <div
       v-if="total"
-      class="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+      class="flex flex-col gap-2 border-t border-border px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
     >
-      <p class="text-sm text-muted-foreground">
+      <p class="text-[12px] text-muted-foreground">
         {{ rangeLabel }}
       </p>
       <Pagination
@@ -270,7 +270,7 @@ const initials = (person: TaskAssignee | null) => {
               as-child
             >
               <Button
-                class="h-10 w-10 p-0"
+                class="h-8 w-8 p-0"
                 :variant="item.value === currentPage ? 'default' : 'outline'"
               >
                 {{ item.value }}

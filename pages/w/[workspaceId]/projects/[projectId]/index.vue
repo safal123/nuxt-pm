@@ -130,7 +130,7 @@ const saveTitle = async () => {
             ref="titleInput"
             v-model="nameDraft"
             aria-label="Project name"
-            class="h-8 w-full max-w-xl rounded-md border border-input bg-background px-2 text-base font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-orange-400"
+            class="h-8 w-full max-w-xl rounded-lg border border-input bg-background px-2 text-[15px] font-semibold tracking-tight text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             :disabled="saving"
             @blur="saveTitle"
             @keyup.enter="saveTitle"
@@ -139,41 +139,31 @@ const saveTitle = async () => {
           <button
             v-else
             type="button"
-            class="group inline-flex max-w-2xl items-center gap-2 rounded-md px-1 py-0.5 -ml-1 text-left hover:bg-accent"
+            class="group -ml-1 inline-flex max-w-2xl items-center gap-1.5 rounded-md px-1 py-0.5 text-left hover:bg-accent"
             title="Rename project"
             @click="startEditing"
           >
-            <h1 class="text-base font-semibold leading-6 text-foreground">
-              {{ activeProject.name }}
-            </h1>
+            <h1>{{ activeProject.name }}</h1>
             <PencilIcon
-              class="h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-foreground"
+              class="size-3.5 shrink-0 text-muted-foreground group-hover:text-foreground"
             />
           </button>
         </div>
-        <div class="flex shrink-0 items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            class="h-8"
-            as-child
-          >
+        <div class="flex shrink-0 items-center gap-1.5">
+          <Button type="button" variant="outline" as-child>
             <NuxtLink
               :to="{
                 name: 'workspace-project-settings',
                 params: { workspaceId, projectId: activeProject.id },
               }"
             >
-              <SettingsIcon class="h-3.5 w-3.5" />
+              <SettingsIcon />
               Settings
             </NuxtLink>
           </Button>
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            class="h-8"
             @click="
               modals.openModal('projectAi', {
                 projectId: activeProject.id,
@@ -181,14 +171,12 @@ const saveTitle = async () => {
               })
             "
           >
-            <SparklesIcon class="h-3.5 w-3.5 text-primary" />
+            <SparklesIcon />
             AI summary
           </Button>
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            class="h-8"
             @click="
               openTimeline({
                 kind: 'project',
@@ -197,7 +185,7 @@ const saveTitle = async () => {
               })
             "
           >
-            <HistoryIcon class="h-3.5 w-3.5" />
+            <HistoryIcon />
             Timeline
           </Button>
         </div>

@@ -32,11 +32,11 @@ type TaskTab = "details" | "summary" | "members" | "files" | "comments" | "activ
 
 const TABS: { id: TaskTab; label: string; icon: typeof UserIcon }[] = [
   { id: "details", label: "Details", icon: AlignLeftIcon },
-  { id: "summary", label: "Summary", icon: SparklesIcon },
   { id: "members", label: "Members", icon: UserIcon },
   { id: "files", label: "Files", icon: PaperclipIcon },
   { id: "comments", label: "Comments", icon: MessageSquareIcon },
   { id: "activity", label: "Activity", icon: HistoryIcon },
+  { id: "summary", label: "Summary", icon: SparklesIcon },
 ];
 
 const boardStore = useBoardStore();
@@ -59,9 +59,28 @@ const descriptionDraft = ref("");
 const commentDraft = ref("");
 const dueDraft = ref("");
 const savingComment = ref(false);
-const savingDates = ref(false);
 const dateSaved = ref(false);
 const dueReady = ref(false);
+const saving = reactive({
+  title: false,
+  status: false,
+  priority: false,
+  due: false,
+  sprint: false,
+  description: false,
+  labels: false,
+  members: false,
+});
+
+const withSave = async (key: keyof typeof saving, run: () => Promise<void>) => {
+  if (saving[key]) return;
+  saving[key] = true;
+  try {
+    await run();
+  } finally {
+    saving[key] = false;
+  }
+};
 const newLabelName = ref("");
 const newLabelColor = ref(TASK_COLORS[4].value);
 const creatingLabel = ref(false);
@@ -146,29 +165,30 @@ const saveTitle = async () => {
   if (!task.value) return;
   const next = titleDraft.value.trim();
   if (!next || next === task.value.title) return;
-  await boardStore.patchTask(task.value.id, { title: next });
+  await withSave("title", () =>
+    boardStore.patchTask(task.value!.id, { title: next }),
+  );
 };
 
 const saveDescription = async () => {
   if (!task.value) return;
   const next = descriptionDraft.value.trim() || null;
   if (next === (task.value.description ?? null)) return;
-  await boardStore.patchTask(task.value.id, { description: next });
+  await withSave("description", () =>
+    boardStore.patchTask(task.value!.id, { description: next }),
+  );
 };
 
 const saveDueDate = async (value: string) => {
   if (!task.value || !dueReady.value) return;
   if (value === toInputDate(task.value.dueDate)) return;
-  savingDates.value = true;
   dateSaved.value = false;
-  try {
-    await boardStore.patchTask(task.value.id, {
+  await withSave("due", async () => {
+    await boardStore.patchTask(task.value!.id, {
       dueDate: value ? new Date(`${value}T12:00:00`).toISOString() : null,
     });
     dateSaved.value = true;
-  } finally {
-    savingDates.value = false;
-  }
+  });
 };
 
 watch(dueDraft, (value) => {
@@ -181,7 +201,9 @@ const toggleLabel = async (label: TaskLabel) => {
   const labelIds = current.some((item) => item.id === label.id)
     ? current.filter((item) => item.id !== label.id).map((item) => item.id)
     : [...current.map((item) => item.id), label.id];
-  await boardStore.patchTask(task.value.id, { labelIds });
+  await withSave("labels", () =>
+    boardStore.patchTask(task.value!.id, { labelIds }),
+  );
 };
 
 const createLabel = async () => {
@@ -205,18 +227,23 @@ const toggleMember = async (person: TaskAssignee) => {
   const memberIds = current.some((member) => member.id === person.id)
     ? current.filter((member) => member.id !== person.id).map((member) => member.id)
     : [...current.map((member) => member.id), person.id];
-  await boardStore.patchTask(task.value.id, { memberIds });
+  await withSave("members", () =>
+    boardStore.patchTask(task.value!.id, { memberIds }),
+  );
 };
-
 
 const setPriority = async (priority: TaskPriority) => {
   if (!task.value || task.value.priority === priority) return;
-  await boardStore.patchTask(task.value.id, { priority });
+  await withSave("priority", () =>
+    boardStore.patchTask(task.value!.id, { priority }),
+  );
 };
 
 const setStatus = async (status: TaskStatus) => {
   if (!task.value || task.value.status === status) return;
-  await boardStore.patchTask(task.value.id, { status });
+  await withSave("status", () =>
+    boardStore.patchTask(task.value!.id, { status }),
+  );
 };
 
 const sprintOptions = computed(() =>
@@ -234,7 +261,9 @@ const setSprint = async (value: unknown) => {
   if (!task.value || typeof value !== "string") return;
   const sprintId = value === "backlog" ? null : value;
   if ((task.value.sprintId ?? null) === sprintId) return;
-  await boardStore.patchTask(task.value.id, { sprintId });
+  await withSave("sprint", () =>
+    boardStore.patchTask(task.value!.id, { sprintId }),
+  );
 };
 
 const isComplete = computed(() => task.value?.status === "DONE");
@@ -346,20 +375,20 @@ const ignoreSelectOutside = (event: Event) => {
       @focus-outside="ignoreSelectOutside"
       @interact-outside="ignoreSelectOutside"
     >
-      <div class="absolute right-3 top-3 z-20 flex items-center gap-0.5">
+      <div class="absolute right-3 top-2.5 z-20 flex items-center gap-1">
         <TaskCoverPicker
           :task="task"
           :overlay="Boolean(task.coverImage || task.coverColor)"
         />
         <DialogClose
-          class="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+          class="flex size-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
           :class="
             task.coverImage || task.coverColor
-              ? 'bg-black/40 text-white hover:bg-black/55'
-              : 'text-muted-foreground opacity-70 hover:bg-accent hover:text-foreground hover:opacity-100'
+              ? 'border-white/20 bg-black/40 text-white hover:bg-black/55 hover:text-white'
+              : ''
           "
         >
-          <XIcon class="h-4 w-4" />
+          <XIcon class="size-3.5" />
           <span class="sr-only">Close</span>
         </DialogClose>
       </div>
@@ -386,7 +415,7 @@ const ignoreSelectOutside = (event: Event) => {
       />
 
       <div
-        class="shrink-0 px-6 pt-5"
+        class="shrink-0 px-5 pt-4"
         :class="task.coverImage || task.coverColor ? '' : 'pr-20'"
       >
         <div class="flex items-center gap-2.5">
@@ -410,14 +439,19 @@ const ignoreSelectOutside = (event: Event) => {
           </button>
           <input
             v-model="titleDraft"
-            class="min-w-0 flex-1 bg-transparent px-1 py-0.5 -ml-0.5 text-lg font-semibold leading-6 text-foreground rounded-md border-0 focus:outline-none focus:ring-2 focus:ring-ring"
+            class="-ml-0.5 min-w-0 flex-1 rounded-md border-0 bg-transparent px-1 py-0.5 text-[15px] font-semibold leading-5 tracking-tight text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             :class="isComplete ? 'line-through text-muted-foreground' : ''"
+            :disabled="saving.title"
             @blur="saveTitle"
             @keyup.enter="saveTitle"
           />
+          <Loader2Icon
+            v-if="saving.title"
+            class="size-3.5 shrink-0 animate-spin text-muted-foreground"
+          />
         </div>
-        <div class="mt-1.5 ml-8 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <p class="truncate text-xs text-muted-foreground">
+        <div class="ml-8 mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <p class="truncate text-[12px] text-muted-foreground">
             in
             <span class="font-medium text-foreground/80">{{ columnName }}</span>
           </p>
@@ -427,9 +461,9 @@ const ignoreSelectOutside = (event: Event) => {
           >
             {{ statusLabel(task.status) }}
           </span>
-          <span class="text-xs text-muted-foreground/40">·</span>
+          <span class="text-[12px] text-muted-foreground/40">·</span>
           <p
-            class="truncate text-xs text-muted-foreground"
+            class="truncate text-[12px] text-muted-foreground"
             :title="createdAtLabel?.exact"
           >
             {{ creatorName }}
@@ -445,15 +479,15 @@ const ignoreSelectOutside = (event: Event) => {
         class="flex min-h-0 flex-1 flex-col"
         @update:model-value="activeTab = $event as TaskTab"
       >
-        <div class="shrink-0 px-6 pt-4">
+        <div class="shrink-0 px-5 pt-3">
           <TabsList
-            class="h-auto w-full justify-start gap-0.5 overflow-x-auto rounded-lg bg-muted p-1"
+            class="grid h-8 w-full grid-cols-6 gap-0.5 p-0.5"
           >
             <TabsTrigger
               v-for="tab in TABS"
               :key="tab.id"
               :value="tab.id"
-              class="h-8 gap-1.5 rounded-md px-2.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
+              class="h-7 w-full min-w-0 px-1"
             >
               <component :is="tab.icon" class="h-3.5 w-3.5" />
               {{ tab.label }}
@@ -461,42 +495,56 @@ const ignoreSelectOutside = (event: Event) => {
           </TabsList>
         </div>
 
-        <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        <div v-if="activeTab === 'details'" class="space-y-6">
-          <div class="grid gap-4 sm:grid-cols-3">
-            <div class="space-y-2">
-              <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Status
-              </h3>
+        <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <div v-if="activeTab === 'details'" class="space-y-4">
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="text-[12px] font-medium text-muted-foreground">
+                  Status
+                </h3>
+                <Loader2Icon
+                  v-if="saving.status"
+                  class="size-3 animate-spin text-muted-foreground"
+                />
+              </div>
               <StatusSelect
                 :model-value="task.status"
+                :disabled="saving.status"
                 @update:model-value="setStatus"
               />
             </div>
-            <div class="space-y-2">
-              <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Priority
-              </h3>
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="text-[12px] font-medium text-muted-foreground">
+                  Priority
+                </h3>
+                <Loader2Icon
+                  v-if="saving.priority"
+                  class="size-3 animate-spin text-muted-foreground"
+                />
+              </div>
               <PrioritySelect
                 :model-value="task.priority"
+                :disabled="saving.priority"
                 @update:model-value="setPriority"
               />
             </div>
-            <div class="space-y-2">
+            <div class="space-y-1.5">
               <div class="flex items-center justify-between gap-2">
-                <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <h3 class="text-[12px] font-medium text-muted-foreground">
                   Due date
                 </h3>
                 <p
-                  v-if="savingDates"
+                  v-if="saving.due"
                   class="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
                 >
-                  <Loader2Icon class="h-3 w-3 animate-spin" />
+                  <Loader2Icon class="size-3 animate-spin" />
                   Saving
                 </p>
                 <p
                   v-else-if="dateSaved"
-                  class="text-[11px] font-medium text-primary"
+                  class="text-[11px] font-medium text-foreground"
                 >
                   Saved
                 </p>
@@ -505,12 +553,19 @@ const ignoreSelectOutside = (event: Event) => {
             </div>
           </div>
 
-          <div v-if="sprintStore.sprints.length" class="space-y-2">
-            <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Sprint
-            </h3>
+          <div v-if="sprintStore.sprints.length" class="space-y-1.5">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-[12px] font-medium text-muted-foreground">
+                Sprint
+              </h3>
+              <Loader2Icon
+                v-if="saving.sprint"
+                class="size-3 animate-spin text-muted-foreground"
+              />
+            </div>
             <Select
               :model-value="task.sprintId || 'backlog'"
+              :disabled="saving.sprint"
               :modal="false"
               @update:model-value="setSprint"
             >
@@ -541,7 +596,7 @@ const ignoreSelectOutside = (event: Event) => {
             </Select>
             <p
               v-if="task.sprintId && !sprintOptions.some((sprint) => sprint.id === task.sprintId)"
-              class="text-xs text-muted-foreground"
+              class="text-[12px] text-muted-foreground"
             >
               This card is on a completed sprint. Move it to the backlog or the
               current sprint to keep working on it.
@@ -549,14 +604,14 @@ const ignoreSelectOutside = (event: Event) => {
           </div>
 
           <div v-if="task.members?.length">
-            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <p class="mb-1.5 text-[12px] font-medium text-muted-foreground">
               Members
             </p>
             <div class="flex -space-x-1">
               <div
                 v-for="member in task.members"
                 :key="member.id"
-                class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[11px] font-semibold text-primary ring-2 ring-background"
+                class="flex size-7 items-center justify-center overflow-hidden rounded-full bg-muted text-[10px] font-medium text-foreground ring-2 ring-background"
                 :title="member.name || member.email"
               >
                 <img
@@ -573,39 +628,53 @@ const ignoreSelectOutside = (event: Event) => {
             v-if="task.aiPlanGoal"
             class="rounded-lg border border-border bg-muted/50 px-3 py-2.5"
           >
-            <p class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <SparklesIcon class="h-3.5 w-3.5" />
+            <p class="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground">
+              <SparklesIcon class="size-3.5" />
               Created from an AI plan
             </p>
-            <p class="mt-1.5 whitespace-pre-line text-sm text-foreground">
+            <p class="mt-1.5 whitespace-pre-line text-[13px] text-foreground">
               {{ task.aiPlanGoal }}
             </p>
           </div>
 
           <div>
-            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Description
-            </h3>
+            <div class="mb-1.5 flex items-center justify-between gap-2">
+              <h3 class="text-[12px] font-medium text-muted-foreground">
+                Description
+              </h3>
+              <Loader2Icon
+                v-if="saving.description"
+                class="size-3 animate-spin text-muted-foreground"
+              />
+            </div>
             <textarea
               v-model="descriptionDraft"
               rows="5"
               placeholder="Add a more detailed description…"
-              class="w-full rounded-lg border border-transparent bg-muted px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              class="w-full rounded-lg border border-transparent bg-muted px-2.5 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-ring focus:bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              :disabled="saving.description"
               @blur="saveDescription"
             />
           </div>
 
-          <div class="space-y-3">
-            <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Labels
-            </h3>
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-[12px] font-medium text-muted-foreground">
+                Labels
+              </h3>
+              <Loader2Icon
+                v-if="saving.labels || creatingLabel"
+                class="size-3 animate-spin text-muted-foreground"
+              />
+            </div>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="label in boardStore.projectLabels"
                 :key="label.id"
                 type="button"
-                class="inline-flex h-6 max-w-full items-center gap-1 rounded px-2 text-xs font-semibold text-white"
+                class="inline-flex h-6 max-w-full items-center gap-1 rounded px-2 text-[12px] font-medium text-white disabled:opacity-60"
                 :style="{ backgroundColor: label.color }"
+                :disabled="saving.labels"
                 @click="toggleLabel(label)"
               >
                 <span class="truncate">{{ label.name }}</span>
@@ -616,20 +685,20 @@ const ignoreSelectOutside = (event: Event) => {
               </button>
               <p
                 v-if="!boardStore.projectLabels.length"
-                class="py-1 text-sm text-muted-foreground"
+                class="py-1 text-[12px] text-muted-foreground"
               >
                 No labels yet. Create one below.
               </p>
             </div>
             <div class="space-y-3 rounded-lg border border-border p-3">
-              <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <p class="text-[12px] font-medium text-muted-foreground">
                 Create a label
               </p>
               <input
                 v-model="newLabelName"
                 maxlength="32"
                 placeholder="Label name"
-                class="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                class="h-8 w-full rounded-lg border border-border px-2.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-ring"
                 @keyup.enter="createLabel"
               />
               <div class="flex flex-wrap gap-1.5">
@@ -644,14 +713,14 @@ const ignoreSelectOutside = (event: Event) => {
                   @click="newLabelColor = color.value"
                 />
               </div>
-              <p v-if="labelError" class="text-xs text-red-600">{{ labelError }}</p>
+              <p v-if="labelError" class="text-[12px] text-red-600">{{ labelError }}</p>
               <Button
-                size="sm"
                 :disabled="!newLabelName.trim() || creatingLabel"
                 @click="createLabel"
               >
-                <PlusIcon class="h-4 w-4 mr-1" />
-                Create label
+                <Loader2Icon v-if="creatingLabel" class="animate-spin" />
+                <PlusIcon v-else />
+                {{ creatingLabel ? "Creating…" : "Create label" }}
               </Button>
             </div>
           </div>
@@ -660,18 +729,25 @@ const ignoreSelectOutside = (event: Event) => {
         <TaskSummary v-else-if="activeTab === 'summary'" :task="task" />
 
         <div v-else-if="activeTab === 'members'" class="space-y-2">
-          <p class="text-sm text-muted-foreground mb-3">
-            Add or remove people on this card. People come from the project member list.
-          </p>
+          <div class="mb-3 flex items-center justify-between gap-2">
+            <p class="text-[12px] text-muted-foreground">
+              Add or remove people on this card. People come from the project member list.
+            </p>
+            <Loader2Icon
+              v-if="saving.members"
+              class="size-3 shrink-0 animate-spin text-muted-foreground"
+            />
+          </div>
           <button
             v-for="person in assignableMembers"
             :key="person.id"
             type="button"
-            class="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-left text-sm hover:bg-accent"
+            class="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[13px] hover:bg-accent disabled:opacity-60"
+            :disabled="saving.members"
             @click="toggleMember(person)"
           >
             <div
-              class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[11px] font-semibold text-primary"
+              class="flex size-7 items-center justify-center overflow-hidden rounded-full bg-muted text-[10px] font-medium text-foreground"
             >
               <img v-if="person.imageUrl" :src="person.imageUrl" class="h-full w-full object-cover" />
               <span v-else>{{ initials(person) }}</span>
@@ -684,13 +760,13 @@ const ignoreSelectOutside = (event: Event) => {
             </div>
             <span
               v-if="isMember(person.id)"
-              class="text-xs font-medium text-red-600"
+              class="text-[12px] font-medium text-red-600"
             >
               Remove
             </span>
-            <span v-else class="text-xs font-medium text-primary">Add</span>
+            <span v-else class="text-[12px] font-medium text-foreground">Add</span>
           </button>
-          <p v-if="!assignableMembers.length" class="text-sm text-muted-foreground py-6 text-center">
+          <p v-if="!assignableMembers.length" class="py-6 text-center text-[12px] text-muted-foreground">
             No project members yet. Add people to the project first.
           </p>
         </div>
@@ -699,46 +775,46 @@ const ignoreSelectOutside = (event: Event) => {
           <ClientOnly>
             <TaskAttachments />
             <template #fallback>
-              <p class="text-sm text-muted-foreground">Loading files…</p>
+              <p class="text-[12px] text-muted-foreground">Loading files…</p>
             </template>
           </ClientOnly>
         </div>
 
         <div v-else-if="activeTab === 'comments'" class="flex flex-col">
-          <p class="text-sm text-muted-foreground">
+          <p class="text-[12px] text-muted-foreground">
             {{ comments.length }}
             {{ comments.length === 1 ? "comment" : "comments" }}
           </p>
 
-          <div class="mt-4">
+          <div class="mt-3">
             <textarea
               v-model="commentDraft"
               placeholder="Write a comment…"
               rows="3"
-              class="min-h-[88px] w-full resize-none rounded-md bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none border-0 focus:outline-none focus:ring-0"
+              class="min-h-[72px] w-full resize-none rounded-lg border-0 bg-muted px-2.5 py-2 text-[13px] text-foreground outline-none placeholder:text-muted-foreground focus:outline-none focus:ring-0"
               @keydown.enter.exact.prevent="submitComment"
             />
             <div class="mt-2 flex justify-end">
               <Button
                 type="button"
-                size="sm"
                 :disabled="savingComment"
                 @click="submitComment"
               >
-                Comment
+                <Loader2Icon v-if="savingComment" class="animate-spin" />
+                {{ savingComment ? "Saving…" : "Comment" }}
               </Button>
             </div>
           </div>
 
-          <div v-if="comments.length" class="mt-4">
+          <div v-if="comments.length" class="mt-3">
             <article
               v-for="(comment, index) in comments"
               :key="comment.id"
-              class="flex gap-3 py-4"
+              class="flex gap-2.5 py-3"
               :class="index ? 'border-t border-border' : ''"
             >
               <div
-                class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[11px] font-semibold text-primary"
+                class="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[10px] font-medium text-foreground"
               >
                 <img
                   v-if="comment.user.imageUrl"
@@ -750,18 +826,18 @@ const ignoreSelectOutside = (event: Event) => {
               </div>
               <div class="min-w-0 flex-1">
                 <div class="flex items-baseline justify-between gap-3">
-                  <p class="truncate text-sm font-medium text-foreground">
+                  <p class="truncate text-[13px] font-medium text-foreground">
                     {{ comment.user.name || comment.user.email }}
                   </p>
                   <time
-                    class="shrink-0 text-xs text-muted-foreground"
+                    class="shrink-0 text-[11px] text-muted-foreground"
                     :title="commentWhen(comment.createdAt).exact"
                   >
                     {{ commentWhen(comment.createdAt).relative }}
                   </time>
                 </div>
                 <p
-                  class="mt-1.5 text-sm leading-6 text-foreground/90 whitespace-pre-wrap break-words"
+                  class="mt-1 whitespace-pre-wrap break-words text-[13px] leading-5 text-foreground/90"
                 >
                   {{ comment.content }}
                 </p>
@@ -777,27 +853,26 @@ const ignoreSelectOutside = (event: Event) => {
             >
               <MessageSquareIcon class="h-4 w-4" />
             </div>
-            <p class="mt-3 text-sm font-medium text-foreground">No comments yet</p>
-            <p class="mt-1 max-w-xs text-sm text-muted-foreground">
+            <p class="mt-3 text-[13px] font-medium text-foreground">No comments yet</p>
+            <p class="mt-1 max-w-xs text-[12px] text-muted-foreground">
               Leave a note for the team. Comments stay on this card.
             </p>
           </div>
         </div>
 
         <div v-else-if="activeTab === 'activity'">
-          <div class="mb-4 flex items-start justify-between gap-3">
-            <p class="text-sm text-muted-foreground">
+          <div class="mb-3 flex items-start justify-between gap-3">
+            <p class="text-[12px] text-muted-foreground">
               Every change on this card, newest first.
             </p>
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              class="h-8 shrink-0"
+              class="shrink-0"
               :disabled="!task"
               @click="openCardTimeline"
             >
-              <HistoryIcon class="h-3.5 w-3.5" />
+              <HistoryIcon />
               Timeline
             </Button>
           </div>
@@ -808,15 +883,14 @@ const ignoreSelectOutside = (event: Event) => {
 
       <DialogFooter
         v-if="canArchive"
-        class="shrink-0 border-t border-border px-6 py-3 sm:justify-end"
+        class="shrink-0 border-t border-border px-5 py-2.5 sm:justify-end"
       >
         <Button
           variant="outline"
-          size="sm"
           class="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
           @click="archiveCard"
         >
-          <ArchiveIcon class="h-4 w-4" />
+          <ArchiveIcon />
           Archive card
         </Button>
       </DialogFooter>

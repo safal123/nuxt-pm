@@ -19,8 +19,8 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
 
-    --primary: 24.6 95% 53.1%;
-    --primary-foreground: 60 9.1% 97.8%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -31,23 +31,23 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --ring: 24.6 95% 53.1%;
+    --ring: 0 0% 9%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 24.6 95% 53.1%;
+    --sidebar-primary: 240 5.9% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-active: 33.3 100% 96.5%;
-    --sidebar-active-hover: 34.3 100% 91.8%;
+    --sidebar-active: 240 4.8% 93.5%;
+    --sidebar-active-hover: 240 5.2% 90%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 24.6 95% 53.1%;
+    --sidebar-ring: 240 5.9% 10%;
 
-    --dropzone: 33.3 100% 96.5%;
-    --dropzone-border: 27 96% 61%;
+    --dropzone: 240 4.8% 95.9%;
+    --dropzone-border: 240 5.9% 10%;
 
     --shadow-drag: 0 18px 40px rgba(15, 23, 42, 0.18);
 
@@ -78,8 +78,8 @@
     --border: 220 12% 28%;
     --input: 220 12% 28%;
 
-    --primary: 20.5 90.2% 48.2%;
-    --primary-foreground: 60 9.1% 97.8%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
 
     --secondary: 220 14% 22%;
     --secondary-foreground: 210 20% 96%;
@@ -90,21 +90,21 @@
     --destructive: 0 55% 48%;
     --destructive-foreground: 210 40% 98%;
 
-    --ring: 20.5 90.2% 48.2%;
+    --ring: 0 0% 83.9%;
 
     --sidebar-background: 220 16% 14%;
     --sidebar-foreground: 210 20% 94%;
-    --sidebar-primary: 20.5 90.2% 48.2%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 240 5.9% 10%;
     --sidebar-accent: 220 14% 20%;
     --sidebar-accent-foreground: 210 20% 94%;
-    --sidebar-active: 20 32% 23%;
-    --sidebar-active-hover: 20 38% 28%;
+    --sidebar-active: 220 14% 22%;
+    --sidebar-active-hover: 220 14% 26%;
     --sidebar-border: 220 12% 26%;
-    --sidebar-ring: 20.5 90.2% 48.2%;
+    --sidebar-ring: 0 0% 83.9%;
 
-    --dropzone: 20 30% 20%;
-    --dropzone-border: 20.5 90.2% 48.2%;
+    --dropzone: 220 14% 22%;
+    --dropzone-border: 0 0% 83.9%;
 
     --shadow-drag: 0 18px 40px rgba(0, 0, 0, 0.45);
 
@@ -132,27 +132,27 @@
       --card-foreground: 210 20% 96%;
       --border: 220 12% 28%;
       --input: 220 12% 28%;
-      --primary: 20.5 90.2% 48.2%;
-      --primary-foreground: 60 9.1% 97.8%;
+      --primary: 0 0% 98%;
+      --primary-foreground: 240 5.9% 10%;
       --secondary: 220 14% 22%;
       --secondary-foreground: 210 20% 96%;
       --accent: 220 14% 24%;
       --accent-foreground: 210 20% 96%;
       --destructive: 0 55% 48%;
       --destructive-foreground: 210 40% 98%;
-      --ring: 20.5 90.2% 48.2%;
+      --ring: 0 0% 83.9%;
       --sidebar-background: 220 16% 14%;
       --sidebar-foreground: 210 20% 94%;
-      --sidebar-primary: 20.5 90.2% 48.2%;
-      --sidebar-primary-foreground: 0 0% 100%;
+      --sidebar-primary: 0 0% 98%;
+      --sidebar-primary-foreground: 240 5.9% 10%;
       --sidebar-accent: 220 14% 20%;
       --sidebar-accent-foreground: 210 20% 94%;
-      --sidebar-active: 20 32% 23%;
-      --sidebar-active-hover: 20 38% 28%;
+      --sidebar-active: 220 14% 22%;
+      --sidebar-active-hover: 220 14% 26%;
       --sidebar-border: 220 12% 26%;
-      --sidebar-ring: 20.5 90.2% 48.2%;
-      --dropzone: 20 30% 20%;
-      --dropzone-border: 20.5 90.2% 48.2%;
+      --sidebar-ring: 0 0% 83.9%;
+      --dropzone: 220 14% 22%;
+      --dropzone-border: 0 0% 83.9%;
       --shadow-drag: 0 18px 40px rgba(0, 0, 0, 0.45);
     }
   }
@@ -177,5 +177,19 @@
 
   body {
     @apply bg-background text-foreground min-h-screen antialiased;
+  }
+}
+
+@layer components {
+  .app-page h1 {
+    @apply text-[15px] font-semibold tracking-tight text-foreground;
+  }
+
+  .app-page h2 {
+    @apply text-[13px] font-semibold tracking-tight text-foreground;
+  }
+
+  .app-page h3 {
+    @apply text-[13px] font-medium text-foreground;
   }
 }

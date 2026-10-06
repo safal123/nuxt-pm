@@ -131,8 +131,8 @@ const onPointerDown = (event: PointerEvent) => {
     />
 
     <div
-      class="pr-3 pt-3 pb-1.5 flex flex-col gap-1.5"
-      :class="task.coverImage || task.coverThumb || task.coverColor ? 'pl-3' : 'pl-3.5'"
+      class="flex flex-col gap-1.5 pb-1.5 pr-2.5 pt-2"
+      :class="task.coverImage || task.coverThumb || task.coverColor ? 'pl-2.5' : 'pl-3'"
     >
       <div
         v-if="cardLabels.length"
@@ -216,7 +216,7 @@ const onPointerDown = (event: PointerEvent) => {
     </div>
 
     <div
-      class="flex items-center justify-between gap-2 border-t border-border px-3 py-1.5 bg-muted/60 shrink-0"
+      class="flex shrink-0 items-center justify-between gap-2 border-t border-border bg-muted/60 px-2.5 py-1"
     >
       <div class="flex items-center gap-2.5 text-muted-foreground">
         <span
@@ -260,7 +260,7 @@ const onPointerDown = (event: PointerEvent) => {
         <div
           v-for="member in task.members.slice(0, 3)"
           :key="member.id"
-          class="h-6 w-6 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300 text-[10px] font-semibold overflow-hidden ring-2 ring-card shrink-0 flex items-center justify-center"
+          class="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[9px] font-semibold text-foreground ring-2 ring-card"
           :title="member.name || member.email"
         >
           <img
@@ -276,7 +276,7 @@ const onPointerDown = (event: PointerEvent) => {
       </div>
       <div
         v-else-if="task.assignee"
-        class="h-6 w-6 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300 text-[10px] font-semibold overflow-hidden ring-2 ring-card shrink-0 flex items-center justify-center"
+        class="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[9px] font-semibold text-foreground ring-2 ring-card"
         :title="task.assignee.name || task.assignee.email"
       >
         <img

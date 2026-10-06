@@ -175,18 +175,18 @@ const saveName = () => {
     :style="columnTint ? { backgroundColor: `${columnTint}2e` } : undefined"
   >
     <div
-      class="flex items-center gap-0.5 px-2 py-2 rounded-t-xl"
+      class="flex items-center gap-0.5 rounded-t-xl px-2 py-1.5"
       :style="columnTint ? { backgroundColor: `${columnTint}55` } : undefined"
     >
       <button
         type="button"
-        class="h-7 w-7 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-background/80 hover:text-foreground"
+        class="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-background/80 hover:text-foreground"
         aria-label="Collapse list"
         title="Collapse list"
         @click="collapseList"
         @pointerdown.stop
       >
-        <ChevronsLeftIcon class="h-4 w-4" />
+        <ChevronsLeftIcon class="size-3.5" />
       </button>
       <input
         v-if="isEditing"
@@ -223,24 +223,24 @@ const saveName = () => {
       <button
         v-if="canPlan"
         type="button"
-        class="h-7 w-7 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-background/80 hover:text-foreground"
+        class="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-background/80 hover:text-foreground"
         aria-label="Plan tasks with AI"
         title="Plan tasks with AI"
         @click="emit('plan', column.id)"
         @pointerdown.stop
       >
-        <SparklesIcon class="h-4 w-4" />
+        <SparklesIcon class="size-3.5" />
       </button>
 
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <button
             type="button"
-            class="h-7 w-7 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-background/80 hover:text-foreground"
+            class="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-background/80 hover:text-foreground"
             aria-label="List actions"
             @pointerdown.stop
           >
-            <MoreHorizontalIcon class="h-4 w-4" />
+            <MoreHorizontalIcon class="size-3.5" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -250,17 +250,17 @@ const saveName = () => {
           @pointerdown.stop
         >
           <DropdownMenuItem @select="startAdding">
-            <PlusIcon class="h-4 w-4" />
+            <PlusIcon />
             Add card
           </DropdownMenuItem>
           <DropdownMenuItem v-if="canPlan" @select="emit('plan', column.id)">
-            <SparklesIcon class="h-4 w-4" />
+            <SparklesIcon />
             Plan tasks with AI
           </DropdownMenuItem>
 
           <DropdownMenuSub>
-            <DropdownMenuSubTrigger class="gap-2">
-              <PaletteIcon class="h-4 w-4 shrink-0" />
+            <DropdownMenuSubTrigger>
+              <PaletteIcon />
               Background color
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent class="w-52 p-2">
@@ -301,19 +301,19 @@ const saveName = () => {
             :disabled="isFirst"
             @select="emit('move', column.id, 'left')"
           >
-            <ChevronLeftIcon class="h-4 w-4" />
+            <ChevronLeftIcon />
             Move left
           </DropdownMenuItem>
           <DropdownMenuItem
             :disabled="isLast"
             @select="emit('move', column.id, 'right')"
           >
-            <ChevronRightIcon class="h-4 w-4" />
+            <ChevronRightIcon />
             Move right
           </DropdownMenuItem>
 
           <DropdownMenuItem @select="collapseList">
-            <ChevronsLeftIcon class="h-4 w-4" />
+            <ChevronsLeftIcon />
             Collapse list
           </DropdownMenuItem>
 
@@ -323,7 +323,7 @@ const saveName = () => {
             class="text-red-600 focus:text-red-600"
             @select="emit('archive', column.id)"
           >
-            <ArchiveIcon class="h-4 w-4" />
+            <ArchiveIcon />
             Archive list
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -332,7 +332,7 @@ const saveName = () => {
 
     <div
       data-task-list
-      class="mt-2 flex-1 overflow-y-auto px-2 pb-2 flex flex-col gap-2 min-h-[88px]"
+      class="mt-1.5 flex min-h-[88px] flex-1 flex-col gap-1.5 overflow-y-auto px-2 pb-2"
     >
       <p
         v-if="filtered && !shownTasks.length"
@@ -376,7 +376,7 @@ const saveName = () => {
           ref="inputRef"
           v-model="newTaskTitle"
           placeholder="Task title"
-          class="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          class="flex h-8 w-full rounded-lg border border-input bg-background px-2.5 text-[12px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           @keyup.enter="submitTask"
           @keyup.esc="cancelAdding"
           @blur="submitTask"
@@ -385,10 +385,10 @@ const saveName = () => {
       <button
         v-else
         type="button"
-        class="w-full flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground hover:bg-background/80 rounded-lg px-2 py-1.5 transition"
+        class="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] text-muted-foreground transition hover:bg-background/80 hover:text-foreground"
         @click="startAdding"
       >
-        <PlusIcon class="h-4 w-4" />
+        <PlusIcon class="size-3.5" />
         Add task
       </button>
     </div>

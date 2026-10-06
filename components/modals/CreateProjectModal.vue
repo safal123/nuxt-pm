@@ -67,22 +67,13 @@ async function onSubmit(values: any) {
 
 <template>
   <Dialog :open="open" @update:open="(value) => { if (!value) close() }">
-    <DialogContent class="max-w-md">
+    <DialogContent class="max-w-[500px]">
       <DialogHeader>
-        <div class="flex items-start gap-3">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted"
-          >
-            <FolderPlusIcon class="h-5 w-5 text-foreground" />
-          </div>
-          <div class="space-y-1.5 text-left">
-            <DialogTitle>Create project</DialogTitle>
-            <DialogDescription>
-              Add a project to this workspace. You can invite people and start a
-              board after it is created.
-            </DialogDescription>
-          </div>
-        </div>
+        <DialogTitle>Create project</DialogTitle>
+        <DialogDescription>
+          Add a project to this workspace. You can invite people and start a
+          board after it is created.
+        </DialogDescription>
       </DialogHeader>
 
       <Form
@@ -93,7 +84,7 @@ async function onSubmit(values: any) {
       >
         <form
           id="createProjectForm"
-          class="space-y-4"
+          class="mt-4 space-y-3"
           @submit="handleSubmit($event, onSubmit)"
         >
           <FormField v-slot="{ componentField }" name="name">
@@ -131,7 +122,7 @@ async function onSubmit(values: any) {
         </form>
       </Form>
 
-      <DialogFooter>
+      <DialogFooter class="mt-4">
         <Button
           type="button"
           variant="outline"
@@ -140,8 +131,13 @@ async function onSubmit(values: any) {
         >
           Cancel
         </Button>
-        <Button type="submit" form="createProjectForm" :disabled="creating">
-          <FolderPlusIcon class="h-4 w-4" />
+        <Button
+          type="submit"
+          size="xs"
+          form="createProjectForm"
+          :disabled="creating"
+        >
+          <FolderPlusIcon />
           {{ creating ? "Creating…" : "Create project" }}
         </Button>
       </DialogFooter>

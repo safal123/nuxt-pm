@@ -100,57 +100,55 @@ const removeMember = async (person: Member) => {
     <DialogContent class="max-w-lg">
       <DialogHeader>
         <DialogTitle>Workspace members</DialogTitle>
+        <DialogDescription>
+          Add someone who already has an account by email, or create a secure invite
+          link. If you enter an email first, the link will only work for that address.
+        </DialogDescription>
       </DialogHeader>
 
-      <p class="text-sm text-muted-foreground">
-        Add someone who already has an account by email, or create a secure invite link.
-        If you enter an email first, the link will only work for that address.
-      </p>
-
-      <form class="flex gap-2 mt-3" @submit.prevent="addMember">
-        <input
+      <form class="mt-4 flex gap-1.5" @submit.prevent="addMember">
+        <Input
           v-model="email"
           type="email"
           placeholder="name@example.com (optional for a link)"
-          class="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+          class="flex-1"
         />
-        <Button type="submit" size="sm" :disabled="!email.trim() || saving">
-          <UserPlusIcon class="h-4 w-4 mr-1" />
+        <Button type="submit" :disabled="!email.trim() || saving">
+          <UserPlusIcon />
           Add
         </Button>
       </form>
       <Button
         variant="outline"
-        size="sm"
-        class="mt-2"
+        class="mt-1.5"
         :disabled="creatingLink"
         @click="createInviteLink"
       >
-        <LinkIcon class="h-4 w-4 mr-1" />
+        <LinkIcon />
         {{ creatingLink ? "Creating…" : "Create invite link" }}
       </Button>
-      <p v-if="errorMessage" class="mt-2 text-xs text-red-600">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="mt-1.5 text-[12px] text-red-600">{{ errorMessage }}</p>
 
-      <div v-if="inviteUrl" class="mt-3 flex gap-2">
-        <input
-          :value="inviteUrl"
+      <div v-if="inviteUrl" class="mt-2.5 flex gap-1.5">
+        <Input
+          :model-value="inviteUrl"
           readonly
-          class="flex-1 rounded-md border border-input bg-muted px-3 py-2 text-xs text-foreground"
+          class="flex-1 bg-muted"
         />
-        <Button variant="outline" size="sm" @click="copyInvite">
-          <CopyIcon class="h-4 w-4 mr-1" />
+        <Button variant="outline" @click="copyInvite">
+          <CopyIcon />
           {{ inviteCopied ? "Copied" : "Copy" }}
         </Button>
       </div>
 
-      <div class="mt-4 max-h-[360px] overflow-y-auto space-y-1">
+      <div class="mt-4 max-h-[360px] space-y-px overflow-y-auto">
         <div
           v-for="person in workspaceStore.members"
           :key="person.id"
-          class="flex items-center gap-3 rounded-lg px-2 py-2"
+          class="flex items-center gap-2.5 rounded-lg px-2 py-1.5"
         >
           <div
-            class="h-8 w-8 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300 text-[11px] font-semibold overflow-hidden flex items-center justify-center"
+            class="flex size-7 items-center justify-center overflow-hidden rounded-full bg-muted text-[10px] font-medium text-foreground"
           >
             <img v-if="person.imageUrl" :src="person.imageUrl" class="h-full w-full object-cover" />
             <span v-else>{{ initials(person) }}</span>
@@ -160,30 +158,30 @@ const removeMember = async (person: Member) => {
             class="min-w-0 flex-1"
             @click="store.closeModal()"
           >
-            <p class="text-sm font-medium text-foreground truncate hover:underline">
+            <p class="truncate text-[13px] font-medium text-foreground hover:underline">
               {{ person.name || person.email }}
             </p>
-            <p class="text-xs text-muted-foreground truncate">{{ person.email }}</p>
+            <p class="truncate text-[12px] text-muted-foreground">{{ person.email }}</p>
           </NuxtLink>
           <span
             v-if="person.isOwner"
-            class="text-[11px] font-semibold uppercase tracking-wide text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/20 px-2 py-0.5 rounded"
+            class="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-foreground"
           >
             Owner
           </span>
           <button
             v-else
             type="button"
-            class="text-muted-foreground hover:text-red-600 p-1"
+            class="p-1 text-muted-foreground hover:text-red-600"
             :disabled="removingId === person.id"
             @click="removeMember(person)"
           >
-            <XIcon class="h-4 w-4" />
+            <XIcon class="size-3.5" />
           </button>
         </div>
         <p
           v-if="!workspaceStore.members.length"
-          class="text-sm text-muted-foreground py-6 text-center"
+          class="py-6 text-center text-[12px] text-muted-foreground"
         >
           No members yet.
         </p>

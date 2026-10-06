@@ -144,15 +144,10 @@ async function onSubdomainSubmit(values: any) {
 
 <template>
   <div class="h-full min-w-0 overflow-y-auto">
-    <div class="mb-6">
-      <h1 class="text-lg font-semibold tracking-tight text-foreground">
-        Settings
-      </h1>
-      <p class="mt-1 text-sm text-muted-foreground">
-        Personal appearance stays on this device. Workspace settings are stored
-        for everyone in {{ workspace?.name || "this workspace" }}.
-      </p>
-    </div>
+    <PageHeader
+      title="Settings"
+      :description="`Personal appearance stays on this device. Workspace settings are stored for everyone in ${workspace?.name || 'this workspace'}.`"
+    />
 
     <div class="mx-auto w-full space-y-8 pb-10">
       <section class="space-y-3">

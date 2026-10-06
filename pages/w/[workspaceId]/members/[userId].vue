@@ -86,13 +86,12 @@ const roleLabel = computed(() =>
 
 <template>
   <div class="h-full min-w-0 overflow-y-auto">
-    <div v-if="error" class="flex flex-col items-center py-16 text-center">
-      <p class="text-sm font-medium text-foreground">Profile unavailable</p>
-      <p class="mt-1 text-sm text-muted-foreground">{{ error }}</p>
+    <div v-if="error" class="flex flex-col items-center py-12 text-center">
+      <p class="text-[13px] font-medium text-foreground">Profile unavailable</p>
+      <p class="mt-1 text-[12px] text-muted-foreground">{{ error }}</p>
       <Button
-        class="mt-4"
+        class="mt-3"
         variant="outline"
-        size="sm"
         as-child
       >
         <NuxtLink :to="{ name: 'workspace-members', params: { workspaceId } }">
@@ -102,12 +101,12 @@ const roleLabel = computed(() =>
     </div>
 
     <template v-else>
-      <div class="mb-5 flex items-start justify-between gap-3">
-        <div class="flex min-w-0 items-start gap-3">
-          <Skeleton v-if="loading && !member" class="h-14 w-14 rounded-full" />
+      <div class="mb-4 flex items-start justify-between gap-3">
+        <div class="flex min-w-0 items-start gap-2.5">
+          <Skeleton v-if="loading && !member" class="size-10 rounded-full" />
           <div
             v-else
-            class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 text-base font-semibold text-orange-700 dark:bg-orange-500/20 dark:text-orange-300"
+            class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[13px] font-medium text-foreground"
           >
             <img
               v-if="member?.imageUrl"
@@ -119,7 +118,7 @@ const roleLabel = computed(() =>
           </div>
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
-              <h1 class="text-xl font-semibold tracking-tight text-foreground">
+              <h1 class="text-[15px] font-semibold tracking-tight text-foreground">
                 {{ member?.name || member?.email || "Member" }}
               </h1>
               <span
@@ -134,12 +133,12 @@ const roleLabel = computed(() =>
                 {{ roleLabel }}
               </span>
             </div>
-            <p class="mt-1 truncate text-sm text-muted-foreground">
+            <p class="mt-1 truncate text-[12px] text-muted-foreground">
               {{ member?.email }}
             </p>
             <p
               v-if="member?.joinedAt"
-              class="mt-1 text-xs text-muted-foreground"
+              class="mt-1 text-[11px] text-muted-foreground"
             >
               Joined {{ formatDate(member.joinedAt) || relativeDate(member.joinedAt) }}
             </p>
@@ -147,7 +146,6 @@ const roleLabel = computed(() =>
         </div>
         <Button
           variant="outline"
-          size="sm"
           as-child
         >
           <NuxtLink
@@ -160,19 +158,19 @@ const roleLabel = computed(() =>
 
       <PageStats :items="statItems" :loading="loading && !profile" />
 
-      <div class="mt-5 grid gap-5 lg:grid-cols-5">
-        <div class="space-y-5 lg:col-span-2">
+      <div class="mt-4 grid gap-4 lg:grid-cols-5">
+        <div class="space-y-4 lg:col-span-2">
           <section class="overflow-hidden rounded-xl border border-border bg-card">
-            <div class="border-b border-border px-4 py-3">
-              <h2 class="text-sm font-semibold text-foreground">Projects</h2>
+            <div class="border-b border-border px-3 py-2">
+              <h2 class="text-[13px] font-semibold text-foreground">Projects</h2>
             </div>
-            <div v-if="loading && !profile" class="space-y-2 p-4">
-              <Skeleton class="h-4 w-40" />
-              <Skeleton class="h-4 w-32" />
+            <div v-if="loading && !profile" class="space-y-1.5 p-3">
+              <Skeleton class="h-3.5 w-40" />
+              <Skeleton class="h-3.5 w-32" />
             </div>
             <p
               v-else-if="!profile?.projects.length"
-              class="px-4 py-8 text-center text-sm text-muted-foreground"
+              class="px-3 py-6 text-center text-[12px] text-muted-foreground"
             >
               Not on any live projects.
             </p>
@@ -184,7 +182,7 @@ const roleLabel = computed(() =>
                   name: 'workspace-project',
                   params: { workspaceId, projectId: project.id },
                 }"
-                class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent/50"
+                class="flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-accent/50"
               >
                 <LayoutGridIcon class="h-3.5 w-3.5 text-muted-foreground" />
                 <span class="min-w-0 truncate font-medium text-foreground">
@@ -195,16 +193,16 @@ const roleLabel = computed(() =>
           </section>
 
           <section class="overflow-hidden rounded-xl border border-border bg-card">
-            <div class="border-b border-border px-4 py-3">
-              <h2 class="text-sm font-semibold text-foreground">Assigned cards</h2>
+            <div class="border-b border-border px-3 py-2">
+              <h2 class="text-[13px] font-semibold text-foreground">Assigned cards</h2>
             </div>
-            <div v-if="loading && !profile" class="space-y-2 p-4">
-              <Skeleton class="h-4 w-48" />
-              <Skeleton class="h-4 w-36" />
+            <div v-if="loading && !profile" class="space-y-1.5 p-3">
+              <Skeleton class="h-3.5 w-48" />
+              <Skeleton class="h-3.5 w-36" />
             </div>
             <p
               v-else-if="!profile?.tasks.length"
-              class="px-4 py-8 text-center text-sm text-muted-foreground"
+              class="px-3 py-6 text-center text-[12px] text-muted-foreground"
             >
               No cards assigned right now.
             </p>
@@ -216,19 +214,19 @@ const roleLabel = computed(() =>
                   name: 'workspace-project',
                   params: { workspaceId, projectId: task.projectId },
                 }"
-                class="block px-4 py-2.5 hover:bg-accent/50"
+                class="block px-3 py-2 hover:bg-accent/50"
               >
-                <p class="truncate text-sm font-medium text-foreground">
+                <p class="truncate text-[13px] font-medium text-foreground">
                   {{ task.title }}
                 </p>
-                <div class="mt-1 flex flex-wrap items-center gap-2">
+                <div class="mt-1 flex flex-wrap items-center gap-1.5">
                   <span
                     class="inline-flex rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset"
                     :class="statusChip(task.status)"
                   >
                     {{ statusLabel(task.status) }}
                   </span>
-                  <span class="truncate text-xs text-muted-foreground">
+                  <span class="truncate text-[12px] text-muted-foreground">
                     {{ task.projectName }}
                   </span>
                 </div>
@@ -240,30 +238,29 @@ const roleLabel = computed(() =>
         <section
           class="flex max-h-[42rem] flex-col overflow-hidden rounded-xl border border-border bg-card lg:col-span-3"
         >
-          <div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-            <h2 class="text-sm font-semibold text-foreground">Recent activity</h2>
+          <div class="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
+            <h2 class="text-[13px] font-semibold text-foreground">Recent activity</h2>
             <span
               v-if="profile?.activities.length"
-              class="text-xs tabular-nums text-muted-foreground"
+              class="text-[11px] tabular-nums text-muted-foreground"
             >
               {{ profile.activities.length }} shown
             </span>
           </div>
-          <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <div class="min-h-0 flex-1 overflow-y-auto px-3 py-3">
             <ActivityTimeline
               :activities="profile?.activities ?? []"
               :loading="loading && !profile"
               compact
               @select="selected = $event"
             />
-            <div v-if="hasMoreActivities" class="mt-4 flex justify-center">
+            <div v-if="hasMoreActivities" class="mt-3 flex justify-center">
               <Button
                 variant="outline"
-                size="sm"
                 :disabled="loadingMore"
                 @click="onLoadMore"
               >
-                <Loader2Icon v-if="loadingMore" class="mr-2 h-3.5 w-3.5 animate-spin" />
+                <Loader2Icon v-if="loadingMore" class="animate-spin" />
                 {{ loadingMore ? "Loading…" : "Load more" }}
               </Button>
             </div>

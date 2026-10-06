@@ -183,7 +183,7 @@ async function onSubmit(values: any) {
       @focus-outside="ignoreSelectOutside"
       @interact-outside="ignoreSelectOutside"
     >
-      <DialogHeader class="border-b border-border px-6 py-4">
+      <DialogHeader class="border-b border-border px-5 py-2.5">
         <DialogTitle>Send email</DialogTitle>
         <DialogDescription>
           Write a branded message, preview the template, then send it.
@@ -203,10 +203,10 @@ async function onSubmit(values: any) {
           class="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-2"
           @submit="handleSubmit($event, onSubmit)"
         >
-          <div class="min-h-0 space-y-3 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
+          <div class="min-h-0 space-y-3 overflow-y-auto border-b border-border p-4 lg:border-b-0 lg:border-r">
             <div class="grid gap-3 sm:grid-cols-2">
               <div class="space-y-1.5">
-                <p class="text-sm font-medium">Template</p>
+                <p class="text-[12px] font-medium">Template</p>
                 <Select
                   :model-value="starterId"
                   :modal="false"
@@ -214,7 +214,7 @@ async function onSubmit(values: any) {
                     if (typeof value === 'string') applyStarter(value as StarterId, setValues, values)
                   }"
                 >
-                  <SelectTrigger class="h-9">
+                  <SelectTrigger>
                     <SelectValue placeholder="Choose a template" />
                   </SelectTrigger>
                   <SelectContent>
@@ -238,7 +238,7 @@ async function onSubmit(values: any) {
                         if (typeof value === 'string') selectedProjectId = value
                       }"
                     >
-                      <SelectTrigger class="h-9">
+                      <SelectTrigger>
                         <SelectValue placeholder="Workspace" />
                       </SelectTrigger>
                       <SelectContent>
@@ -283,7 +283,7 @@ async function onSubmit(values: any) {
                   if (typeof value === 'string') setValues({ ...values, to: value })
                 }"
               >
-                <SelectTrigger class="h-9">
+                <SelectTrigger>
                   <SelectValue placeholder="Insert member email" />
                 </SelectTrigger>
                 <SelectContent>
@@ -385,8 +385,8 @@ async function onSubmit(values: any) {
             </div>
           </div>
 
-          <div class="min-h-0 overflow-y-auto bg-muted/30 p-6">
-            <p class="mb-2 text-xs font-medium text-muted-foreground">Template preview</p>
+          <div class="min-h-0 overflow-y-auto bg-muted/30 p-4">
+            <p class="mb-2 text-[11px] font-medium text-muted-foreground">Template preview</p>
             <iframe
               class="h-[420px] w-full rounded-lg border border-border bg-white"
               sandbox=""
@@ -397,12 +397,12 @@ async function onSubmit(values: any) {
         </form>
       </Form>
 
-      <DialogFooter class="border-t border-border px-6 py-4">
+      <DialogFooter class="border-t border-border px-5 py-2.5">
         <Button type="button" variant="outline" :disabled="sending" @click="close">
           Cancel
         </Button>
-        <Button type="submit" form="sendEmailForm" :disabled="sending">
-          <SendIcon class="h-4 w-4" />
+        <Button type="submit" size="xs" form="sendEmailForm" :disabled="sending">
+          <SendIcon />
           {{ sending ? "Sending…" : "Send email" }}
         </Button>
       </DialogFooter>

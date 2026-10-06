@@ -113,20 +113,20 @@ watch(
   <Sheet :open="open" @update:open="onOpen">
     <SheetContent
       side="right"
-      overlay-class="z-[80]"
-      class="z-[80] flex h-full w-full flex-col gap-0 p-0 sm:max-w-xl"
+      overlay-class="z-[80] bg-black/20 backdrop-blur-md"
+      class="z-[80] flex h-full w-full flex-col gap-0 p-0 sm:max-w-lg"
     >
-      <SheetHeader class="space-y-1 border-b border-border px-6 py-4 pr-12 text-left">
-        <SheetTitle class="flex items-center gap-2">
-          <HistoryIcon class="h-4 w-4 text-muted-foreground" />
+      <SheetHeader class="gap-y-0 space-y-0 border-b border-border px-4 py-2 pr-12 text-left">
+        <SheetTitle class="flex items-center gap-1.5 text-[14px] font-semibold tracking-tight">
+          <HistoryIcon class="size-3.5 text-muted-foreground" />
           {{ title }}
         </SheetTitle>
-        <SheetDescription class="truncate">
+        <SheetDescription class="truncate text-[12px]">
           {{ targetName }}
         </SheetDescription>
         <p
           v-if="!loading && summary.total"
-          class="text-xs text-muted-foreground"
+          class="text-[11px] text-muted-foreground"
         >
           {{ summary.total }}
           {{ summary.total === 1 ? "event" : "events" }}
@@ -136,10 +136,15 @@ watch(
         </p>
       </SheetHeader>
 
-      <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        <div v-if="error" class="flex flex-col items-center gap-2 py-10 text-center">
-          <p class="text-sm text-muted-foreground">{{ error }}</p>
-          <Button type="button" variant="outline" size="sm" @click="fetchTimeline">
+      <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        <div v-if="error" class="flex flex-col items-center gap-2 py-8 text-center">
+          <p class="text-[12px] text-muted-foreground">{{ error }}</p>
+          <Button
+            type="button"
+            variant="outline"
+            class="h-8 rounded-lg px-3 text-[12px] font-medium"
+            @click="fetchTimeline"
+          >
             Try again
           </Button>
         </div>
@@ -153,11 +158,15 @@ watch(
 
       <div
         v-if="projectHref"
-        class="border-t border-border px-6 py-3"
+        class="border-t border-border px-4 py-2"
       >
-        <Button variant="outline" size="sm" as-child>
+        <Button
+          variant="outline"
+          class="h-8 rounded-lg px-3 text-[12px] font-medium [&_svg]:size-3.5"
+          as-child
+        >
           <NuxtLink :to="projectHref">
-            <LayoutGridIcon class="h-4 w-4" />
+            <LayoutGridIcon />
             Open project
           </NuxtLink>
         </Button>

@@ -19,7 +19,7 @@ const highlights = [
       class="relative hidden overflow-hidden bg-zinc-950 text-zinc-50 lg:flex lg:flex-col"
     >
       <div
-        class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,hsl(262_83%_58%/0.38),transparent_55%)]"
+        class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.12),transparent_55%)]"
       />
       <div
         class="pointer-events-none absolute inset-0 opacity-[0.18] [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:22px_22px]"
@@ -39,7 +39,7 @@ const highlights = [
 
         <div class="max-w-md">
           <p
-            class="text-xs font-medium uppercase tracking-[0.18em] text-orange-300"
+            class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-400"
           >
             Product teams
           </p>
@@ -55,7 +55,7 @@ const highlights = [
               class="flex items-start gap-3 text-sm leading-6 text-zinc-300"
             >
               <span
-                class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-500/20 text-orange-300"
+                class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-zinc-200"
               >
                 <CheckIcon class="h-3 w-3" />
               </span>

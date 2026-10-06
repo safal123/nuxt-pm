@@ -76,6 +76,37 @@ export const userUpdateSchema = z
     { message: 'Nothing to update.' },
   )
 
+export const statusAvailabilitySchema = z.enum(['online', 'offline'])
+export const statusClearAfterSchema = z.enum([
+  'never',
+  '30m',
+  '1h',
+  '4h',
+  'today',
+  'week',
+])
+
+const statusEmojiSchema = z
+  .string()
+  .trim()
+  .max(16)
+  .nullable()
+  .transform((value) => (value ? value : null))
+
+const statusTextSchema = z
+  .string()
+  .trim()
+  .max(80)
+  .nullable()
+  .transform((value) => (value ? value : null))
+
+export const userStatusSchema = z.object({
+  availability: statusAvailabilitySchema,
+  emoji: statusEmojiSchema,
+  text: statusTextSchema,
+  clearAfter: statusClearAfterSchema,
+})
+
 export const workspaceCreateSchema = z.object({
   name: trimmedName('Workspace name').max(
     50,

@@ -89,11 +89,29 @@ model User {
   aiSummaries         AiSummary[]
   aiChatMessages      AiChatMessage[]
   calendarEvents      CalendarEvent[]      @relation("CreatedCalendarEvents")
+  status              UserStatus?
 
   activeWorkspace Workspace? @relation("ActiveWorkspace", fields: [activeWorkspaceId], references: [id])
   activeProject   Project?   @relation("ActiveProject", fields: [activeProjectId], references: [id])
 
   @@map("users")
+}
+
+/// Per-user presence. Visible to people who share a workspace.
+model UserStatus {
+  id           String    @id @default(cuid())
+  userId       String    @unique @map("user_id")
+  availability String    @default("online")
+  emoji        String?
+  text         String?
+  clearAfter   String    @default("never") @map("clear_after")
+  expiresAt    DateTime? @map("expires_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_status")
 }
 
 model Subscription {

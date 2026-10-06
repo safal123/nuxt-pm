@@ -2,7 +2,6 @@
 import { addMinutes, format } from "date-fns";
 import {
   AlignLeftIcon,
-  CalendarClockIcon,
   CheckIcon,
   ExternalLinkIcon,
   Loader2Icon,
@@ -233,36 +232,26 @@ const removeEvent = async () => {
 
 <template>
   <Dialog :open="open" @update:open="(value) => { if (!value) close() }">
-    <DialogContent class="flex max-h-[90vh] max-w-lg flex-col gap-0 p-0">
-      <DialogHeader class="border-b border-border px-6 pb-4 pt-6">
-        <div class="flex items-start gap-3">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md"
-            :style="{ backgroundColor: `${TASK_COLORS.find((item) => item.id === color)?.value ?? '#0079bf'}22` }"
-          >
-            <CalendarClockIcon
-              class="h-5 w-5"
-              :style="{ color: TASK_COLORS.find((item) => item.id === color)?.value }"
-            />
-          </div>
-          <div class="space-y-1 text-left">
-            <DialogTitle>
-              {{ readOnly ? event?.title : editing ? "Edit event" : "New event" }}
-            </DialogTitle>
-            <DialogDescription>
-              {{ summaryLabel }}<template v-if="durationHint"> · {{ durationHint }}</template>
-            </DialogDescription>
-          </div>
-        </div>
+    <DialogContent class="max-w-[500px]">
+      <DialogHeader>
+        <DialogTitle>
+          {{ readOnly ? event?.title : editing ? "Edit event" : "New event" }}
+        </DialogTitle>
+        <DialogDescription>
+          {{ summaryLabel }}<template v-if="durationHint"> · {{ durationHint }}</template>
+        </DialogDescription>
       </DialogHeader>
 
-      <div v-if="readOnly" class="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5 text-sm">
-        <p class="text-xs text-muted-foreground">
+      <div
+        v-if="readOnly"
+        class="mt-4 space-y-3 text-[13px]"
+      >
+        <p class="text-[12px] text-muted-foreground">
           From {{ providerName }}<template v-if="sourceCalendar"> · {{ sourceCalendar }}</template>.
           Changes are made in {{ providerName }}.
         </p>
-        <div v-if="event?.location" class="flex gap-3">
-          <MapPinIcon class="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <div v-if="event?.location" class="flex gap-2.5">
+          <MapPinIcon class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
           <a
             v-if="/^https?:\/\//.test(event.location)"
             :href="event.location"
@@ -272,8 +261,8 @@ const removeEvent = async () => {
           >{{ event.location }}</a>
           <span v-else class="break-words">{{ event.location }}</span>
         </div>
-        <div v-if="event?.description" class="flex gap-3">
-          <AlignLeftIcon class="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <div v-if="event?.description" class="flex gap-2.5">
+          <AlignLeftIcon class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
           <p class="whitespace-pre-line break-words">{{ event.description }}</p>
         </div>
       </div>
@@ -288,16 +277,16 @@ const removeEvent = async () => {
       >
         <form
           id="calendarEventForm"
-          class="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5"
+          class="mt-4 space-y-3"
           @submit="handleSubmit($event, onSubmit)"
         >
           <FormField v-slot="{ componentField }" name="title">
             <FormItem>
+              <FormLabel>Title</FormLabel>
               <FormControl>
                 <Input
                   v-bind="componentField"
                   placeholder="Add title"
-                  class="h-11 border-0 border-b border-border px-0 text-lg font-medium shadow-none focus-visible:ring-0 rounded-none"
                   :disabled="busy || readOnly"
                   autofocus
                 />
@@ -307,7 +296,7 @@ const removeEvent = async () => {
           </FormField>
 
           <div class="flex items-center justify-between">
-            <Label for="event-all-day" class="text-sm font-medium">All day</Label>
+            <Label for="event-all-day">All day</Label>
             <Switch
               id="event-all-day"
               :checked="allDay"
@@ -316,8 +305,8 @@ const removeEvent = async () => {
             />
           </div>
 
-          <div class="grid gap-3">
-            <div class="grid grid-cols-[1fr_auto] gap-2">
+          <div class="grid gap-2">
+            <div class="grid grid-cols-[1fr_auto] gap-1.5">
               <DatePicker
                 :model-value="startDay"
                 placeholder="Start date"
@@ -329,7 +318,7 @@ const removeEvent = async () => {
                 :disabled="busy || readOnly"
                 @update:model-value="(value) => changeStart(startDay, String(value))"
               >
-                <SelectTrigger class="h-9 w-[120px]">
+                <SelectTrigger class="w-[110px]">
                   <SelectValue placeholder="Start" />
                 </SelectTrigger>
                 <SelectContent class="max-h-64">
@@ -339,7 +328,7 @@ const removeEvent = async () => {
                 </SelectContent>
               </Select>
             </div>
-            <div class="grid grid-cols-[1fr_auto] gap-2">
+            <div class="grid grid-cols-[1fr_auto] gap-1.5">
               <DatePicker v-model="endDay" placeholder="End date" />
               <Select
                 v-if="!allDay"
@@ -347,7 +336,7 @@ const removeEvent = async () => {
                 :disabled="busy || readOnly"
                 @update:model-value="(value) => (endTime = String(value))"
               >
-                <SelectTrigger class="h-9 w-[120px]">
+                <SelectTrigger class="w-[110px]">
                   <SelectValue placeholder="End" />
                 </SelectTrigger>
                 <SelectContent class="max-h-64">
@@ -357,7 +346,7 @@ const removeEvent = async () => {
                 </SelectContent>
               </Select>
             </div>
-            <p v-if="rangeError" class="text-xs font-medium text-destructive">
+            <p v-if="rangeError" class="text-[12px] font-medium text-destructive">
               {{ rangeError }}
             </p>
           </div>
@@ -367,12 +356,12 @@ const removeEvent = async () => {
               <FormControl>
                 <div class="relative">
                   <MapPinIcon
-                    class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                    class="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
                   />
                   <Input
                     v-bind="componentField"
                     placeholder="Add location or meeting link"
-                    class="pl-9"
+                    class="pl-8"
                     :disabled="busy || readOnly"
                   />
                 </div>
@@ -395,9 +384,9 @@ const removeEvent = async () => {
             </FormItem>
           </FormField>
 
-          <div class="space-y-2">
-            <Label class="text-sm font-medium">Colour</Label>
-            <div class="flex flex-wrap gap-2">
+          <div class="space-y-1.5">
+            <Label>Colour</Label>
+            <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="item in TASK_COLORS"
                 :key="item.id"
@@ -407,43 +396,42 @@ const removeEvent = async () => {
                 :disabled="busy || readOnly"
                 :class="
                   cn(
-                    'flex h-7 w-7 items-center justify-center rounded-full ring-offset-2 ring-offset-background transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none',
+                    'flex size-6 items-center justify-center rounded-full ring-offset-2 ring-offset-background transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none',
                     color === item.id && 'ring-2 ring-foreground/60',
                   )
                 "
                 :style="{ backgroundColor: item.value }"
                 @click="color = item.id"
               >
-                <CheckIcon v-if="color === item.id" class="h-3.5 w-3.5 text-white drop-shadow" />
+                <CheckIcon v-if="color === item.id" class="size-3 text-white drop-shadow" />
               </button>
             </div>
           </div>
         </form>
       </Form>
 
-      <DialogFooter class="flex-row items-center gap-2 border-t border-border px-6 py-4 sm:justify-between">
+      <DialogFooter class="mt-4 sm:justify-between">
         <Button
           v-if="editing && !readOnly"
           type="button"
           variant="ghost"
-          size="sm"
           :class="cn('text-destructive hover:text-destructive', confirmDelete && 'bg-destructive/10')"
           :disabled="busy"
           @click="removeEvent"
         >
-          <Loader2Icon v-if="deleting" class="h-4 w-4 animate-spin" />
-          <Trash2Icon v-else class="h-4 w-4" />
+          <Loader2Icon v-if="deleting" class="animate-spin" />
+          <Trash2Icon v-else />
           {{ confirmDelete ? "Confirm delete" : "Delete" }}
         </Button>
         <span v-else />
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <Button type="button" variant="outline" :disabled="busy" @click="close">
             {{ readOnly ? "Close" : "Cancel" }}
           </Button>
           <Button v-if="readOnly && event?.externalUrl" as-child>
             <a :href="event.externalUrl" target="_blank" rel="noopener">
               Open in {{ providerName }}
-              <ExternalLinkIcon class="h-4 w-4" />
+              <ExternalLinkIcon />
             </a>
           </Button>
           <Button
@@ -452,7 +440,7 @@ const removeEvent = async () => {
             form="calendarEventForm"
             :disabled="busy || Boolean(rangeError)"
           >
-            <Loader2Icon v-if="saving" class="h-4 w-4 animate-spin" />
+            <Loader2Icon v-if="saving" class="animate-spin" />
             {{ editing ? "Save" : "Create event" }}
           </Button>
         </div>

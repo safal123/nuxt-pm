@@ -68,15 +68,15 @@ const subject = (activity: WorkspaceActivity) =>
     <PopoverTrigger as-child>
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         size="icon"
-        class="relative shrink-0"
+        class="relative h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
         aria-label="Notifications"
       >
-        <BellIcon class="h-4 w-4" />
+        <BellIcon />
         <span
           v-if="notifications.unreadCount"
-          class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground"
+          class="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-medium leading-none text-primary-foreground"
         >
           {{ notifications.unreadCount > 9 ? "9+" : notifications.unreadCount }}
         </span>
@@ -85,15 +85,14 @@ const subject = (activity: WorkspaceActivity) =>
     <PopoverContent
       align="end"
       :side-offset="8"
-      class="w-[min(22rem,calc(100vw-1.5rem))] p-0"
+      class="w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border-border/80 p-0 shadow-[0_12px_40px_rgba(15,23,42,0.12)]"
     >
-      <div class="flex items-center justify-between border-b border-border px-3 py-2.5">
-        <p class="text-sm font-semibold text-foreground">Activity</p>
+      <div class="flex items-center justify-between border-b border-border px-3 py-2">
+        <p class="text-[13px] font-semibold tracking-tight text-foreground">Activity</p>
         <Button
           v-if="workspaceId"
           variant="ghost"
-          size="sm"
-          class="h-7 px-2 text-xs"
+          size="xs"
           as-child
         >
           <NuxtLink :to="`/w/${workspaceId}/activities`" @click="open = false">
@@ -105,13 +104,13 @@ const subject = (activity: WorkspaceActivity) =>
       <div class="max-h-[min(22rem,70vh)] overflow-y-auto">
         <p
           v-if="notifications.loading && !notifications.items.length"
-          class="px-3 py-8 text-center text-sm text-muted-foreground"
+          class="px-3 py-8 text-center text-[12px] text-muted-foreground"
         >
           Loading activity…
         </p>
         <p
           v-else-if="!notifications.items.length"
-          class="px-3 py-8 text-center text-sm text-muted-foreground"
+          class="px-3 py-8 text-center text-[12px] text-muted-foreground"
         >
           No activity yet in this workspace.
         </p>
@@ -119,11 +118,11 @@ const subject = (activity: WorkspaceActivity) =>
           <li v-for="item in notifications.items" :key="item.id">
             <NuxtLink
               :to="activityHref(item)"
-              class="flex gap-3 px-3 py-2.5 transition-colors hover:bg-accent"
+              class="flex gap-2.5 px-3 py-2 transition-colors hover:bg-accent/50"
               @click="open = false"
             >
               <div
-                class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[11px] font-semibold text-muted-foreground"
+                class="mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[10px] font-medium text-foreground"
               >
                 <img
                   v-if="item.user.imageUrl"
@@ -134,14 +133,14 @@ const subject = (activity: WorkspaceActivity) =>
                 <span v-else>{{ personInitials(item.user) }}</span>
               </div>
               <div class="min-w-0 flex-1">
-                <p class="text-sm leading-5 text-foreground">
+                <p class="text-[13px] leading-5 text-foreground">
                   <span class="font-medium">{{
                     item.user.name || item.user.email
                   }}</span>
                   {{ " " }}
                   <span class="text-muted-foreground">{{ item.message }}</span>
                 </p>
-                <p class="mt-0.5 truncate text-xs text-muted-foreground">
+                <p class="mt-0.5 truncate text-[11px] text-muted-foreground">
                   {{ subject(item) }}
                   ·
                   <span :title="when(item.createdAt).title">{{

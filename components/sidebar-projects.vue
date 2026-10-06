@@ -96,16 +96,16 @@ const editProject = async (project: Project) => {
 <template>
   <div class="contents">
   <SidebarGroup>
-    <SidebarMenu class="px-2 mt-1">
+    <SidebarMenu>
       <SidebarMenuItem
         :class="navItemClass(route.path.endsWith('/dashboard'))"
       >
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
             :to="{ name: 'workspace-dashboard', params: { workspaceId } }"
-            class="w-full cursor-pointer flex items-center gap-2 p-2"
+            class="w-full cursor-pointer"
           >
-            <LayoutDashboardIcon class="h-4 w-4 text-sidebar-foreground" />
+            <LayoutDashboardIcon class="text-sidebar-foreground" />
             <span>Dashboard</span>
           </NuxtLink>
         </SidebarMenuButton>
@@ -120,9 +120,9 @@ const editProject = async (project: Project) => {
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
             :to="{ name: 'workspace-projects', params: { workspaceId } }"
-            class="w-full cursor-pointer flex items-center gap-2 p-2"
+            class="w-full cursor-pointer"
           >
-            <FolderKanbanIcon class="h-4 w-4 text-sidebar-foreground" />
+            <FolderKanbanIcon class="text-sidebar-foreground" />
             <span>Projects</span>
           </NuxtLink>
         </SidebarMenuButton>
@@ -132,19 +132,20 @@ const editProject = async (project: Project) => {
 
   <SidebarGroup>
     <SidebarGroupLabel>
-      <div class="flex items-center justify-between w-full mb-2">
-        <span class="text-sidebar-foreground font-semibold text-[14px]"> Projects </span>
-        <PlusIcon
-          @click="
-            modalsStore.openModal('createProject', {
-              workspaceId: workspaceId,
-            })
-          "
-          class="w-6 h-6 text-sidebar-foreground ml-auto bg-sidebar-accent rounded-full p-1 cursor-pointer"
-        />
-      </div>
+      <span>Projects</span>
+      <button
+        type="button"
+        class="ml-auto flex size-5 items-center justify-center rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        @click="
+          modalsStore.openModal('createProject', {
+            workspaceId: workspaceId,
+          })
+        "
+      >
+        <PlusIcon class="size-3.5" />
+      </button>
     </SidebarGroupLabel>
-    <SidebarMenu class="px-2 mt-1">
+    <SidebarMenu>
       <SidebarMenuItem
         v-for="item in liveProjects"
         :key="item.id"
@@ -156,16 +157,8 @@ const editProject = async (project: Project) => {
         "
       >
         <SidebarMenuButton @click.prevent="handleSelectProject(item.id)">
-          <div class="w-full cursor-pointer flex items-center gap-2 p-2">
-            <component :is="projectIcon(item)" class="h-4 w-4 text-sidebar-foreground" />
-            <span>
-              {{
-                item.name.length > 15
-                  ? item.name.slice(0, 15) + "..."
-                  : item.name
-              }}
-            </span>
-          </div>
+          <component :is="projectIcon(item)" class="text-sidebar-foreground" />
+          <span>{{ item.name }}</span>
         </SidebarMenuButton>
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
@@ -219,21 +212,17 @@ const editProject = async (project: Project) => {
   </SidebarGroup>
 
   <SidebarGroup>
-    <SidebarGroupLabel>
-      <div class="flex items-center justify-between w-full mb-2">
-        <span class="text-sidebar-foreground font-semibold text-[14px]"> Workspace </span>
-      </div>
-    </SidebarGroupLabel>
-    <SidebarMenu class="px-2 mt-1">
+    <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+    <SidebarMenu>
       <SidebarMenuItem
         :class="navItemClass(route.path.includes('/members'))"
       >
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
             :to="{ name: 'workspace-members', params: { workspaceId } }"
-            class="w-full cursor-pointer flex items-center gap-2 p-2"
+            class="w-full cursor-pointer"
           >
-            <UsersIcon class="h-4 w-4 text-sidebar-foreground" />
+            <UsersIcon class="text-sidebar-foreground" />
             <span>People</span>
           </NuxtLink>
         </SidebarMenuButton>
@@ -244,9 +233,9 @@ const editProject = async (project: Project) => {
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
             :to="{ name: 'workspace-activities', params: { workspaceId } }"
-            class="w-full cursor-pointer flex items-center gap-2 p-2"
+            class="w-full cursor-pointer"
           >
-            <HistoryIcon class="h-4 w-4 text-sidebar-foreground" />
+            <HistoryIcon class="text-sidebar-foreground" />
             <span>Activities</span>
           </NuxtLink>
         </SidebarMenuButton>
@@ -257,9 +246,9 @@ const editProject = async (project: Project) => {
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
             :to="{ name: 'workspace-emails', params: { workspaceId } }"
-            class="w-full cursor-pointer flex items-center gap-2 p-2"
+            class="w-full cursor-pointer"
           >
-            <MailIcon class="h-4 w-4 text-sidebar-foreground" />
+            <MailIcon class="text-sidebar-foreground" />
             <span>Emails</span>
           </NuxtLink>
         </SidebarMenuButton>
@@ -271,9 +260,9 @@ const editProject = async (project: Project) => {
         <SidebarMenuButton as-child>
           <NuxtLink
             :to="{ name: 'workspace-billing', params: { workspaceId } }"
-            class="w-full cursor-pointer flex items-center gap-2 p-2"
+            class="w-full cursor-pointer"
           >
-            <CreditCardIcon class="h-4 w-4 text-sidebar-foreground" />
+            <CreditCardIcon class="text-sidebar-foreground" />
             <span>Billing</span>
           </NuxtLink>
         </SidebarMenuButton>
@@ -284,9 +273,9 @@ const editProject = async (project: Project) => {
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
             :to="{ name: 'workspace-archived', params: { workspaceId } }"
-            class="w-full cursor-pointer flex items-center gap-2 p-2"
+            class="w-full cursor-pointer"
           >
-            <ArchiveIcon class="h-4 w-4 text-sidebar-foreground" />
+            <ArchiveIcon class="text-sidebar-foreground" />
             <span>Archive</span>
           </NuxtLink>
         </SidebarMenuButton>
@@ -297,9 +286,9 @@ const editProject = async (project: Project) => {
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink
             :to="{ name: 'workspace-settings', params: { workspaceId } }"
-            class="w-full cursor-pointer flex items-center gap-2 p-2"
+            class="w-full cursor-pointer"
           >
-            <SettingsIcon class="h-4 w-4 text-sidebar-foreground" />
+            <SettingsIcon class="text-sidebar-foreground" />
             <span>Settings</span>
           </NuxtLink>
         </SidebarMenuButton>

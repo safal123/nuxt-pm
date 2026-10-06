@@ -52,13 +52,21 @@ const formSchema = toTypedSchema(
 const formKey = ref(0);
 const saving = ref(false);
 const savingView = ref(false);
+type SettingsTab = "general" | "defaults" | "people" | "calendar" | "archive";
+const tab = ref<SettingsTab>("general");
 
 watch(
   () => project.value?.id,
   (id) => {
-    if (id) formKey.value += 1;
+    if (!id) return;
+    formKey.value += 1;
+    tab.value = "general";
   },
 );
+
+watch(isCreator, (value) => {
+  if (!value && tab.value === "archive") tab.value = "general";
+});
 
 watch(
   [projectId, () => workspaceStore.getActiveWorkspace?.projects],
@@ -96,15 +104,18 @@ async function onSubmit(values: { name: string; description?: string | null }) {
   }
 }
 
-const sections = computed(() => [
-  { id: "general", label: "General", icon: FolderIcon },
-  { id: "defaults", label: "Defaults", icon: Settings2Icon },
-  { id: "people", label: "People", icon: UsersIcon },
-  { id: "calendar", label: "Calendar", icon: CalendarDaysIcon },
-  ...(isCreator.value
-    ? [{ id: "archive", label: "Archive", icon: ArchiveIcon }]
-    : []),
-]);
+const sections = computed(() => {
+  const items: { id: SettingsTab; label: string; icon: typeof FolderIcon }[] = [
+    { id: "general", label: "General", icon: FolderIcon },
+    { id: "defaults", label: "Defaults", icon: Settings2Icon },
+    { id: "people", label: "People", icon: UsersIcon },
+    { id: "calendar", label: "Calendar", icon: CalendarDaysIcon },
+  ];
+  if (isCreator.value) {
+    items.push({ id: "archive", label: "Archive", icon: ArchiveIcon });
+  }
+  return items;
+});
 
 const setDefaultView = async (value: unknown) => {
   if (value !== "board" && value !== "table" && value !== "calendar") return;
@@ -127,16 +138,11 @@ const setDefaultView = async (value: unknown) => {
 <template>
   <div class="flex h-full min-w-0 flex-col overflow-hidden">
     <div v-if="project" class="flex min-h-0 flex-1 flex-col">
-      <div class="mb-6 flex shrink-0 items-start justify-between gap-3">
-        <div class="min-w-0">
-          <h1 class="text-lg font-semibold tracking-tight text-foreground">
-            Project settings
-          </h1>
-          <p class="mt-1 text-sm text-muted-foreground">
-            Controls for {{ project.name }}.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" as-child>
+      <PageHeader
+        title="Project settings"
+        :description="`Controls for ${project.name}.`"
+      >
+        <Button variant="outline" as-child>
           <NuxtLink
             :to="{
               name: 'workspace-project',
@@ -146,28 +152,37 @@ const setDefaultView = async (value: unknown) => {
             Back to board
           </NuxtLink>
         </Button>
-      </div>
+      </PageHeader>
 
-      <div class="grid min-h-0 flex-1 items-start gap-8 lg:grid-cols-[13rem_minmax(0,1fr)]">
-        <nav class="flex shrink-0 gap-2 overflow-x-auto lg:sticky lg:top-0 lg:flex-col lg:overflow-visible">
-          <a
+      <div
+        class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card sm:flex-row"
+      >
+        <nav
+          class="flex shrink-0 gap-1 overflow-x-auto border-b border-border p-2.5 sm:w-44 sm:flex-col sm:border-b-0 sm:border-r"
+        >
+          <button
             v-for="section in sections"
             :key="section.id"
-            :href="`#${section.id}`"
-            class="inline-flex shrink-0 items-center gap-2 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+            type="button"
+            class="inline-flex h-8 shrink-0 items-center gap-2 rounded-lg px-2.5 text-[12px] font-medium transition-colors"
+            :class="
+              tab === section.id
+                ? 'bg-accent text-accent-foreground'
+                : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+            "
+            @click="tab = section.id"
           >
-            <component :is="section.icon" class="h-3.5 w-3.5" />
+            <component :is="section.icon" class="size-3.5" />
             {{ section.label }}
-          </a>
+          </button>
         </nav>
 
-        <div class="min-h-0 min-w-0 space-y-8 overflow-y-auto pb-10">
-          <section id="general" class="scroll-mt-20 space-y-3">
-            <div class="flex items-center gap-2">
-              <FolderIcon class="h-4 w-4 text-muted-foreground" />
-              <h2 class="text-sm font-semibold text-foreground">General</h2>
-            </div>
-            <div class="overflow-hidden rounded-xl border border-border bg-card">
+        <div class="min-h-0 min-w-0 flex-1 overflow-y-auto p-5">
+          <div v-if="tab === 'general'" class="space-y-4">
+            <PageSection
+              title="General"
+              description="Name and description shown in the sidebar and project list."
+            >
               <Form
                 :key="formKey"
                 v-slot="{ handleSubmit }"
@@ -178,7 +193,10 @@ const setDefaultView = async (value: unknown) => {
                   description: project.description ?? '',
                 }"
               >
-                <form class="space-y-5 p-4 sm:p-5" @submit="handleSubmit($event, onSubmit)">
+                <form
+                  class="space-y-3"
+                  @submit="handleSubmit($event, onSubmit)"
+                >
                   <FormField v-slot="{ componentField }" name="name">
                     <FormItem>
                       <FormLabel>Name</FormLabel>
@@ -202,105 +220,70 @@ const setDefaultView = async (value: unknown) => {
                       <FormMessage />
                     </FormItem>
                   </FormField>
-                  <div class="flex justify-end">
-                    <Button type="submit" :disabled="saving">
-                      {{ saving ? "Saving…" : "Save" }}
-                    </Button>
-                  </div>
+                  <Button type="submit" :disabled="saving">
+                    {{ saving ? "Saving…" : "Save" }}
+                  </Button>
                 </form>
               </Form>
-              <div class="grid gap-1 border-t border-border px-4 py-4 sm:grid-cols-[140px_1fr] sm:px-5">
-                <p class="text-sm text-muted-foreground">Created</p>
-                <p class="text-sm text-foreground">{{ createdLabel }}</p>
-              </div>
-            </div>
-          </section>
-
-          <section id="defaults" class="scroll-mt-20 space-y-3">
-            <div class="flex items-center gap-2">
-              <Settings2Icon class="h-4 w-4 text-muted-foreground" />
-              <h2 class="text-sm font-semibold text-foreground">Defaults</h2>
-            </div>
-            <div class="overflow-hidden rounded-xl border border-border bg-card">
               <div
-                class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+                class="grid gap-1 border-t border-border pt-3 sm:grid-cols-[140px_1fr]"
               >
-                <div class="min-w-0">
-                  <p class="text-sm font-medium text-foreground">Default view</p>
-                  <p class="mt-0.5 text-sm text-muted-foreground">
-                    Board, table, or calendar when someone opens this project.
-                    Anyone can still switch in the toolbar.
-                  </p>
-                </div>
-                <Tabs
-                  :model-value="project.settings?.defaultView ?? 'board'"
-                  @update:model-value="setDefaultView"
-                >
-                  <TabsList>
-                    <TabsTrigger value="board" :disabled="savingView">
-                      <span class="inline-flex items-center gap-1.5">
-                        <Columns3Icon class="h-3.5 w-3.5" />
-                        Board
-                      </span>
-                    </TabsTrigger>
-                    <TabsTrigger value="table" :disabled="savingView">
-                      <span class="inline-flex items-center gap-1.5">
-                        <Table2Icon class="h-3.5 w-3.5" />
-                        Table
-                      </span>
-                    </TabsTrigger>
-                    <TabsTrigger value="calendar" :disabled="savingView">
-                      <span class="inline-flex items-center gap-1.5">
-                        <CalendarDaysIcon class="h-3.5 w-3.5" />
-                        Calendar
-                      </span>
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <p class="text-[12px] text-muted-foreground">Created</p>
+                <p class="text-[13px] text-foreground">{{ createdLabel }}</p>
               </div>
-            </div>
-          </section>
+            </PageSection>
+          </div>
 
-          <section id="people" class="scroll-mt-20 space-y-3">
-            <div class="flex items-center gap-2">
-              <UsersIcon class="h-4 w-4 text-muted-foreground" />
-              <h2 class="text-sm font-semibold text-foreground">People</h2>
-            </div>
-            <div
-              class="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+          <div v-else-if="tab === 'defaults'" class="space-y-4">
+            <PageSection
+              title="Defaults"
+              description="Board, table, or calendar when someone opens this project. Anyone can still switch in the toolbar."
             >
-              <div class="min-w-0">
-                <p class="text-sm font-medium text-foreground">Project members</p>
-                <p class="mt-0.5 text-sm text-muted-foreground">
-                  People who can be assigned to cards on this board.
-                </p>
-              </div>
+              <Tabs
+                :model-value="project.settings?.defaultView ?? 'board'"
+                @update:model-value="setDefaultView"
+              >
+                <TabsList>
+                  <TabsTrigger value="board" :disabled="savingView">
+                    <Columns3Icon />
+                    Board
+                  </TabsTrigger>
+                  <TabsTrigger value="table" :disabled="savingView">
+                    <Table2Icon />
+                    Table
+                  </TabsTrigger>
+                  <TabsTrigger value="calendar" :disabled="savingView">
+                    <CalendarDaysIcon />
+                    Calendar
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </PageSection>
+          </div>
+
+          <div v-else-if="tab === 'people'" class="space-y-4">
+            <PageSection
+              title="People"
+              description="People who can be assigned to cards on this board."
+            >
               <div
-                class="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-xs font-medium shadow-sm hover:bg-accent"
+                class="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-[12px] font-medium shadow-sm hover:bg-accent"
               >
-                <LazyProjectMembersModal :project-id="project.id" :workspace-id="workspaceId" />
+                <LazyProjectMembersModal
+                  :project-id="project.id"
+                  :workspace-id="workspaceId"
+                />
               </div>
-            </div>
-          </section>
+            </PageSection>
+          </div>
 
-          <section id="calendar" class="scroll-mt-20 space-y-3">
-            <div class="flex items-center gap-2">
-              <CalendarDaysIcon class="h-4 w-4 text-muted-foreground" />
-              <h2 class="text-sm font-semibold text-foreground">Calendar</h2>
-            </div>
-            <div
-              class="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+          <div v-else-if="tab === 'calendar'" class="space-y-4">
+            <PageSection
+              title="Calendar"
+              description="Google calendars are connected from the calendar view. More providers will be added here."
             >
-              <div class="min-w-0">
-                <p class="text-sm font-medium text-foreground">Connected calendars</p>
-                <p class="mt-0.5 text-sm text-muted-foreground">
-                  Google calendars are connected from the calendar view. More
-                  providers will be added here.
-                </p>
-              </div>
               <Button
                 variant="outline"
-                size="sm"
                 as-child
                 @click="rememberView(project.id, 'calendar')"
               >
@@ -313,26 +296,16 @@ const setDefaultView = async (value: unknown) => {
                   Open calendar
                 </NuxtLink>
               </Button>
-            </div>
-          </section>
+            </PageSection>
+          </div>
 
-          <section v-if="isCreator" id="archive" class="scroll-mt-20 space-y-3">
-            <div class="flex items-center gap-2">
-              <ArchiveIcon class="h-4 w-4 text-muted-foreground" />
-              <h2 class="text-sm font-semibold text-foreground">Archive</h2>
-            </div>
-            <div
-              class="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+          <div v-else-if="tab === 'archive' && isCreator" class="space-y-4">
+            <PageSection
+              title="Archive"
+              description="Hide the board from the sidebar. You can restore it from Archive."
             >
-              <div class="min-w-0">
-                <p class="text-sm font-medium text-foreground">Archive this project</p>
-                <p class="mt-0.5 text-sm text-muted-foreground">
-                  Hide the board from the sidebar. You can restore it from Archive.
-                </p>
-              </div>
               <Button
                 variant="outline"
-                size="sm"
                 @click="
                   modalsStore.openModal('archiveProject', {
                     projectId: project.id,
@@ -342,8 +315,8 @@ const setDefaultView = async (value: unknown) => {
               >
                 Archive
               </Button>
-            </div>
-          </section>
+            </PageSection>
+          </div>
         </div>
       </div>
     </div>

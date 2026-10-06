@@ -7,8 +7,19 @@ import { workspaceCreateSchema } from "~/server/utils/schemas";
 const workspaceStore = useWorkspaceStore();
 const userStore = useUserStore();
 const creating = ref(false);
+const open = ref(false);
 
 const formSchema = toTypedSchema(workspaceCreateSchema.pick({ name: true }));
+
+const close = () => {
+  if (creating.value) return;
+  open.value = false;
+};
+
+const onOpen = (value: boolean) => {
+  if (value) open.value = true;
+  else close();
+};
 
 async function onSubmit(values: any) {
   if (creating.value) return;
@@ -18,6 +29,7 @@ async function onSubmit(values: any) {
     await userStore.updateUser({ activeWorkspaceId: workspace.id });
     await workspaceStore.setActiveWorkspace(workspace.id);
     toast.success("Workspace created");
+    open.value = false;
     await navigateTo({
       name: "workspace-dashboard",
       params: { workspaceId: workspace.id },
@@ -31,29 +43,36 @@ async function onSubmit(values: any) {
 </script>
 
 <template>
-  <BaseDialog title="Create Workspace">
-    <template #trigger>
-      <Button
-        size="sm"
-        class="w-full justify-start border border-dashed"
+  <Dialog :open="open" @update:open="onOpen">
+    <DialogTrigger as-child>
+      <button
+        type="button"
+        class="flex h-7 w-full items-center gap-1.5 rounded-md border border-dashed border-border px-2 text-left text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
       >
-        <PlusIcon class="h-4 w-4" />
-        Add Workspace
-      </Button>
-    </template>
-    <template #body>
+        <PlusIcon class="size-3.5" />
+        Add workspace
+      </button>
+    </DialogTrigger>
+    <DialogContent class="max-w-[500px]">
+      <DialogHeader>
+        <DialogTitle>Create workspace</DialogTitle>
+        <DialogDescription>
+          Add a workspace to switch between teams and boards.
+        </DialogDescription>
+      </DialogHeader>
+
       <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
         <form
           id="createWorkspaceForm"
-          class="py-4"
+          class="mt-4"
           @submit="handleSubmit($event, onSubmit)"
         >
           <FormField v-slot="{ componentField }" name="name">
             <FormItem>
-              <FormLabel>Workspace Name</FormLabel>
+              <FormLabel>Name</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="My Awesome Workspace"
+                  placeholder="My workspace"
                   v-bind="componentField"
                   :disabled="creating"
                 />
@@ -63,21 +82,25 @@ async function onSubmit(values: any) {
           </FormField>
         </form>
       </Form>
-    </template>
-    <template #footer>
-      <div class="flex gap-4">
-        <DialogClose as-child>
-          <Button size="sm" variant="destructive" :disabled="creating"> Cancel </Button>
-        </DialogClose>
+
+      <DialogFooter class="mt-4">
         <Button
-          size="sm"
+          type="button"
+          variant="outline"
+          :disabled="creating"
+          @click="close"
+        >
+          Cancel
+        </Button>
+        <Button
           type="submit"
+          size="xs"
           form="createWorkspaceForm"
           :disabled="creating"
         >
-          {{ creating ? "Creating..." : "Create" }}
+          {{ creating ? "Creating…" : "Create workspace" }}
         </Button>
-      </div>
-    </template>
-  </BaseDialog>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

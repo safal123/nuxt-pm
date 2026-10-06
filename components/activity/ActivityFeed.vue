@@ -27,8 +27,8 @@ const groups = computed(() => groupActivitiesByDate(props.activities));
 
 <template>
   <div class="overflow-hidden rounded-xl border border-border bg-card">
-    <div v-if="error" class="flex flex-col items-center gap-2 px-4 py-16 text-center">
-      <p class="text-sm text-muted-foreground">{{ error }}</p>
+    <div v-if="error" class="flex flex-col items-center gap-2 px-3 py-12 text-center">
+      <p class="text-[12px] text-muted-foreground">{{ error }}</p>
       <Button type="button" variant="outline" size="sm" @click="emit('retry')">
         Try again
       </Button>
@@ -41,27 +41,27 @@ const groups = computed(() => groupActivitiesByDate(props.activities));
       <div
         v-for="index in 6"
         :key="index"
-        class="flex items-start gap-3 px-4 py-3.5"
+        class="flex items-start gap-2.5 px-3 py-2.5"
       >
-        <Skeleton class="h-9 w-9 shrink-0 rounded-full" />
-        <div class="min-w-0 flex-1 space-y-2">
-          <Skeleton class="h-4 w-2/3" />
-          <Skeleton class="h-3 w-1/3" />
+        <Skeleton class="size-7 shrink-0 rounded-full" />
+        <div class="min-w-0 flex-1 space-y-1.5">
+          <Skeleton class="h-3.5 w-2/3" />
+          <Skeleton class="h-2.5 w-1/3" />
         </div>
       </div>
     </div>
 
     <div
       v-else-if="!activities.length"
-      class="flex flex-col items-center px-4 py-16 text-center"
+      class="flex flex-col items-center px-3 py-12 text-center"
     >
       <div
-        class="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
+        class="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground"
       >
-        <HistoryIcon class="h-5 w-5" />
+        <HistoryIcon class="size-4" />
       </div>
-      <p class="mt-3 text-sm font-medium text-foreground">No activity yet</p>
-      <p class="mt-1 max-w-sm text-sm text-muted-foreground">
+      <p class="mt-2.5 text-[13px] font-medium text-foreground">No activity yet</p>
+      <p class="mt-1 max-w-sm text-[12px] text-muted-foreground">
         Board changes, comments, and emails will show up here as the team works.
       </p>
     </div>
@@ -73,7 +73,7 @@ const groups = computed(() => groupActivitiesByDate(props.activities));
         class="border-b border-border last:border-b-0"
       >
         <p
-          class="sticky top-0 z-10 border-b border-border bg-muted/50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          class="sticky top-0 z-10 border-b border-border bg-muted/50 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
         >
           {{ group.label }}
         </p>

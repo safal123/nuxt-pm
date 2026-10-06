@@ -14,7 +14,7 @@ const TONE = {
   rose: 'bg-rose-50 text-rose-700 ring-rose-100 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-800',
   teal: 'bg-teal-50 text-teal-700 ring-teal-100 dark:bg-teal-950/50 dark:text-teal-300 dark:ring-teal-800',
   orange:
-    'bg-orange-50 text-orange-700 ring-orange-100 dark:bg-orange-950/50 dark:text-orange-300 dark:ring-orange-800',
+    'bg-zinc-100 text-zinc-700 ring-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-300 dark:ring-zinc-700',
   indigo:
     'bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:ring-indigo-800',
 } as const
@@ -73,7 +73,7 @@ const NODE: Record<Tone, string> = {
   rose: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
   teal: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300',
   orange:
-    'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+    'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
   indigo:
     'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
 }

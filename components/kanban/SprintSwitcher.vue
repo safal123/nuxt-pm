@@ -41,10 +41,9 @@ const selectView = async (next: SprintView) => {
       <Button
         type="button"
         variant="outline"
-        size="sm"
-        class="h-8 max-w-[15rem] gap-1.5 px-2"
+        class="max-w-[15rem] px-2"
       >
-        <TimerIcon class="h-3.5 w-3.5 text-muted-foreground" />
+        <TimerIcon class="text-muted-foreground" />
         <span class="min-w-0 truncate">{{ currentLabel }}</span>
         <span
           v-if="currentHint"
@@ -52,7 +51,7 @@ const selectView = async (next: SprintView) => {
         >
           · {{ currentHint }}
         </span>
-        <ChevronDownIcon class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <ChevronDownIcon class="shrink-0 text-muted-foreground" />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent
@@ -68,7 +67,7 @@ const selectView = async (next: SprintView) => {
         />
         <span class="flex min-w-0 flex-col">
           <span>{{ sprintStore.current?.name || "Current sprint" }}</span>
-          <span class="text-xs text-muted-foreground">
+          <span class="text-[11px] text-muted-foreground">
             {{
               sprintStore.current
                 ? sprintRangeLabel(sprintStore.current) ||
@@ -90,7 +89,7 @@ const selectView = async (next: SprintView) => {
         />
         <span class="flex min-w-0 flex-col">
           <span>Backlog</span>
-          <span class="text-xs text-muted-foreground">
+          <span class="text-[11px] text-muted-foreground">
             Cards not in a sprint
           </span>
         </span>
@@ -110,7 +109,7 @@ const selectView = async (next: SprintView) => {
           />
           <span class="flex min-w-0 flex-col">
             <span class="truncate">{{ sprint.name }}</span>
-            <span class="text-xs text-muted-foreground">Planned</span>
+            <span class="text-[11px] text-muted-foreground">Planned</span>
           </span>
         </DropdownMenuItem>
       </template>
@@ -132,7 +131,7 @@ const selectView = async (next: SprintView) => {
           />
           <span class="flex min-w-0 flex-col">
             <span class="truncate">{{ sprint.name }}</span>
-            <span class="text-xs text-muted-foreground">
+            <span class="text-[11px] text-muted-foreground">
               {{ sprintRangeLabel(sprint) || "Completed" }}
               · {{ sprint.doneCount }}/{{ sprint.taskCount }} done
             </span>

@@ -10,19 +10,19 @@ defineProps<{
   <div>
     <p
       v-if="preview.kind === 'comment'"
-      class="mt-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm leading-5 text-foreground whitespace-pre-wrap"
+      class="mt-1.5 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-[12px] leading-4 text-foreground whitespace-pre-wrap"
     >
       {{ preview.text }}
     </p>
     <p
       v-else-if="preview.kind === 'note'"
-      class="mt-1.5 text-xs text-muted-foreground"
+      class="mt-1 text-[12px] text-muted-foreground"
     >
       {{ preview.text }}
     </p>
     <div
       v-else-if="preview.kind === 'swap'"
-      class="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1 text-xs"
+      class="mt-1.5 inline-flex max-w-full items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[12px]"
     >
       <span class="shrink-0 font-medium text-muted-foreground">{{
         preview.label
@@ -41,12 +41,12 @@ defineProps<{
     </div>
     <div
       v-else-if="preview.kind === 'dates'"
-      class="mt-2 overflow-hidden rounded-md border border-border bg-muted/40"
+      class="mt-1.5 overflow-hidden rounded-md border border-border bg-muted/40"
     >
       <div
         v-for="(change, index) in preview.changes"
         :key="`${change.field}-${index}`"
-        class="flex items-center gap-3 px-3 py-1.5 text-xs"
+        class="flex items-center gap-2.5 px-2.5 py-1 text-[12px]"
         :class="index ? 'border-t border-border' : ''"
       >
         <span class="w-12 shrink-0 font-medium text-muted-foreground">{{

@@ -105,12 +105,11 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
         <PopoverTrigger as-child>
           <Button
             type="button"
-            size="sm"
             variant="outline"
-            class="h-8 px-2"
+            size="icon"
             aria-label="Filters"
           >
-            <ListFilterIcon class="h-3.5 w-3.5" />
+            <ListFilterIcon />
             <span
               v-if="filterCount"
               class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] text-background"
@@ -119,45 +118,48 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
             </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent class="w-[min(18rem,calc(100vw-2rem))] p-3" align="end">
+        <PopoverContent
+          class="w-[min(18rem,calc(100vw-2rem))] rounded-xl p-3"
+          align="end"
+        >
           <div class="space-y-3">
             <div>
-              <p class="mb-1.5 text-xs font-medium text-muted-foreground">
+              <p class="mb-1.5 text-[12px] font-medium text-muted-foreground">
                 Quick
               </p>
               <div class="flex flex-wrap gap-1">
                 <Button
                   type="button"
-                  size="sm"
+                  size="xs"
                   :variant="query.assignee === 'me' ? 'secondary' : 'outline'"
                   @click="toggleAssignee('me')"
                 >
-                  <UserIcon class="h-3.5 w-3.5" />
+                  <UserIcon />
                   Assigned to me
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
+                  size="xs"
                   :variant="query.completion === 'open' ? 'secondary' : 'outline'"
                   @click="toggleCompletion('open')"
                 >
-                  <CircleDashedIcon class="h-3.5 w-3.5" />
+                  <CircleDashedIcon />
                   Incomplete
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
+                  size="xs"
                   :variant="query.completion === 'done' ? 'secondary' : 'outline'"
                   @click="toggleCompletion('done')"
                 >
-                  <CheckCircle2Icon class="h-3.5 w-3.5" />
+                  <CheckCircle2Icon />
                   Completed
                 </Button>
               </div>
             </div>
 
             <div>
-              <p class="mb-1.5 text-xs font-medium text-muted-foreground">
+              <p class="mb-1.5 text-[12px] font-medium text-muted-foreground">
                 Due date
               </p>
               <div class="flex flex-wrap gap-1">
@@ -165,7 +167,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
                   v-for="item in DUE_OPTIONS"
                   :key="item.id"
                   type="button"
-                  size="sm"
+                  size="xs"
                   :variant="query.due === item.id ? 'secondary' : 'outline'"
                   @click="toggleDue(item.id)"
                 >
@@ -175,13 +177,13 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
             </div>
 
             <div>
-              <p class="mb-1.5 text-xs font-medium text-muted-foreground">
+              <p class="mb-1.5 text-[12px] font-medium text-muted-foreground">
                 Assignee
               </p>
               <div class="flex flex-wrap gap-1">
                 <Button
                   type="button"
-                  size="sm"
+                  size="xs"
                   :variant="query.assignee === 'unassigned' ? 'secondary' : 'outline'"
                   @click="toggleAssignee('unassigned')"
                 >
@@ -191,7 +193,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
             </div>
 
             <div>
-              <p class="mb-1.5 text-xs font-medium text-muted-foreground">
+              <p class="mb-1.5 text-[12px] font-medium text-muted-foreground">
                 Priority
               </p>
               <div class="flex flex-wrap gap-1">
@@ -199,7 +201,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
                   v-for="item in TASK_PRIORITIES"
                   :key="item.id"
                   type="button"
-                  size="sm"
+                  size="xs"
                   :variant="
                     query.priorities.includes(item.id) ? 'secondary' : 'outline'
                   "
@@ -211,7 +213,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
             </div>
 
             <div v-if="labels.length">
-              <p class="mb-1.5 text-xs font-medium text-muted-foreground">
+              <p class="mb-1.5 text-[12px] font-medium text-muted-foreground">
                 Labels
               </p>
               <div class="flex flex-wrap gap-1">
@@ -219,14 +221,14 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
                   v-for="label in labels"
                   :key="label.id"
                   type="button"
-                  size="sm"
+                  size="xs"
                   :variant="
                     query.labelIds.includes(label.id) ? 'secondary' : 'outline'
                   "
                   @click="toggleLabel(label.id)"
                 >
                   <span
-                    class="h-2 w-2 rounded-full"
+                    class="size-2 rounded-full"
                     :style="{ backgroundColor: label.color }"
                   />
                   {{ label.name }}
@@ -241,12 +243,11 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
         <DropdownMenuTrigger as-child>
           <Button
             type="button"
-            size="sm"
             variant="outline"
-            class="h-8 px-2"
+            size="icon"
             aria-label="Sort cards"
           >
-            <SlidersHorizontalIcon class="h-3.5 w-3.5" />
+            <SlidersHorizontalIcon />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent class="w-56" align="end">
@@ -263,7 +264,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
             >
               <span class="flex flex-col">
                 <span>{{ item.label }}</span>
-                <span class="text-xs text-muted-foreground">{{ item.hint }}</span>
+                <span class="text-[11px] text-muted-foreground">{{ item.hint }}</span>
               </span>
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
@@ -272,7 +273,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
 
       <p
         v-if="isFiltered || sprintStore.viewingClosed || !canDrag"
-        class="flex min-w-0 flex-1 basis-full items-center gap-2 text-xs text-muted-foreground sm:basis-auto sm:justify-end"
+        class="flex min-w-0 flex-1 basis-full items-center gap-2 text-[12px] text-muted-foreground sm:basis-auto sm:justify-end"
       >
         <span v-if="isFiltered">{{ matchCount }} of {{ totalCount }}</span>
         <span v-else-if="sprintStore.viewingClosed">Previous sprint</span>
@@ -281,11 +282,10 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
           v-if="isFiltered"
           type="button"
           variant="ghost"
-          size="sm"
-          class="h-6 px-1.5 text-xs"
+          size="xs"
           @click="clear"
         >
-          <XIcon class="h-3 w-3" />
+          <XIcon />
           Clear
         </Button>
       </p>

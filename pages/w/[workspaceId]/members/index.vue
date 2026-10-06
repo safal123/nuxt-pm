@@ -45,36 +45,30 @@ const openAdd = () => modalsStore.openModal("workspaceMembers");
 
 <template>
   <div class="h-full min-w-0 overflow-y-auto">
-    <div class="mb-5 flex items-end justify-between gap-3">
-      <div>
-        <h1 class="text-xl font-semibold tracking-tight text-foreground">
-          People
-        </h1>
-        <p class="mt-1 text-sm text-muted-foreground">
-          Everyone in this workspace. Open a profile to see their projects and
-          activity.
-        </p>
-      </div>
-      <Button size="sm" @click="openAdd">
-        <UserPlusIcon class="h-4 w-4" />
+    <PageHeader
+      title="People"
+      description="Everyone in this workspace. Open a profile to see their projects and activity."
+    >
+      <Button @click="openAdd">
+        <UserPlusIcon />
         Add people
       </Button>
-    </div>
+    </PageHeader>
 
     <PageStats :items="statItems" />
 
-    <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
+    <div class="mt-4 overflow-hidden rounded-xl border border-border bg-card">
       <div
         v-if="!members.length"
-        class="flex flex-col items-center px-4 py-16 text-center"
+        class="flex flex-col items-center px-3 py-12 text-center"
       >
         <div
-          class="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
+          class="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground"
         >
-          <UsersIcon class="h-5 w-5" />
+          <UsersIcon class="size-4" />
         </div>
-        <p class="mt-3 text-sm font-medium text-foreground">No people yet</p>
-        <p class="mt-1 max-w-sm text-sm text-muted-foreground">
+        <p class="mt-2.5 text-[13px] font-medium text-foreground">No people yet</p>
+        <p class="mt-1 max-w-sm text-[12px] text-muted-foreground">
           Invite teammates to collaborate in this workspace.
         </p>
       </div>
@@ -86,10 +80,10 @@ const openAdd = () => modalsStore.openModal("workspaceMembers");
             name: 'workspace-member',
             params: { workspaceId, userId: person.id },
           }"
-          class="flex items-center gap-3 px-4 py-3.5 hover:bg-accent/50"
+          class="flex items-center gap-2.5 px-3 py-2.5 hover:bg-accent/50"
         >
           <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 text-[12px] font-semibold text-orange-700 dark:bg-orange-500/20 dark:text-orange-300"
+            class="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[10px] font-medium text-foreground"
           >
             <img
               v-if="person.imageUrl"
@@ -100,16 +94,16 @@ const openAdd = () => modalsStore.openModal("workspaceMembers");
             <span v-else>{{ personInitials(person) }}</span>
           </div>
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium text-foreground">
+            <p class="truncate text-[13px] font-medium text-foreground">
               {{ person.name || person.email }}
               <span
                 v-if="isYou(person)"
-                class="ml-1.5 text-xs font-normal text-muted-foreground"
+                class="ml-1.5 text-[11px] font-normal text-muted-foreground"
               >
                 You
               </span>
             </p>
-            <p class="truncate text-xs text-muted-foreground">
+            <p class="truncate text-[12px] text-muted-foreground">
               {{ person.email }}
             </p>
           </div>

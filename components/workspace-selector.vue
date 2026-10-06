@@ -45,13 +45,18 @@ const handleWorkspaceSelect = async (workspace: Workspace) => {
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             <div
-              class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
+              class="flex aspect-square size-7 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"
             >
-              <GalleryVerticalEnd class="size-4" />
+              <GalleryVerticalEnd class="size-3.5" />
             </div>
-            <div class="flex flex-col gap-0.5 leading-none">
-              <span>{{ activeWorkspace?.name || "Select Workspace" }}</span>
-              <span v-if="activeWorkspace?.createdAt" class="text-xs text-muted-foreground">
+            <div class="grid min-w-0 flex-1 text-left leading-tight">
+              <span class="truncate text-[13px] font-medium">{{
+                activeWorkspace?.name || "Select Workspace"
+              }}</span>
+              <span
+                v-if="activeWorkspace?.createdAt"
+                class="truncate text-[11px] text-muted-foreground"
+              >
                 Joined
                 {{
                   formatDistance(
@@ -61,22 +66,27 @@ const handleWorkspaceSelect = async (workspace: Workspace) => {
                 }}
               </span>
             </div>
-            <ChevronsUpDown class="ml-auto size-4" />
+            <ChevronsUpDown class="ml-auto size-3.5" />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          class="w-[--reka-dropdown-menu-trigger-width] min-w-[240px]"
-          align="center"
+          class="w-[--reka-dropdown-menu-trigger-width] min-w-[240px] rounded-xl p-1"
+          align="start"
         >
           <DropdownMenuItem
             v-for="workspace in workspaces"
             :key="workspace.id"
+            class="px-2 py-1 text-[13px] [&>svg]:size-3.5"
             @select="handleWorkspaceSelect(workspace)"
           >
             {{ workspace.name }}
-            <Check v-if="workspace.id === activeWorkspaceId" class="ml-auto" />
+            <Check
+              v-if="workspace.id === activeWorkspaceId"
+              class="ml-auto size-3.5 text-muted-foreground"
+            />
           </DropdownMenuItem>
-          <DropdownMenuItem @select.prevent>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem class="p-0 focus:bg-transparent" @select.prevent>
             <CreateWorkspaceModal />
           </DropdownMenuItem>
         </DropdownMenuContent>

@@ -34,7 +34,7 @@ await consume();
 
     <SidebarInset class="min-w-0 overflow-hidden">
       <header
-        class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-6"
+        class="sticky top-0 z-20 flex h-12 shrink-0 items-center gap-2 border-b bg-background/95 px-3 text-[13px] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-4"
       >
         <SidebarTrigger class="-ml-1 shrink-0" />
         <Separator orientation="vertical" class="hidden h-4 sm:block" />
@@ -60,7 +60,7 @@ await consume();
 
       <WorkspaceModals />
 
-      <main class="min-w-0 flex-1 overflow-hidden p-4 md:p-6">
+      <main class="app-page min-w-0 flex-1 overflow-hidden p-3 md:p-4">
         <slot />
       </main>
     </SidebarInset>

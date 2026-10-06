@@ -44,6 +44,13 @@ export const serializeAppUser = (user: {
   activeProjectId: string | null
   timezone?: string | null
   reminderEmails?: boolean
+  status?: {
+    availability: 'online' | 'offline'
+    emoji: string
+    text: string
+    clearAfter: 'never' | '30m' | '1h' | '4h' | 'today' | 'week'
+    expiresAt: string | null
+  }
 }) => ({
   id: user.id,
   email: user.email,
@@ -56,4 +63,5 @@ export const serializeAppUser = (user: {
   activeProjectId: user.activeProjectId,
   timezone: user.timezone ?? null,
   reminderEmails: user.reminderEmails ?? true,
+  status: user.status,
 })

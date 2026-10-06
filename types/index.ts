@@ -35,6 +35,13 @@ export interface User {
   activeProjectId: string | null
   timezone?: string | null
   reminderEmails?: boolean
+  status?: {
+    availability: 'online' | 'offline'
+    emoji: string
+    text: string
+    clearAfter: 'never' | '30m' | '1h' | '4h' | 'today' | 'week'
+    expiresAt: string | null
+  }
   createdAt?: Date | string
   updatedAt?: Date | string
 }

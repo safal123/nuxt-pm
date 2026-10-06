@@ -99,22 +99,22 @@ const earlierLabel = (item: TaskSummary) => {
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-4">
     <section
       v-if="locked"
-      class="flex flex-col items-start gap-3 rounded-xl border border-primary/20 bg-primary/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between"
+      class="flex flex-col items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/[0.04] p-3 sm:flex-row sm:items-center sm:justify-between"
     >
-      <div class="flex items-start gap-3">
+      <div class="flex items-start gap-2.5">
         <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"
+          class="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"
         >
-          <LockIcon class="h-4 w-4" />
+          <LockIcon class="size-3.5" />
         </div>
         <div>
-          <p class="text-sm font-medium text-foreground">
+          <p class="text-[13px] font-medium text-foreground">
             AI summaries are on Team and Business
           </p>
-          <p class="mt-0.5 text-sm text-muted-foreground">
+          <p class="mt-0.5 text-[12px] text-muted-foreground">
             Get a daily briefing of progress and next steps for every card.
           </p>
         </div>
@@ -122,8 +122,7 @@ const earlierLabel = (item: TaskSummary) => {
       <Button
         v-if="workspaceStore.activeWorkspaceId"
         as-child
-        size="sm"
-        class="h-8 shrink-0"
+        class="shrink-0"
       >
         <NuxtLink
           :to="{
@@ -138,13 +137,13 @@ const earlierLabel = (item: TaskSummary) => {
 
     <div v-else class="flex items-start justify-between gap-3">
       <div class="min-w-0">
-        <p class="text-sm text-muted-foreground">
+        <p class="text-[12px] text-muted-foreground">
           One new briefing per card per day. Earlier briefings stay on the
           card so you can track how the work has moved.
         </p>
         <p
           v-if="generatedLabel"
-          class="mt-1 text-xs text-muted-foreground"
+          class="mt-1 text-[11px] text-muted-foreground"
           :title="generatedLabel.exact"
         >
           Latest {{ generatedLabel.relative }}
@@ -153,8 +152,7 @@ const earlierLabel = (item: TaskSummary) => {
       </div>
       <Button
         type="button"
-        size="sm"
-        class="h-8 shrink-0"
+        class="shrink-0"
         :variant="summary ? 'outline' : 'default'"
         :disabled="generating || limitedToday"
         @click="generateSummary"
@@ -173,51 +171,51 @@ const earlierLabel = (item: TaskSummary) => {
       </Button>
     </div>
 
-    <section class="rounded-xl border border-border bg-card p-4">
+    <section class="rounded-xl border border-border bg-card p-3">
       <div class="flex items-center gap-2">
         <div
-          class="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"
+          class="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary"
         >
-          <ListChecksIcon class="h-3.5 w-3.5" />
+          <ListChecksIcon class="size-3.5" />
         </div>
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3 class="text-[12px] font-medium text-muted-foreground">
           Progress
         </h3>
       </div>
       <ul
         v-if="progressBullets.length"
-        class="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-foreground marker:text-primary/70"
+        class="mt-2.5 list-disc space-y-1 pl-5 text-[13px] leading-5 text-foreground marker:text-primary/70"
       >
         <li v-for="(item, index) in progressBullets" :key="index">
           {{ item }}
         </li>
       </ul>
-      <p v-else class="mt-3 text-sm leading-6 text-muted-foreground">
+      <p v-else class="mt-2.5 text-[13px] leading-5 text-muted-foreground">
         Generate a briefing from the description, comments, files, and activity
         so the team can see where this card stands.
       </p>
     </section>
 
-    <section class="rounded-xl border border-border bg-card p-4">
+    <section class="rounded-xl border border-border bg-card p-3">
       <div class="flex items-center gap-2">
         <div
-          class="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary"
+          class="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary"
         >
-          <ArrowRightIcon class="h-3.5 w-3.5" />
+          <ArrowRightIcon class="size-3.5" />
         </div>
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3 class="text-[12px] font-medium text-muted-foreground">
           Further action
         </h3>
       </div>
       <ol
         v-if="actionBullets.length"
-        class="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-6 text-foreground marker:font-semibold marker:text-primary"
+        class="mt-2.5 list-decimal space-y-1 pl-5 text-[13px] leading-5 text-foreground marker:font-semibold marker:text-primary"
       >
         <li v-for="(item, index) in actionBullets" :key="index">
           {{ item }}
         </li>
       </ol>
-      <p v-else class="mt-3 text-sm leading-6 text-muted-foreground">
+      <p v-else class="mt-2.5 text-[13px] leading-5 text-muted-foreground">
         Generate concrete next steps, including who should take them when that
         is clear.
       </p>
@@ -225,11 +223,11 @@ const earlierLabel = (item: TaskSummary) => {
 
     <section
       v-if="earlierSummaries.length"
-      class="space-y-3 rounded-xl border border-border bg-muted/40 p-4"
+      class="space-y-2.5 rounded-xl border border-border bg-muted/40 p-3"
     >
       <div class="flex items-center gap-2">
-        <HistoryIcon class="h-3.5 w-3.5 text-primary" />
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <HistoryIcon class="size-3.5 text-primary" />
+        <h3 class="text-[12px] font-medium text-muted-foreground">
           Earlier briefings
         </h3>
       </div>
@@ -242,7 +240,7 @@ const earlierLabel = (item: TaskSummary) => {
           {{ earlierLabel(item) }}
         </p>
         <ul
-          class="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-foreground marker:text-primary/70"
+          class="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-5 text-foreground marker:text-primary/70"
         >
           <li v-for="(line, index) in summaryBullets(item.progress)" :key="`p-${index}`">
             {{ line }}
@@ -250,7 +248,7 @@ const earlierLabel = (item: TaskSummary) => {
         </ul>
         <p class="mt-2 text-[11px] font-medium text-muted-foreground">Next</p>
         <ol
-          class="mt-1 list-decimal space-y-1 pl-5 text-sm leading-6 text-muted-foreground"
+          class="mt-1 list-decimal space-y-1 pl-5 text-[13px] leading-5 text-muted-foreground"
         >
           <li v-for="(line, index) in summaryBullets(item.furtherAction)" :key="`a-${index}`">
             {{ line }}
@@ -259,7 +257,7 @@ const earlierLabel = (item: TaskSummary) => {
       </article>
     </section>
 
-    <p class="text-xs leading-5 text-muted-foreground">
+    <p class="text-[11px] leading-4 text-muted-foreground">
       Uses
       <template v-for="(item, index) in contextItems" :key="item">
         <span v-if="index"> · </span>

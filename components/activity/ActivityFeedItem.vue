@@ -46,14 +46,14 @@ const openProject = (event: Event) => {
 
 <template>
   <div
-    class="flex w-full cursor-pointer items-start gap-3 px-4 py-3.5 text-left hover:bg-accent/50"
+    class="flex w-full cursor-pointer items-start gap-2.5 px-3 py-2.5 text-left hover:bg-accent/50"
     role="button"
     tabindex="0"
     @click="emit('select')"
     @keyup.enter="emit('select')"
   >
     <div
-      class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 text-[11px] font-semibold text-orange-700 dark:bg-orange-500/20 dark:text-orange-300"
+      class="mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[10px] font-medium text-foreground"
     >
       <img
         v-if="activity.user.imageUrl"
@@ -65,39 +65,39 @@ const openProject = (event: Event) => {
     </div>
 
     <div class="min-w-0 flex-1">
-      <div class="flex items-start justify-between gap-3">
-        <p class="min-w-0 text-sm leading-5">
+      <div class="flex items-start justify-between gap-2">
+        <p class="min-w-0 text-[13px] leading-5">
           <NuxtLink
             v-if="profileHref"
             :to="profileHref"
-            class="font-semibold text-foreground hover:underline"
+            class="font-medium text-foreground hover:underline"
             @click.stop
           >
             {{ activity.user.name || activity.user.email }}
           </NuxtLink>
-          <span v-else class="font-semibold text-foreground">{{
+          <span v-else class="font-medium text-foreground">{{
             activity.user.name || activity.user.email
           }}</span>
           {{ " " }}
           <span class="text-muted-foreground">{{ activity.message }}</span>
         </p>
         <span
-          class="shrink-0 pt-0.5 text-xs text-muted-foreground"
+          class="shrink-0 pt-0.5 text-[11px] tabular-nums text-muted-foreground"
           :title="when.title"
         >
           {{ when.label }}
         </span>
       </div>
 
-      <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+      <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
         <span :class="activityTypeChip(activity.type)">
-          <ActivityTypeIcon :type="activity.type" class="h-3 w-3" />
+          <ActivityTypeIcon :type="activity.type" class="size-3" />
           {{ activityTypeLabel(activity.type) }}
         </span>
         <button
           v-if="activity.task"
           type="button"
-          class="max-w-[16rem] truncate text-xs font-medium text-foreground hover:underline"
+          class="max-w-[16rem] truncate text-[12px] font-medium text-foreground hover:underline"
           :title="`Card timeline: ${activity.task.title}`"
           @click="openTask"
         >
@@ -105,14 +105,14 @@ const openProject = (event: Event) => {
         </button>
         <span
           v-else-if="subject"
-          class="max-w-[16rem] truncate text-xs text-muted-foreground"
+          class="max-w-[16rem] truncate text-[12px] text-muted-foreground"
         >
           {{ subject }}
         </span>
         <button
           v-if="activity.project?.id"
           type="button"
-          class="max-w-[12rem] truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+          class="max-w-[12rem] truncate text-[12px] text-muted-foreground hover:text-foreground hover:underline"
           :title="`Project timeline: ${activity.project.name}`"
           @click="openProject"
         >

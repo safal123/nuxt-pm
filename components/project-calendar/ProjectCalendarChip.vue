@@ -45,7 +45,7 @@ const chipStyle = computed(() => {
     :title="entry.overdue ? `Overdue · ${entry.title}` : entry.title"
     :class="
       cn(
-        'flex w-full min-w-0 items-center gap-1 rounded-[5px] border-l-[3px] px-1.5 py-px text-left text-xs leading-5 text-foreground transition-[filter,box-shadow] hover:shadow-sm hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:brightness-125',
+        'flex w-full min-w-0 items-center gap-1 rounded-[5px] border-l-[3px] px-1.5 py-px text-left text-[11px] leading-4 text-foreground transition-[filter,box-shadow] hover:shadow-sm hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:brightness-125',
         isBlock && 'font-medium',
         entry.editable && 'cursor-grab active:cursor-grabbing',
         entry.done && 'text-muted-foreground',

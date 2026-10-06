@@ -94,7 +94,7 @@ const removeMember = async (person: Member) => {
             class="flex items-center gap-3 rounded-lg px-2 py-2"
           >
             <div
-              class="h-8 w-8 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300 text-[11px] font-semibold overflow-hidden flex items-center justify-center"
+              class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-muted text-[11px] font-semibold text-foreground"
             >
               <img v-if="person.imageUrl" :src="person.imageUrl" class="h-full w-full object-cover" />
               <span v-else>{{ initials(person) }}</span>
@@ -111,7 +111,7 @@ const removeMember = async (person: Member) => {
             </NuxtLink>
             <span
               v-if="person.isOwner"
-              class="text-[11px] font-semibold uppercase tracking-wide text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/20 px-2 py-0.5 rounded"
+              class="rounded bg-muted px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-foreground"
             >
               Owner
             </span>

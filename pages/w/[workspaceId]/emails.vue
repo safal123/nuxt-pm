@@ -220,41 +220,32 @@ const counterpart = (item: EmailLogItem) =>
 
 <template>
   <div class="h-full min-w-0 overflow-y-auto">
-    <div
-      class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
+    <PageHeader
+      title="Emails"
+      :description="
+        view === 'inbox'
+          ? 'Workspace emails sent to you, without opening your mail app.'
+          : view === 'sent'
+            ? 'Emails you sent, with a preview of the template that went out.'
+            : 'Templates you can send to teammates from this workspace.'
+      "
     >
-      <div>
-        <h1 class="text-xl font-semibold tracking-tight text-foreground">
-          Emails
-        </h1>
-        <p class="mt-1 text-sm text-muted-foreground">
-          {{
-            view === "inbox"
-              ? "Workspace emails sent to you, without opening your mail app."
-              : view === "sent"
-                ? "Emails you sent, with a preview of the template that went out."
-                : "Templates you can send to teammates from this workspace."
-          }}
-        </p>
-      </div>
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Button @click="openCompose('custom')">Send email</Button>
-        <Tabs :model-value="view" @update:model-value="onView">
-          <TabsList>
-            <TabsTrigger value="inbox">Inbox</TabsTrigger>
-            <TabsTrigger value="sent">Sent</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-    </div>
+      <Button size="xs" @click="openCompose('custom')">Send email</Button>
+      <Tabs :model-value="view" @update:model-value="onView">
+        <TabsList>
+          <TabsTrigger value="inbox">Inbox</TabsTrigger>
+          <TabsTrigger value="sent">Sent</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
+        </TabsList>
+      </Tabs>
+    </PageHeader>
 
     <template v-if="view === 'inbox' || view === 'sent'">
       <PageStats :items="statItems" :loading="loading && !emails.length" />
 
-      <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+      <div class="mt-4 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-end">
         <Select :model-value="projectId" @update:model-value="onProject">
-          <SelectTrigger class="h-9 w-full sm:w-[200px]">
+          <SelectTrigger class="h-8 w-full text-[12px] sm:w-[200px]">
             <SelectValue placeholder="All projects" />
           </SelectTrigger>
           <SelectContent>
@@ -271,7 +262,7 @@ const counterpart = (item: EmailLogItem) =>
           </SelectContent>
         </Select>
         <Select :model-value="templateId" @update:model-value="onTemplate">
-          <SelectTrigger class="h-9 w-full sm:w-[220px]">
+          <SelectTrigger class="h-8 w-full text-[12px] sm:w-[220px]">
             <SelectValue placeholder="All templates" />
           </SelectTrigger>
           <SelectContent>
@@ -294,27 +285,27 @@ const counterpart = (item: EmailLogItem) =>
           <div
             v-for="index in 5"
             :key="index"
-            class="flex items-start gap-3 px-4 py-3.5"
+            class="flex items-start gap-2.5 px-3 py-2.5"
           >
-            <Skeleton class="h-9 w-9 shrink-0 rounded-full" />
-            <div class="min-w-0 flex-1 space-y-2">
-              <Skeleton class="h-4 w-2/3" />
-              <Skeleton class="h-3 w-1/3" />
+            <Skeleton class="size-7 shrink-0 rounded-full" />
+            <div class="min-w-0 flex-1 space-y-1.5">
+              <Skeleton class="h-3.5 w-2/3" />
+              <Skeleton class="h-2.5 w-1/3" />
             </div>
           </div>
         </div>
 
         <div
           v-else-if="!emails.length"
-          class="flex flex-col items-center px-4 py-16 text-center"
+          class="flex flex-col items-center px-3 py-12 text-center"
         >
           <div
-            class="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
+            class="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground"
           >
-            <MailIcon class="h-5 w-5" />
+            <MailIcon class="size-4" />
           </div>
-          <p class="mt-3 text-sm font-medium text-foreground">No emails yet</p>
-          <p class="mt-1 max-w-sm text-sm text-muted-foreground">
+          <p class="mt-2.5 text-[13px] font-medium text-foreground">No emails yet</p>
+          <p class="mt-1 max-w-sm text-[12px] text-muted-foreground">
             {{
               view === "inbox"
                 ? "Invites, notices, and messages teammates send you will show up here."
@@ -330,7 +321,7 @@ const counterpart = (item: EmailLogItem) =>
             class="border-b border-border last:border-b-0"
           >
             <p
-              class="sticky top-0 z-10 border-b border-border bg-muted/50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              class="sticky top-0 z-10 border-b border-border bg-muted/50 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
             >
               {{ group.label }}
             </p>
@@ -338,37 +329,37 @@ const counterpart = (item: EmailLogItem) =>
               v-for="item in group.items"
               :key="item.id"
               type="button"
-              class="flex w-full items-start gap-3 px-4 py-3.5 text-left hover:bg-accent/50"
+              class="flex w-full items-start gap-2.5 px-3 py-2.5 text-left hover:bg-accent/50"
               @click="openEmail(item)"
             >
               <div
-                class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 text-[11px] font-semibold text-orange-700 dark:bg-orange-500/20 dark:text-orange-300"
+                class="mt-0.5 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[10px] font-medium text-foreground"
               >
                 {{ personInitials({ name: counterpart(item), email: item.toEmail }) }}
               </div>
               <div class="min-w-0 flex-1">
-                <div class="flex items-start justify-between gap-3">
-                  <p class="min-w-0 text-sm font-medium text-foreground">
+                <div class="flex items-start justify-between gap-2">
+                  <p class="min-w-0 text-[13px] font-medium text-foreground">
                     {{ counterpart(item) }}
                   </p>
                   <span
-                    class="shrink-0 pt-0.5 text-xs tabular-nums text-muted-foreground"
+                    class="shrink-0 pt-0.5 text-[11px] tabular-nums text-muted-foreground"
                     :title="when(item.createdAt).title"
                   >
                     {{ when(item.createdAt).label }}
                   </span>
                 </div>
-                <p class="mt-0.5 truncate text-sm text-foreground">
+                <p class="mt-0.5 truncate text-[13px] text-foreground">
                   {{ item.subject }}
                 </p>
-                <div class="mt-1.5 flex flex-wrap items-center gap-2">
+                <div class="mt-1 flex flex-wrap items-center gap-1.5">
                   <span :class="emailTemplateChip(item.template)">
                     {{ item.templateLabel }}
                   </span>
                   <span :class="emailStatusChip(item.status)">
                     {{ item.status }}
                   </span>
-                  <span class="text-xs text-muted-foreground">
+                  <span class="text-[12px] text-muted-foreground">
                     {{ item.projectName || "Workspace" }}
                   </span>
                 </div>
@@ -391,31 +382,31 @@ const counterpart = (item: EmailLogItem) =>
       <div
         v-for="item in EMAIL_TEMPLATES"
         :key="item.id"
-        class="rounded-xl border border-border bg-card p-4"
+        class="rounded-xl border border-border bg-card p-3"
       >
-        <div class="flex items-start gap-3">
+        <div class="flex items-start gap-2.5">
           <div
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+            class="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
           >
-            <MailIcon class="h-4 w-4" />
+            <MailIcon class="size-3.5" />
           </div>
           <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <p class="text-sm font-semibold text-foreground">{{ item.label }}</p>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <p class="text-[13px] font-medium text-foreground">{{ item.label }}</p>
               <span :class="emailTemplateChip(item.id)">{{ item.id }}</span>
             </div>
-            <p class="mt-1 text-sm leading-6 text-muted-foreground">
+            <p class="mt-1 text-[12px] leading-4 text-muted-foreground">
               {{ item.description }}
             </p>
-            <div class="mt-3 flex flex-wrap gap-2">
+            <div class="mt-2.5 flex flex-wrap gap-1.5">
               <Button
                 variant="outline"
-                size="sm"
+                size="xs"
                 @click="previewTemplate(item.id)"
               >
                 Preview
               </Button>
-              <Button size="sm" @click="openCompose(starterFromTemplate(item.id))">
+              <Button size="xs" @click="openCompose(starterFromTemplate(item.id))">
                 Use template
               </Button>
             </div>

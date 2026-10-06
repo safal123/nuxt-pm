@@ -30,65 +30,65 @@ const onSelect = (item: WorkspaceActivity) => {
 </script>
 
 <template>
-  <div v-if="loading" class="relative space-y-4 ps-1">
+  <div v-if="loading" class="relative space-y-3 ps-1">
     <div
-      class="absolute bottom-2 top-2 start-4 w-[2px] -translate-x-1/2 rounded-full bg-border"
+      class="absolute bottom-2 top-2 start-3.5 w-[2px] -translate-x-1/2 rounded-full bg-border"
       aria-hidden="true"
     />
-    <div v-for="index in 5" :key="index" class="flex gap-3">
-      <Skeleton class="relative z-10 h-8 w-8 shrink-0 rounded-full" />
-      <div class="min-w-0 flex-1 space-y-2 rounded-xl border border-border p-3">
-        <Skeleton class="h-4 w-2/3" />
-        <Skeleton class="h-3 w-1/3" />
+    <div v-for="index in 5" :key="index" class="flex gap-2.5">
+      <Skeleton class="relative z-10 size-7 shrink-0 rounded-full" />
+      <div class="min-w-0 flex-1 space-y-1.5 rounded-lg border border-border p-2.5">
+        <Skeleton class="h-3.5 w-2/3" />
+        <Skeleton class="h-2.5 w-1/3" />
       </div>
     </div>
   </div>
 
   <p
     v-else-if="!activities.length"
-    class="py-8 text-center text-sm text-muted-foreground"
+    class="py-6 text-center text-[12px] text-muted-foreground"
   >
     No activity recorded yet.
   </p>
 
   <div v-else class="relative">
     <div
-      class="pointer-events-none absolute bottom-4 top-3 start-4 w-[2px] -translate-x-1/2 rounded-full bg-gradient-to-b from-muted-foreground/25 via-border to-transparent"
+      class="pointer-events-none absolute bottom-4 top-3 start-3.5 w-[2px] -translate-x-1/2 rounded-full bg-gradient-to-b from-muted-foreground/25 via-border to-transparent"
       aria-hidden="true"
     />
 
     <section
       v-for="(group, groupIndex) in groups"
       :key="group.key"
-      :class="groupIndex ? 'mt-6' : ''"
+      :class="groupIndex ? 'mt-4' : ''"
     >
       <div
-        class="sticky top-0 z-20 mb-4 flex items-center gap-3 bg-background/90 py-1 backdrop-blur-sm"
+        class="sticky top-0 z-20 mb-2 flex items-center gap-2 bg-background/90 py-0.5 backdrop-blur-sm"
       >
         <span
-          class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center"
+          class="relative z-10 flex size-7 shrink-0 items-center justify-center"
         >
           <span
             class="h-2 w-2 rounded-full bg-muted-foreground/45 ring-4 ring-background"
           />
         </span>
         <p
-          class="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+          class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
         >
           {{ group.label }}
         </p>
       </div>
 
-      <ol class="space-y-3">
+      <ol class="space-y-2">
         <li
           v-for="item in group.items"
           :key="item.id"
-          class="relative flex items-start gap-3"
+          class="relative flex items-start gap-2.5"
         >
-          <span :class="activityTypeNode(item.type)">
+          <span :class="activityTypeNode(item.type, 'sm')">
             <ActivityTypeIcon
               :type="item.type"
-              class="h-3.5 w-3.5"
+              class="size-3"
               :stroke-width="2"
             />
           </span>
@@ -101,7 +101,7 @@ const onSelect = (item: WorkspaceActivity) => {
               compact
                 ? 'py-0.5'
                 : [
-                    'rounded-xl border border-border bg-card px-3 py-2.5 shadow-sm',
+                    'rounded-lg border border-border bg-card px-2.5 py-2 shadow-sm',
                     selectable === false
                       ? ''
                       : 'transition-colors hover:bg-accent/50',
@@ -109,10 +109,10 @@ const onSelect = (item: WorkspaceActivity) => {
             "
             @click="onSelect(item)"
           >
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start justify-between gap-2">
               <div class="flex min-w-0 items-start gap-2">
                 <span
-                  class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 text-[9px] font-semibold text-orange-700 dark:bg-orange-500/20 dark:text-orange-300"
+                  class="mt-0.5 flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[9px] font-medium text-foreground"
                 >
                   <img
                     v-if="item.user.imageUrl"
@@ -122,8 +122,8 @@ const onSelect = (item: WorkspaceActivity) => {
                   />
                   <span v-else>{{ personInitials(item.user) }}</span>
                 </span>
-                <p class="min-w-0 text-sm leading-5">
-                  <span class="font-semibold text-foreground">{{
+                <p class="min-w-0 text-[13px] leading-5">
+                  <span class="font-medium text-foreground">{{
                     item.user.name || item.user.email
                   }}</span>
                   {{ " " }}
@@ -139,19 +139,19 @@ const onSelect = (item: WorkspaceActivity) => {
             </div>
             <div
               v-if="!compact"
-              class="mt-2 flex flex-wrap items-center gap-2 ps-8"
+              class="mt-1.5 flex flex-wrap items-center gap-1.5 ps-7"
             >
               <span :class="activityTypeChip(item.type)">
                 {{ activityTypeLabel(item.type) }}
               </span>
               <span
                 v-if="item.task"
-                class="max-w-[16rem] truncate text-xs text-muted-foreground"
+                class="max-w-[16rem] truncate text-[12px] text-muted-foreground"
               >
                 {{ item.task.title }}
               </span>
             </div>
-            <div :class="compact ? '' : 'ps-8'">
+            <div :class="compact ? '' : 'ps-7'">
               <ActivityChange
                 v-if="activityChangePreview(item)"
                 :preview="activityChangePreview(item)!"

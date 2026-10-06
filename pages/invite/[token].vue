@@ -76,7 +76,7 @@ const join = async () => {
       <ThemeToggle />
     </div>
     <div class="w-full max-w-md rounded-xl border bg-card p-8 shadow-sm">
-      <p class="text-xs font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-400">Workspace invite</p>
+      <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Workspace invite</p>
 
       <div v-if="loading" class="py-10 text-center text-sm text-muted-foreground">Loading invite…</div>
 

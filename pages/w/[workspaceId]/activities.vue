@@ -40,16 +40,10 @@ const openEventTimeline = (
 
 <template>
   <div class="h-full min-w-0 overflow-y-auto">
-    <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-      <div>
-        <h1 class="text-xl font-semibold tracking-tight text-foreground">
-          Activity
-        </h1>
-        <p class="mt-1 text-sm text-muted-foreground">
-          A full audit of board changes, comments, and emails. Open a card or
-          project name to see its timeline.
-        </p>
-      </div>
+    <PageHeader
+      title="Activity"
+      description="A full audit of board changes, comments, and emails. Open a card or project name to see its timeline."
+    >
       <ActivityFilters
         :filters="filters"
         :projects="projects"
@@ -58,7 +52,7 @@ const openEventTimeline = (
         @task="setTask"
         @kind="setKind"
       />
-    </div>
+    </PageHeader>
 
     <ActivityStats
       :summary="summary"
@@ -66,7 +60,7 @@ const openEventTimeline = (
     />
 
     <ActivityFeed
-      class="mt-5"
+      class="mt-4"
       :activities="activities"
       :loading="loading"
       :error="error"

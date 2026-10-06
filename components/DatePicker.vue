@@ -4,6 +4,7 @@ import {
   DateFormatter,
   getLocalTimeZone,
   parseDate,
+  today,
 } from "@internationalized/date";
 import { CalendarIcon, XIcon } from "lucide-vue-next";
 import { cn } from "@/lib/utils";
@@ -64,6 +65,24 @@ const clear = () => {
   emit("update:modelValue", "");
   open.value = false;
 };
+
+const PRESETS = [
+  { days: 0, label: "Today" },
+  { days: 1, label: "Tomorrow" },
+  { days: 7, label: "Next week" },
+] as const;
+
+const applyPreset = (days: number) => {
+  const next = today(getLocalTimeZone()).add({ days });
+  emit("update:modelValue", next.toString());
+  open.value = false;
+};
+
+const isPreset = (days: number) => {
+  if (!date.value) return false;
+  const preset = today(getLocalTimeZone()).add({ days });
+  return date.value.compare(preset) === 0;
+};
 </script>
 
 <template>
@@ -75,17 +94,36 @@ const clear = () => {
           variant="outline"
           :class="
             cn(
-              'h-9 w-full justify-start px-3 text-left font-normal',
-              date && 'pr-9',
+              'h-8 w-full justify-start px-2.5 text-left text-[12px] font-normal',
+              date && 'pr-8',
               !date && 'text-muted-foreground',
             )
           "
         >
-          <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
+          <CalendarIcon class="mr-1.5 size-3.5 text-muted-foreground" />
           {{ label }}
         </Button>
       </PopoverTrigger>
-      <PopoverContent class="w-auto p-0 z-[100]" align="start">
+      <PopoverContent
+        class="z-[100] w-auto overflow-hidden rounded-xl p-0"
+        align="start"
+      >
+        <div class="grid grid-cols-3 gap-1.5 border-b border-border px-3 py-2.5">
+          <button
+            v-for="preset in PRESETS"
+            :key="preset.days"
+            type="button"
+            class="h-7 rounded-md border px-1.5 text-[11px] font-medium transition-colors"
+            :class="
+              isPreset(preset.days)
+                ? 'border-foreground/20 bg-foreground text-background'
+                : 'border-border bg-muted text-muted-foreground hover:bg-accent hover:text-foreground'
+            "
+            @click="applyPreset(preset.days)"
+          >
+            {{ preset.label }}
+          </button>
+        </div>
         <Calendar
           :model-value="date"
           :locale="calendarLocale"
@@ -98,7 +136,7 @@ const clear = () => {
     <button
       v-if="date"
       type="button"
-      class="absolute right-1.5 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      class="absolute right-1 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       aria-label="Clear date"
       @click.stop="clear"
     >

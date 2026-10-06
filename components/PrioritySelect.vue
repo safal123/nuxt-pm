@@ -13,6 +13,7 @@ import { TASK_PRIORITIES } from "@/utils/task-priority";
 
 const props = defineProps<{
   modelValue: TaskPriority;
+  disabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -26,7 +27,12 @@ const onSelect = (value: unknown) => {
 </script>
 
 <template>
-  <Select :model-value="modelValue" :modal="false" @update:model-value="onSelect">
+  <Select
+    :model-value="modelValue"
+    :disabled="disabled"
+    :modal="false"
+    @update:model-value="onSelect"
+  >
     <SelectTrigger class="w-full">
       <SelectValue placeholder="Select a priority" />
     </SelectTrigger>

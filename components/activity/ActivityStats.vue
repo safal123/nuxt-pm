@@ -28,7 +28,7 @@ const STATS = [
     <div
       v-for="(stat, index) in STATS"
       :key="stat.key"
-      class="flex items-start gap-3 border-border px-4 py-3.5"
+      class="flex items-start gap-2.5 border-border px-3 py-2.5"
       :class="{
         'border-t': index > 0,
         'sm:border-t-0': index === 1,
@@ -38,14 +38,14 @@ const STATS = [
       }"
     >
       <div
-        class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
+        class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
       >
-        <component :is="stat.icon" class="h-4 w-4" />
+        <component :is="stat.icon" class="size-3.5" />
       </div>
       <div class="min-w-0">
-        <p class="text-xs font-medium text-muted-foreground">{{ stat.label }}</p>
-        <Skeleton v-if="loading" class="mt-1.5 h-6 w-12" />
-        <p v-else class="mt-0.5 text-xl font-semibold tracking-tight text-foreground">
+        <p class="text-[11px] font-medium text-muted-foreground">{{ stat.label }}</p>
+        <Skeleton v-if="loading" class="mt-1 h-5 w-10" />
+        <p v-else class="mt-0.5 text-[15px] font-semibold tracking-tight text-foreground">
           {{ summary[stat.key] }}
         </p>
       </div>
@@ -53,9 +53,9 @@ const STATS = [
   </div>
   <p
     v-if="!loading && (summary.comments || summary.emails)"
-    class="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"
+    class="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground"
   >
-    <MessageSquareIcon class="h-3.5 w-3.5" />
+    <MessageSquareIcon class="size-3" />
     {{ summary.comments }}
     {{ summary.comments === 1 ? "comment" : "comments" }}
     <span v-if="summary.emails">

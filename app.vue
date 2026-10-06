@@ -10,5 +10,6 @@ const toasterTheme = computed(() => (isDark.value ? "dark" : "light"));
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
+  <SetStatusModal />
   <Toaster :theme="toasterTheme" rich-colors close-button />
 </template>

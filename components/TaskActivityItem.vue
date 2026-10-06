@@ -75,7 +75,7 @@ const headline = computed(() => {
 <template>
   <div class="flex gap-3">
     <div
-      class="h-8 w-8 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300 text-[11px] font-semibold shrink-0 flex items-center justify-center overflow-hidden"
+      class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-[11px] font-semibold text-foreground"
     >
       <img
         v-if="activity.user.imageUrl"

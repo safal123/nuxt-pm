@@ -298,42 +298,45 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
 
 <template>
   <div class="flex w-full min-w-0 flex-col">
-    <div class="mb-3 flex min-w-0 items-start gap-2">
-      <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-        <Button variant="outline" size="sm" class="h-8" title="Today (T)" @click="goToday">
+    <div class="mb-2 flex min-w-0 items-start gap-1.5">
+      <div class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+        <Button variant="outline" title="Today (T)" @click="goToday">
           Today
         </Button>
         <div class="flex items-center">
           <Button
             variant="ghost"
             size="icon"
-            class="h-8 w-8"
             aria-label="Previous"
             title="Previous (←)"
             @click="step(-1)"
           >
-            <ChevronLeftIcon class="h-4 w-4" />
+            <ChevronLeftIcon />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            class="h-8 w-8"
             aria-label="Next"
             title="Next (→)"
             @click="step(1)"
           >
-            <ChevronRightIcon class="h-4 w-4" />
+            <ChevronRightIcon />
           </Button>
         </div>
-        <h2 class="min-w-0 truncate text-lg font-semibold tracking-tight">{{ title }}</h2>
+        <h2 class="min-w-0 truncate">{{ title }}</h2>
         <Loader2Icon
           v-if="calendarStore.loading"
-          class="h-4 w-4 shrink-0 animate-spin text-muted-foreground"
+          class="size-3.5 shrink-0 animate-spin text-muted-foreground"
         />
 
-        <div class="ml-auto flex items-center gap-2">
-          <Button size="sm" class="h-8" title="New event (C)" @click="openCreate({ day: format(cursor, 'yyyy-MM-dd') })">
-            <PlusIcon class="h-4 w-4" />
+        <div class="ml-auto flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            class="px-2"
+            title="New event (C)"
+            @click="openCreate({ day: format(cursor, 'yyyy-MM-dd') })"
+          >
+            <PlusIcon />
             New event
           </Button>
           <Tabs :model-value="mode" @update:model-value="setMode">
@@ -342,7 +345,7 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
                 v-for="item in MODES"
                 :key="item.id"
                 :value="item.id"
-                class="h-7 px-3 text-xs"
+                class="h-7 px-2.5"
                 :title="`${item.label} (${item.shortcut})`"
               >
                 {{ item.label }}
@@ -361,7 +364,7 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
       <aside
         class="hidden w-[17rem] shrink-0 flex-col overflow-y-auto border-r border-border bg-muted/20 xl:flex"
       >
-        <div class="p-4">
+        <div class="p-3">
           <ProjectCalendarMiniMonth
             :cursor="cursor"
             :mode="mode"
@@ -373,12 +376,12 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
 
         <Separator />
 
-        <section class="space-y-1 p-4">
-          <p class="mb-2 text-xs font-semibold text-muted-foreground">On this calendar</p>
+        <section class="space-y-1 p-3">
+          <p class="mb-1.5 text-[12px] font-medium text-muted-foreground">On this calendar</p>
           <label
             v-for="item in layers"
             :key="item.id"
-            class="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-accent"
+            class="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
           >
             <Checkbox
               :checked="item.on"
@@ -390,11 +393,11 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
               @update:checked="(value: boolean) => item.toggle(value)"
             />
             <span class="min-w-0 flex-1">
-              <span class="block text-sm font-medium leading-tight">{{ item.label }}</span>
-              <span class="block text-xs text-muted-foreground">{{ item.hint }}</span>
+              <span class="block text-[13px] font-medium leading-tight">{{ item.label }}</span>
+              <span class="block text-[11px] text-muted-foreground">{{ item.hint }}</span>
             </span>
             <span
-              class="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground"
+              class="rounded-full bg-muted px-1.5 py-px text-[11px] font-medium tabular-nums text-muted-foreground"
             >
               {{ item.count }}
             </span>
@@ -405,10 +408,10 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
 
         <ProjectCalendarSync v-model:connect-open="connectOpen" />
 
-        <div class="mt-auto p-4">
-          <div class="rounded-lg border border-dashed border-border px-3 py-2.5">
-            <p class="mb-1.5 text-xs font-medium">Shortcuts</p>
-            <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-muted-foreground">
+        <div class="mt-auto p-3">
+          <div class="rounded-lg border border-dashed border-border px-3 py-2">
+            <p class="mb-1.5 text-[12px] font-medium">Shortcuts</p>
+            <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
               <template v-for="shortcut in SHORTCUTS" :key="shortcut.keys">
                 <dt>
                   <kbd

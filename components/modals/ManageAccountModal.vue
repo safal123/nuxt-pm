@@ -141,12 +141,10 @@ async function onChangePassword(values: any) {
 
 <template>
   <DialogContent
-    class="flex h-[min(36rem,calc(100dvh-2rem))] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:rounded-xl"
+    class="flex h-[min(32rem,calc(100dvh-2rem))] max-w-3xl flex-col overflow-hidden p-0"
   >
-    <DialogHeader
-      class="space-y-0 border-b border-border px-6 py-4 pr-12 text-left"
-    >
-      <DialogTitle class="text-base">Account</DialogTitle>
+    <DialogHeader class="border-b border-border px-5 py-3">
+      <DialogTitle>Account</DialogTitle>
       <DialogDescription>
         Manage your profile, photo, and sign-in methods.
       </DialogDescription>
@@ -154,11 +152,11 @@ async function onChangePassword(values: any) {
 
     <div class="flex min-h-0 flex-1 flex-col sm:flex-row">
       <nav
-        class="flex shrink-0 gap-1 overflow-x-auto border-b border-border p-2 sm:w-48 sm:flex-col sm:border-b-0 sm:border-r sm:p-3"
+        class="flex shrink-0 gap-1 overflow-x-auto border-b border-border p-2 sm:w-44 sm:flex-col sm:border-b-0 sm:border-r sm:p-2.5"
       >
         <button
           type="button"
-          class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+          class="inline-flex h-8 items-center gap-2 rounded-lg px-2.5 text-[12px] font-medium transition-colors"
           :class="
             tab === 'profile'
               ? 'bg-accent text-accent-foreground'
@@ -166,12 +164,12 @@ async function onChangePassword(values: any) {
           "
           @click="tab = 'profile'"
         >
-          <UserIcon class="h-4 w-4" />
+          <UserIcon class="size-3.5" />
           Profile
         </button>
         <button
           type="button"
-          class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+          class="inline-flex h-8 items-center gap-2 rounded-lg px-2.5 text-[12px] font-medium transition-colors"
           :class="
             tab === 'security'
               ? 'bg-accent text-accent-foreground'
@@ -179,21 +177,23 @@ async function onChangePassword(values: any) {
           "
           @click="tab = 'security'"
         >
-          <ShieldIcon class="h-4 w-4" />
+          <ShieldIcon class="size-3.5" />
           Security
         </button>
       </nav>
 
-      <div class="min-h-0 flex-1 overflow-y-auto p-6">
-        <div v-if="tab === 'profile'" class="space-y-6">
+      <div class="min-h-0 flex-1 overflow-y-auto p-5">
+        <div v-if="tab === 'profile'" class="space-y-4">
           <div>
-            <h3 class="text-sm font-semibold">Profile details</h3>
-            <p class="mt-1 text-sm text-muted-foreground">
+            <h3 class="text-[13px] font-semibold tracking-tight text-foreground">
+              Profile details
+            </h3>
+            <p class="mt-0.5 text-[12px] text-muted-foreground">
               Shown on cards, comments, and activity.
             </p>
           </div>
 
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3">
             <input
               ref="fileInput"
               type="file"
@@ -208,34 +208,34 @@ async function onChangePassword(values: any) {
               aria-label="Change photo"
               @click="fileInput?.click()"
             >
-              <Avatar class="!size-20 text-lg">
+              <Avatar class="!size-12">
                 <AvatarImage
                   v-if="user?.image"
                   :src="user.image"
                   :alt="user.name ?? ''"
                 />
-                <AvatarFallback class="text-lg font-medium">
+                <AvatarFallback class="bg-muted text-[12px] font-medium">
                   {{ initials }}
                 </AvatarFallback>
               </Avatar>
               <span
                 class="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
               >
-                <CameraIcon class="h-5 w-5" />
+                <CameraIcon class="size-3.5" />
               </span>
             </button>
             <div class="min-w-0">
-              <p class="truncate text-sm font-medium">
+              <p class="truncate text-[13px] font-medium">
                 {{ user?.name || "Add your name" }}
               </p>
-              <p class="truncate text-sm text-muted-foreground">
+              <p class="truncate text-[12px] text-muted-foreground">
                 {{ user?.email }}
               </p>
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
-                class="mt-2"
+                size="xs"
+                class="mt-1.5"
                 :disabled="isUploading"
                 @click="fileInput?.click()"
               >
@@ -251,7 +251,7 @@ async function onChangePassword(values: any) {
             :initial-values="{ name: user?.name ?? '' }"
           >
             <form
-              class="space-y-4"
+              class="space-y-3"
               @submit="handleSubmit($event, onSaveProfile)"
             >
               <FormField v-slot="{ componentField }" name="name">
@@ -269,10 +269,10 @@ async function onChangePassword(values: any) {
                 </FormItem>
               </FormField>
 
-              <div class="space-y-2">
+              <div class="space-y-1.5">
                 <Label>Email</Label>
                 <Input :model-value="user?.email ?? ''" type="email" disabled />
-                <p class="text-xs text-muted-foreground">
+                <p class="text-[11px] text-muted-foreground">
                   Email can’t be changed here.
                 </p>
               </div>
@@ -284,23 +284,25 @@ async function onChangePassword(values: any) {
           </Form>
         </div>
 
-        <div v-else class="space-y-6">
+        <div v-else class="space-y-4">
           <div>
-            <h3 class="text-sm font-semibold">Security</h3>
-            <p class="mt-1 text-sm text-muted-foreground">
+            <h3 class="text-[13px] font-semibold tracking-tight text-foreground">
+              Security
+            </h3>
+            <p class="mt-0.5 text-[12px] text-muted-foreground">
               How you sign in to Northstar.
             </p>
           </div>
 
           <div
             v-if="hasGoogle"
-            class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3"
+            class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
           >
-            <div class="flex min-w-0 items-center gap-3">
+            <div class="flex min-w-0 items-center gap-2.5">
               <span
-                class="flex size-9 items-center justify-center rounded-md border border-border bg-background"
+                class="flex size-7 items-center justify-center rounded-md border border-border bg-background"
               >
-                <svg class="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                <svg class="size-3.5" viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     fill="#4285F4"
                     d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.46a5.52 5.52 0 0 1-2.4 3.62v3h3.86c2.26-2.08 3.6-5.15 3.6-8.81z"
@@ -320,28 +322,30 @@ async function onChangePassword(values: any) {
                 </svg>
               </span>
               <div class="min-w-0">
-                <p class="text-sm font-medium">Google</p>
-                <p class="truncate text-xs text-muted-foreground">
+                <p class="text-[13px] font-medium">Google</p>
+                <p class="truncate text-[11px] text-muted-foreground">
                   {{ user?.email }}
                 </p>
               </div>
             </div>
-            <Badge variant="secondary">Connected</Badge>
+            <Badge
+              variant="secondary"
+              class="px-1.5 py-px text-[10px] font-medium"
+            >
+              Connected
+            </Badge>
           </div>
 
-          <div
-            v-if="hasPassword"
-            class="rounded-lg border border-border p-4"
-          >
-            <div class="flex items-start gap-3">
+          <div v-if="hasPassword" class="rounded-lg border border-border p-3">
+            <div class="flex items-start gap-2.5">
               <span
-                class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-background"
+                class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background"
               >
-                <KeyRoundIcon class="h-4 w-4" />
+                <KeyRoundIcon class="size-3.5 text-muted-foreground" />
               </span>
               <div class="min-w-0 flex-1">
-                <h4 class="text-sm font-medium">Password</h4>
-                <p class="mt-0.5 text-sm text-muted-foreground">
+                <h4 class="text-[13px] font-medium">Password</h4>
+                <p class="mt-0.5 text-[12px] text-muted-foreground">
                   Changing it signs out your other devices.
                 </p>
 
@@ -352,10 +356,13 @@ async function onChangePassword(values: any) {
                   :validation-schema="passwordSchema"
                 >
                   <form
-                    class="mt-4 space-y-3"
+                    class="mt-3 space-y-3"
                     @submit="handleSubmit($event, onChangePassword)"
                   >
-                    <FormField v-slot="{ componentField }" name="currentPassword">
+                    <FormField
+                      v-slot="{ componentField }"
+                      name="currentPassword"
+                    >
                       <FormItem>
                         <FormLabel>Current password</FormLabel>
                         <FormControl>
@@ -385,7 +392,10 @@ async function onChangePassword(values: any) {
                       </FormItem>
                     </FormField>
 
-                    <FormField v-slot="{ componentField }" name="confirmPassword">
+                    <FormField
+                      v-slot="{ componentField }"
+                      name="confirmPassword"
+                    >
                       <FormItem>
                         <FormLabel>Confirm new password</FormLabel>
                         <FormControl>
@@ -411,7 +421,7 @@ async function onChangePassword(values: any) {
 
           <p
             v-else
-            class="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground"
+            class="rounded-lg border border-dashed border-border px-3 py-2.5 text-[12px] text-muted-foreground"
           >
             You sign in with Google, so this account does not have a password.
           </p>
