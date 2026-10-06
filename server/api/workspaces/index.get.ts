@@ -6,7 +6,7 @@ export default defineApi({
     const workspaces = await prisma.workspace.findMany({
       where: workspaceAccessWhere(user.id),
       include: {
-        projects: true,
+        projects: { include: { settings: true } },
         members: true,
         settings: true,
         creator: {
@@ -21,6 +21,13 @@ export default defineApi({
         return {
           ...workspace,
           settings: serializeWorkspaceSettings(settings),
+          projects: await Promise.all(
+            workspace.projects.map(async (project) => {
+              const projectSettings = project.settings
+                ?? await ensureProjectSettings(project.id, project.workspaceId)
+              return serializeProject({ ...project, settings: projectSettings })
+            }),
+          ),
         }
       }),
     )

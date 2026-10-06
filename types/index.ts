@@ -106,6 +106,12 @@ export type BillingOverview = BillingSubscription & {
   currency: string
 }
 
+export type ProjectView = 'board' | 'table' | 'calendar'
+
+export interface ProjectSetting {
+  defaultView: ProjectView
+}
+
 export interface Project {
   id: string
   name: string
@@ -115,6 +121,7 @@ export interface Project {
   archivedAt?: Date | string | null
   createdAt: Date | string
   updatedAt: Date | string
+  settings?: ProjectSetting | null
 }
 
 export type SprintStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'

@@ -18,7 +18,7 @@ const closeMenu = () => {
 
 <template>
   <header
-    class="fixed inset-x-0 top-0 z-50 border-b border-border/80 bg-background/80 backdrop-blur-md"
+    class="fixed inset-x-0 top-0 z-50 border-b border-border bg-background"
   >
     <nav
       class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
@@ -59,7 +59,7 @@ const closeMenu = () => {
             <NuxtLink to="/sign-in">Sign in</NuxtLink>
           </Button>
           <Button as-child>
-            <NuxtLink to="/sign-up">Get started</NuxtLink>
+            <NuxtLink to="/sign-up">Create a workspace</NuxtLink>
           </Button>
         </template>
       </div>
@@ -108,7 +108,7 @@ const closeMenu = () => {
                   <NuxtLink to="/sign-in" @click="closeMenu">Sign in</NuxtLink>
                 </Button>
                 <Button as-child class="w-full">
-                  <NuxtLink to="/sign-up" @click="closeMenu">Get started</NuxtLink>
+                  <NuxtLink to="/sign-up" @click="closeMenu">Create a workspace</NuxtLink>
                 </Button>
               </template>
             </div>

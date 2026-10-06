@@ -49,11 +49,17 @@ describe("createProject", () => {
   });
 
   it("creates the project with the caller as owner and default lists", async () => {
+    const now = new Date("2026-10-05T00:00:00.000Z");
     const project = {
       id: "p_1",
       name: "Website",
+      description: "Launch",
       workspaceId: "ws_1",
       createdBy: "user_1",
+      archivedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      settings: { defaultView: "board" },
     };
     create.mockResolvedValue(project);
 
@@ -64,7 +70,11 @@ describe("createProject", () => {
         description: "Launch",
         createdBy: "user_1",
       }),
-    ).resolves.toEqual(project);
+    ).resolves.toMatchObject({
+      id: "p_1",
+      name: "Website",
+      settings: { defaultView: "board" },
+    });
 
     expect(assertPlan).toHaveBeenCalledWith("ws_1");
     expect(create).toHaveBeenCalledWith({
@@ -76,7 +86,11 @@ describe("createProject", () => {
         members: {
           create: { userId: "user_1", role: "OWNER" },
         },
+        settings: {
+          create: {},
+        },
       },
+      include: { settings: true },
     });
     expect(defaultColumns).toHaveBeenCalledWith("p_1", "ws_1");
   });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { HistoryIcon, PencilIcon, SparklesIcon } from "lucide-vue-next";
+import { HistoryIcon, PencilIcon, SettingsIcon, SparklesIcon } from "lucide-vue-next";
 import type { Project } from "@/types";
 import { toast } from "vue-sonner";
 import { Button } from "@/components/ui/button";
@@ -152,6 +152,23 @@ const saveTitle = async () => {
           </button>
         </div>
         <div class="flex shrink-0 items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            class="h-8"
+            as-child
+          >
+            <NuxtLink
+              :to="{
+                name: 'workspace-project-settings',
+                params: { workspaceId, projectId: activeProject.id },
+              }"
+            >
+              <SettingsIcon class="h-3.5 w-3.5" />
+              Settings
+            </NuxtLink>
+          </Button>
           <Button
             type="button"
             variant="outline"

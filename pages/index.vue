@@ -1,12 +1,12 @@
 <script setup lang="ts">
 useHead({
-  title: "Northstar — Boards, activity, and email in one workspace",
+  title: "Northstar — Project boards, activity, and email",
   htmlAttrs: { class: { "scroll-smooth": true } },
   meta: [
     {
       name: "description",
       content:
-        "Northstar is a workspace for kanban and table views, archive and restore, activity history, and branded email you can track.",
+        "Northstar is a workspace for kanban and table views, archive and restore, activity history, and email you can track.",
     },
   ],
 });

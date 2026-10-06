@@ -132,7 +132,11 @@ export const useBoardStore = defineStore('board', () => {
     projectId.value = id
     try {
       const sprint = useSprintStore().boardSprintParam
-      const { columns: next } = await api<{ columns: TaskColumn[] }>(
+      const { columns: next, labels, members } = await api<{
+        columns: TaskColumn[]
+        labels?: Task['labels']
+        members?: Task['members']
+      }>(
         `/api/projects/${id}/board`,
         { query: { sprint } },
       )
@@ -141,7 +145,14 @@ export const useBoardStore = defineStore('board', () => {
         completedCount: column.completedCount ?? 0,
         tasks: column.tasks ?? []
       }))
-      await Promise.all([fetchLabels(id), fetchProjectMembers(id)])
+      projectLabels.value = labels ?? []
+      projectMembers.value = members ?? []
+      if (!labels || !members) {
+        await Promise.all([
+          labels ? Promise.resolve() : fetchLabels(id),
+          members ? Promise.resolve() : fetchProjectMembers(id),
+        ])
+      }
     } finally {
       loading.value = false
     }

@@ -6,9 +6,7 @@ import { subdomainCheckSchema } from "~/server/utils/schemas";
 import {
   BellIcon,
   GlobeIcon,
-  Columns3Icon,
   SunIcon,
-  Table2Icon,
   UsersIcon,
 } from "lucide-vue-next";
 import {
@@ -20,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -40,7 +37,6 @@ definePageMeta({
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceStore();
 const { preference, setPreference } = useTheme();
-const { view, setView } = useProjectView();
 const { showEmailsInActivity } = useAppSettings();
 
 const user = computed(() => userStore.user);
@@ -166,7 +162,7 @@ async function onSubdomainSubmit(values: any) {
         </div>
         <div class="overflow-hidden rounded-xl border border-border bg-card">
           <div
-            class="flex flex-col gap-3 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+            class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
           >
             <div class="min-w-0">
               <p class="text-sm font-medium text-foreground">Theme</p>
@@ -188,34 +184,6 @@ async function onSubdomainSubmit(values: any) {
             </Select>
           </div>
 
-          <div
-            class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-foreground">
-                Default task view
-              </p>
-              <p class="mt-0.5 text-sm text-muted-foreground">
-                Board or table when you open a project.
-              </p>
-            </div>
-            <Tabs :model-value="view" @update:model-value="setView">
-              <TabsList>
-                <TabsTrigger value="board">
-                  <span class="inline-flex items-center gap-1.5">
-                    <Columns3Icon class="h-3.5 w-3.5" />
-                    Board
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger value="table">
-                  <span class="inline-flex items-center gap-1.5">
-                    <Table2Icon class="h-3.5 w-3.5" />
-                    Table
-                  </span>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
         </div>
       </section>
 

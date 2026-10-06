@@ -242,10 +242,27 @@ model Project {
   activities          Activity[]
   calendarEvents      CalendarEvent[]
   calendarConnections CalendarConnection[]
+  settings            ProjectSetting?
 
   @@unique([id, workspaceId])
   @@unique([workspaceId, name])
   @@map("projects")
+}
+
+/// Per-project defaults. Add columns here when a new control needs to be stored.
+model ProjectSetting {
+  id          String   @id @default(cuid())
+  projectId   String   @unique @map("project_id")
+  workspaceId String   @map("workspace_id")
+  defaultView String   @default("board") @map("default_view")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+
+  @@unique([projectId, workspaceId])
+  @@index([workspaceId])
+  @@map("project_settings")
 }
 
 model Sprint {

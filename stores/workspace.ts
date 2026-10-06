@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { ArchivedList, Member, Project, Task, Workspace, WorkspaceSetting } from '~/types'
+import type { ArchivedList, Member, Project, ProjectSetting, Task, Workspace, WorkspaceSetting } from '~/types'
 import { api } from '~/lib/api'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
@@ -126,6 +126,36 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       archivedProjects.value = [project, ...without]
     } else {
       archivedProjects.value = archivedProjects.value.filter((item) => item.id !== project.id)
+    }
+  }
+
+  const applyProjectSettings = (projectId: string, settings: ProjectSetting) => {
+    applyProjectUpdate({ id: projectId, settings } as Project)
+  }
+
+  const updateProjectSettings = async (
+    projectId: string,
+    patch: Partial<ProjectSetting>,
+  ) => {
+    const current = workspaces.value
+      .flatMap((workspace) => workspace.projects ?? [])
+      .find((project) => project.id === projectId)
+    const previous = current?.settings
+    applyProjectSettings(projectId, {
+      defaultView: 'board',
+      ...previous,
+      ...patch,
+    })
+    try {
+      const { settings } = await api<{ settings: ProjectSetting }>(
+        `/api/projects/${projectId}/settings`,
+        { method: 'PATCH', body: patch },
+      )
+      if (settings) applyProjectSettings(projectId, settings)
+      return settings ?? null
+    } catch (error) {
+      if (previous) applyProjectSettings(projectId, previous)
+      throw error
     }
   }
 
@@ -264,6 +294,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     removeMember,
     sendEmail,
     updateProject,
+    updateProjectSettings,
     updateSettings,
     fetchArchive,
     restoreList,

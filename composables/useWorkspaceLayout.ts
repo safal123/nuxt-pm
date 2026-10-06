@@ -33,6 +33,7 @@ export const useWorkspaceLayout = () => {
     if (path.includes("/members/")) return "Profile";
     if (path.includes("/members")) return "People";
     if (path.includes("/billing")) return "Billing";
+    if (path.includes("/projects/") && path.includes("/settings")) return "Project settings";
     if (path.includes("/settings")) return "Settings";
     const projectId = route.params.projectId;
     if (projectId) {

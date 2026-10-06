@@ -1236,6 +1236,9 @@ async function main() {
           description: projectDraft.description,
           workspaceId: workspace.id,
           createdBy: ownerId,
+          settings: {
+            create: {},
+          },
         },
       })
 

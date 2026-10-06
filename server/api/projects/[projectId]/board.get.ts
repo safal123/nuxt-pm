@@ -1,4 +1,5 @@
 import prisma from '~/lib/prisma'
+import { listProjectMembers } from '~/server/utils/member'
 import { boardQuerySchema } from '~/server/utils/schemas'
 import { BOARD_COMPLETED_LIMIT } from '~/utils/board'
 
@@ -74,6 +75,15 @@ export default defineApi({
     ]
     await mergeTaskAttachmentCounts(boardTasks)
 
+    const [labels, members] = await Promise.all([
+      prisma.label.findMany({
+        where: { projectId },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, name: true, color: true },
+      }),
+      listProjectMembers(projectId),
+    ])
+
     return {
       data: {
         columns: columns.map((column, index) => ({
@@ -83,6 +93,8 @@ export default defineApi({
             .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
             .map((task) => serializeTask(task, { compact: true })),
         })),
+        labels,
+        members,
       },
       message: 'Board fetched successfully',
     }

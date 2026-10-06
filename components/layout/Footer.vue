@@ -16,7 +16,7 @@ const year = new Date().getFullYear();
         <div>
           <p class="text-sm font-semibold text-foreground">Northstar</p>
           <p class="text-xs text-muted-foreground">
-            Boards, activity, and email for product teams.
+            Boards, activity, and email.
           </p>
         </div>
       </div>

@@ -178,6 +178,8 @@ export const projectCreateSchema = z.object({
   description: optionalString,
 })
 
+export const projectViewSchema = z.enum(['board', 'table', 'calendar'])
+
 export const projectUpdateSchema = z
   .object({
     archived: z.boolean().optional(),
@@ -191,6 +193,14 @@ export const projectUpdateSchema = z
       value.description !== undefined,
     { message: 'Nothing to update.' },
   )
+
+export const projectSettingsSchema = z
+  .object({
+    defaultView: projectViewSchema.optional(),
+  })
+  .refine((value) => value.defaultView !== undefined, {
+    message: 'Nothing to update.',
+  })
 
 export const projectColumnCreateSchema = z.object({
   name: trimmedName('Column name'),

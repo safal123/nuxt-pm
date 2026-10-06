@@ -1,4 +1,4 @@
-import prisma from '~/lib/prisma'
+import { updateProject } from '~/server/utils/project'
 import { projectUpdateSchema } from '~/server/utils/schemas'
 
 export default defineApi({
@@ -6,32 +6,16 @@ export default defineApi({
   handler: async ({ user, event, body }) => {
     const projectId = getRouterParam(event, 'projectId') as string
     const existing = await validateProjectAccess(projectId, user.id)
-
-    if (body.archived === true || body.archived === false) {
-      assertCreator(existing.createdBy, user.id, 'project')
-      const project = await prisma.project.update({
-        where: { id: projectId },
-        data: { archivedAt: body.archived ? new Date() : null },
-      })
-      return {
-        data: { project },
-        message: body.archived ? 'Project archived successfully' : 'Project restored successfully',
-      }
-    }
-
-    const data: { name?: string; description?: string | null } = {}
-
-    if (body.name !== undefined) data.name = body.name
-    if (body.description !== undefined) data.description = body.description
-
-    const project = await prisma.project.update({
-      where: { id: projectId },
-      data,
-    })
+    const project = await updateProject(existing, body, user.id)
+    const archived = body.archived === true || body.archived === false
 
     return {
       data: { project },
-      message: 'Project updated successfully',
+      message: archived
+        ? body.archived
+          ? 'Project archived successfully'
+          : 'Project restored successfully'
+        : 'Project updated successfully',
     }
   },
 })

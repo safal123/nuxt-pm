@@ -1,79 +1,57 @@
 <script setup lang="ts">
-import {
-  ArchiveIcon,
-  Columns3Icon,
-  HistoryIcon,
-  MailIcon,
-  Table2Icon,
-  UsersIcon,
-} from "lucide-vue-next";
-
 const features = [
   {
     title: "Board and table",
     description:
-      "Run each project as a kanban board or a table. Drag cards between lists, then switch views without losing order, due dates, or assignees.",
-    icon: Columns3Icon,
+      "Each project is a kanban board and a table of the same cards. Switch views without losing order, due dates, or assignees.",
   },
   {
-    title: "Tasks that stay current",
+    title: "Cards that stay current",
     description:
-      "Due dates, priority, status, comments, and members live on every card. Open a task for the full thread — or scan the table for what’s overdue.",
-    icon: Table2Icon,
+      "Due date, priority, status, comments, and members sit on the card. Open it for the thread, or scan the table for what is overdue.",
   },
   {
     title: "Workspaces and invites",
     description:
-      "Group projects in a workspace, add members, and send a secure invite. People join the right board instead of hunting for a shared link.",
-    icon: UsersIcon,
+      "Group projects in a workspace and send a signed invite. People join the right board instead of following a shared link.",
   },
   {
     title: "Archive, then restore",
     description:
-      "Lists, cards, and projects are archived — not deleted. Restore when you need them back, or permanently remove from the archive when you’re sure.",
-    icon: ArchiveIcon,
+      "Lists, cards, and projects are archived, not deleted. Restore them later, or remove them only after they are already archived.",
   },
   {
     title: "Activity you can filter",
     description:
-      "Every move, comment, archive, and email is logged. Filter by project or task, then open a row for the full detail.",
-    icon: HistoryIcon,
+      "Moves, comments, archives, and emails are logged. Filter by project or task, then open a row for the full record.",
   },
   {
-    title: "Email you can track",
+    title: "Email you can check",
     description:
-      "Invites, member notices, and custom templates go out through Resend. See what you sent, preview the HTML, and retry from the same sidebar.",
-    icon: MailIcon,
+      "Invites and custom templates go out through Resend. See what was sent, preview the HTML, and retry from the same page.",
   },
 ];
 </script>
 
 <template>
-  <section id="features" class="scroll-mt-24 py-20 sm:py-28">
+  <section id="features" class="scroll-mt-24 py-20 sm:py-24">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl text-center">
-        <p class="text-sm font-medium text-primary">Built for how you already work</p>
-        <h2 class="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          The same tools as the dashboard — not a marketing wishlist.
+      <div class="max-w-xl">
+        <h2 class="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          What you use after you sign in
         </h2>
-        <p class="mt-4 text-base leading-7 text-muted-foreground">
-          Northstar is a workspace: projects, boards, archive, activity, and
-          email. What you see here is what you get after you sign in.
+        <p class="mt-3 text-base leading-7 text-muted-foreground">
+          These are the screens in the app, not a list of things we plan to add.
         </p>
       </div>
 
-      <div class="mx-auto mt-14 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="mt-12 grid border-t border-border sm:grid-cols-2">
         <article
           v-for="feature in features"
           :key="feature.title"
-          class="rounded-xl border border-border bg-card p-6 shadow-sm"
+          class="border-b border-border py-7 sm:px-8 sm:odd:pl-0 sm:even:pr-0"
         >
-          <div
-            class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300"
-          >
-            <component :is="feature.icon" class="h-5 w-5" />
-          </div>
-          <h3 class="mt-4 text-base font-semibold text-foreground">
+          <h3 class="text-[15px] font-semibold text-foreground">
             {{ feature.title }}
           </h3>
           <p class="mt-2 text-sm leading-6 text-muted-foreground">

@@ -108,20 +108,18 @@ const faqs = [
 </script>
 
 <template>
-  <section id="pricing" class="scroll-mt-24 border-y border-border bg-muted/30 py-20 sm:py-28">
+  <section id="pricing" class="scroll-mt-24 border-t border-border py-20 sm:py-24">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl text-center">
-        <p class="text-sm font-medium text-primary">Pricing</p>
-        <h2 class="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Start free. Scale when the team does.
+      <div class="max-w-xl">
+        <h2 class="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          Start free. Pay when the team grows.
         </h2>
-        <p class="mt-4 text-base leading-7 text-muted-foreground">
-          Plans follow the product: workspaces, boards, archive, activity, and
-          email — not a generic feature list.
+        <p class="mt-3 text-base leading-7 text-muted-foreground">
+          Plans follow workspaces, boards, archive, activity, and email.
         </p>
       </div>
 
-      <div class="mt-10 flex flex-col items-center gap-3">
+      <div class="mt-10 flex flex-col items-start gap-3">
         <Tabs
           :model-value="interval"
           @update:model-value="
@@ -146,9 +144,7 @@ const faqs = [
           :key="plan.name"
           class="relative flex flex-col rounded-xl border bg-card p-6 shadow-sm"
           :class="
-            plan.featured
-              ? 'border-primary shadow-md ring-1 ring-primary'
-              : 'border-border'
+            plan.featured ? 'border-foreground' : 'border-border'
           "
         >
           <div class="mb-4 flex h-6 items-center justify-center">

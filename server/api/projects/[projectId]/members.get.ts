@@ -1,3 +1,5 @@
+import { listProjectMembers } from '~/server/utils/member'
+
 export default defineApi({
   handler: async ({ user, event }) => {
     const projectId = getRouterParam(event, 'projectId') as string

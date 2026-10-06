@@ -179,6 +179,17 @@ const editProject = async (project: Project) => {
             side="bottom"
             align="end"
           >
+            <DropdownMenuItem
+              @click="
+                navigateTo({
+                  name: 'workspace-project-settings',
+                  params: { workspaceId: workspaceId, projectId: item.id },
+                })
+              "
+            >
+              <SettingsIcon />
+              <span>Settings</span>
+            </DropdownMenuItem>
             <DropdownMenuItem @click="editProject(item)">
               <Edit2 />
               <span>Rename</span>
@@ -281,7 +292,7 @@ const editProject = async (project: Project) => {
         </SidebarMenuButton>
       </SidebarMenuItem>
       <SidebarMenuItem
-        :class="navItemClass(route.path.includes('/settings'))"
+        :class="navItemClass(route.path.includes('/settings') && !route.params.projectId)"
       >
         <SidebarMenuButton v-if="workspaceId" as-child>
           <NuxtLink

@@ -12,7 +12,15 @@ type ApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
  */
 const ssrCookieHeader = () => {
   if (!import.meta.server) return undefined
-  // tryUseNuxtApp does not throw when Pinia calls this after an await.
+  // useRequestHeaders keeps working after an await in a Pinia action.
+  // tryUseNuxtApp() can be empty there, which dropped the session cookie
+  // and made follow-up GETs (labels, members) return 401.
+  try {
+    const cookie = useRequestHeaders(['cookie']).cookie
+    if (cookie) return { cookie }
+  } catch {
+    // Outside a request (scripts, cron).
+  }
   const event = tryUseNuxtApp()?.ssrContext?.event
   if (!event) return undefined
   const cookie = getRequestHeader(event, 'cookie')
