@@ -13,14 +13,14 @@ defineProps<{
       <h1>{{ title }}</h1>
       <p
         v-if="description"
-        class="mt-1 text-[12px] leading-4 text-muted-foreground"
+        class="mt-1 text-[12px] font-normal leading-5 text-muted-foreground"
       >
         {{ description }}
       </p>
     </div>
     <div
       v-if="$slots.default"
-      class="flex shrink-0 flex-wrap items-center gap-1.5"
+      class="flex w-full min-w-0 shrink-0 flex-wrap items-center gap-1.5 sm:w-auto"
     >
       <slot />
     </div>

@@ -124,42 +124,39 @@ const newChat = async () => {
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 flex-col bg-gradient-to-b from-primary/[0.04] via-background to-background">
-    <div ref="scroller" class="min-h-0 flex-1 overflow-y-auto px-5 py-6">
+  <div class="flex min-h-0 flex-1 flex-col">
+    <div ref="scroller" class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
       <!-- Empty state -->
       <div
         v-if="!messages.length"
-        class="flex min-h-full flex-col items-center justify-center gap-6 text-center"
+        class="flex min-h-full flex-col items-center justify-center gap-3 text-center"
       >
-        <div class="relative">
-          <div class="absolute inset-0 rounded-2xl bg-primary/30 blur-xl" aria-hidden="true" />
-          <div
-            class="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-          >
-            <SparklesIcon class="h-6 w-6" />
-          </div>
+        <div
+          class="flex size-8 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground"
+        >
+          <SparklesIcon class="size-3.5" />
         </div>
-        <div class="space-y-1.5">
-          <p class="text-base font-semibold text-foreground">
+        <div class="space-y-0.5">
+          <p class="text-[13px] font-semibold text-foreground">
             Ask anything about {{ projectName }}
           </p>
-          <p class="mx-auto max-w-xs text-sm text-muted-foreground">
+          <p class="mx-auto max-w-xs text-[12px] text-muted-foreground">
             I read the cards, comments, sprints, and activity on this board.
           </p>
         </div>
-        <div class="grid w-full max-w-md grid-cols-2 gap-2">
+        <div class="grid w-full grid-cols-2 gap-1.5">
           <button
             v-for="item in SUGGESTIONS"
             :key="item.label"
             type="button"
-            class="group flex items-center gap-2.5 rounded-xl border border-border bg-card/80 px-3 py-2.5 text-left text-sm shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md disabled:opacity-50 "
+            class="flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-2 text-left text-[12px] transition hover:bg-muted disabled:opacity-50"
             :disabled="aiStore.replying"
             @click="ask(item.prompt)"
           >
             <span
-              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground"
+              class="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
             >
-              <component :is="item.icon" class="h-3.5 w-3.5" />
+              <component :is="item.icon" class="size-3.5" />
             </span>
             <span class="font-medium text-foreground">{{ item.label }}</span>
           </button>
@@ -167,38 +164,38 @@ const newChat = async () => {
       </div>
 
       <!-- Conversation -->
-      <div v-else class="space-y-6">
+      <div v-else class="space-y-3">
         <div
           v-for="(message, index) in messages"
           :key="message.id ?? `pending-${index}`"
-          class="flex gap-3"
+          class="flex gap-2"
           :class="message.role === 'user' ? 'flex-row-reverse' : ''"
         >
           <span
             v-if="message.role === 'assistant'"
-            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+            class="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground"
           >
-            <SparklesIcon class="h-4 w-4" />
+            <SparklesIcon class="size-3.5" />
           </span>
           <span
             v-else
-            class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted text-[11px] font-semibold text-muted-foreground"
+            class="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-[11px] font-semibold text-muted-foreground"
           >
             <img
               v-if="userStore.user?.imageUrl || userStore.user?.image"
               :src="userStore.user?.imageUrl || userStore.user?.image || ''"
               alt=""
-              class="h-full w-full object-cover"
+              class="size-full object-cover"
             />
             <span v-else>{{ userInitials }}</span>
           </span>
 
           <div
-            class="group flex min-w-0 max-w-[85%] flex-col gap-1"
+            class="group flex min-w-0 max-w-[85%] flex-col gap-0.5"
             :class="message.role === 'user' ? 'items-end' : 'items-start'"
           >
-            <div class="flex items-center gap-2 px-1 text-[11px] text-muted-foreground">
-              <span class="font-medium text-foreground/80">
+            <div class="flex items-center gap-1.5 px-0.5 text-[11px] text-muted-foreground">
+              <span class="font-medium text-foreground">
                 {{ message.role === "user" ? "You" : "Northstar AI" }}
               </span>
               <span v-if="timeLabel(message.at)">{{ timeLabel(message.at) }}</span>
@@ -206,13 +203,13 @@ const newChat = async () => {
 
             <div
               v-if="message.role === 'user'"
-              class="whitespace-pre-wrap rounded-2xl rounded-tr-md bg-primary px-4 py-2.5 text-sm leading-6 text-primary-foreground shadow-sm shadow-primary/20"
+              class="whitespace-pre-wrap rounded-xl rounded-tr-md bg-foreground px-3 py-2 text-[13px] leading-5 text-background"
             >
               {{ message.content }}
             </div>
             <div
               v-else
-              class="rounded-2xl rounded-tl-md border border-border bg-card px-4 py-3 text-foreground/90 shadow-sm"
+              class="rounded-xl rounded-tl-md border border-border bg-card px-3 py-2 text-foreground"
             >
               <ChatMarkdown :content="message.content" />
             </div>
@@ -220,36 +217,36 @@ const newChat = async () => {
             <button
               v-if="message.role === 'assistant'"
               type="button"
-              class="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
+              class="flex items-center gap-1 rounded-md px-1 py-0.5 text-[11px] text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
               @click="copy(message.content, index)"
             >
-              <CheckIcon v-if="copiedIndex === index" class="h-3 w-3 text-emerald-500" />
-              <CopyIcon v-else class="h-3 w-3" />
+              <CheckIcon v-if="copiedIndex === index" class="size-3 text-emerald-500" />
+              <CopyIcon v-else class="size-3" />
               {{ copiedIndex === index ? "Copied" : "Copy" }}
             </button>
           </div>
         </div>
 
-        <div v-if="aiStore.replying" class="flex gap-3">
+        <div v-if="aiStore.replying" class="flex gap-2">
           <span
-            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+            class="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground"
           >
-            <SparklesIcon class="h-4 w-4 animate-pulse" />
+            <SparklesIcon class="size-3.5 animate-pulse" />
           </span>
           <div
-            class="flex items-center gap-1.5 rounded-2xl rounded-tl-md border border-border bg-card px-4 py-3.5 shadow-sm"
+            class="flex items-center gap-1 rounded-xl rounded-tl-md border border-border bg-card px-3 py-2"
             aria-label="Thinking"
           >
-            <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/70 [animation-delay:-0.3s]" />
-            <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/70 [animation-delay:-0.15s]" />
-            <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/70" />
+            <span class="size-1 animate-bounce rounded-full bg-muted-foreground/70 [animation-delay:-0.3s]" />
+            <span class="size-1 animate-bounce rounded-full bg-muted-foreground/70 [animation-delay:-0.15s]" />
+            <span class="size-1 animate-bounce rounded-full bg-muted-foreground/70" />
           </div>
         </div>
       </div>
     </div>
 
     <!-- Composer -->
-    <div class="border-t border-border/60 bg-background/80 px-4 pb-4 pt-3 backdrop-blur">
+    <div class="border-t border-border px-4 py-2">
       <Form
         :key="formKey"
         v-slot="{ handleSubmit, values }"
@@ -261,7 +258,7 @@ const newChat = async () => {
           <FormField v-slot="{ field }" name="content">
             <FormItem>
               <div
-                class="flex items-end gap-2 rounded-2xl border border-border bg-card p-1.5 pl-3.5 shadow-sm transition focus-within:border-primary/60 focus-within:ring-4 focus-within:ring-primary/10"
+                class="flex items-end gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1"
               >
                 <FormControl>
                   <textarea
@@ -269,7 +266,7 @@ const newChat = async () => {
                     v-bind="field"
                     rows="1"
                     placeholder="Ask about progress, blockers, owners…"
-                    class="max-h-40 min-h-[36px] flex-1 resize-none bg-transparent py-2 text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-60"
+                    class="max-h-32 min-h-7 flex-1 resize-none bg-transparent py-1 text-[12px] leading-5 text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-60"
                     :disabled="aiStore.replying"
                     @input="autoGrow"
                     @keydown="onKeydown($event, () => handleSubmit(onSubmit)())"
@@ -278,11 +275,11 @@ const newChat = async () => {
                 <Button
                   type="submit"
                   size="icon"
-                  class="h-9 w-9 shrink-0 rounded-xl bg-primary text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-40"
+                  class="size-7 shrink-0"
                   :disabled="aiStore.replying || !String(values.content ?? '').trim()"
                   aria-label="Send"
                 >
-                  <ArrowUpIcon class="h-4 w-4" />
+                  <ArrowUpIcon class="size-3.5" />
                 </Button>
               </div>
               <FormMessage class="px-1" />
@@ -290,7 +287,7 @@ const newChat = async () => {
           </FormField>
         </form>
       </Form>
-      <div class="mt-2 flex items-center justify-between px-1 text-[11px] text-muted-foreground">
+      <div class="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
         <span>
           <kbd class="rounded border border-border bg-muted px-1 font-sans">Enter</kbd>
           to send ·
@@ -302,11 +299,11 @@ const newChat = async () => {
         <button
           v-if="messages.length"
           type="button"
-          class="flex items-center gap-1 rounded-md px-1.5 py-0.5 transition hover:bg-accent hover:text-foreground disabled:opacity-50"
+          class="flex items-center gap-1 rounded-md px-1 py-0.5 transition hover:bg-muted hover:text-foreground disabled:opacity-50"
           :disabled="aiStore.replying || clearing"
           @click="newChat"
         >
-          <RotateCcwIcon class="h-3 w-3" />
+          <RotateCcwIcon class="size-3" />
           Clear chat
         </button>
       </div>

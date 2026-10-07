@@ -82,7 +82,7 @@ const billingTo = computed(() =>
 );
 
 const itemClass =
-  "w-full gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-normal leading-5 tracking-normal text-[#1C2526] transition-colors duration-150 hover:bg-muted focus:bg-muted focus:text-[#1C2526] dark:text-foreground dark:focus:text-foreground sm:py-1 [&>svg]:size-4";
+  "w-full gap-2 rounded-lg border border-transparent px-3 py-2 text-left text-[13px] font-normal leading-5 tracking-normal text-[#1C2526] transition-colors duration-150 hover:border-border hover:bg-muted focus:border-border focus:bg-muted focus:text-[#1C2526] dark:text-foreground dark:focus:text-foreground sm:py-1 [&>svg]:size-4";
 
 const signingOut = ref(false);
 const muted = ref(false);

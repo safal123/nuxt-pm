@@ -14,11 +14,11 @@ const tokenClass = (token: InlineToken) => [
 </script>
 
 <template>
-  <div class="space-y-2.5 text-sm leading-6">
+  <div class="space-y-1.5 text-[13px] leading-5">
     <template v-for="(block, index) in blocks" :key="index">
       <p
         v-if="block.type === 'heading'"
-        class="pt-1 text-[13px] font-semibold text-foreground"
+        class="pt-0.5 text-[13px] font-semibold text-foreground"
       >
         <span v-for="(token, i) in block.inline" :key="i" :class="tokenClass(token)">{{
           token.text
@@ -34,22 +34,22 @@ const tokenClass = (token: InlineToken) => [
       <component
         :is="block.ordered ? 'ol' : 'ul'"
         v-else
-        class="space-y-1.5"
+        class="space-y-1"
       >
         <li
           v-for="(item, itemIndex) in block.items"
           :key="itemIndex"
-          class="flex gap-2.5"
+          class="flex gap-2"
         >
           <span
             v-if="block.ordered"
-            class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary"
+            class="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-foreground"
           >
             {{ itemIndex + 1 }}
           </span>
           <span
             v-else
-            class="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70"
+            class="mt-[7px] size-1 shrink-0 rounded-full bg-muted-foreground/70"
           />
           <span class="min-w-0">
             <span v-for="(token, i) in item" :key="i" :class="tokenClass(token)">{{

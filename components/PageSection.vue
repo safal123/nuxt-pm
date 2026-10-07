@@ -14,7 +14,7 @@ defineProps<{
         <h2>{{ title }}</h2>
         <p
           v-if="description"
-          class="mt-0.5 text-[12px] leading-4 text-muted-foreground"
+          class="mt-0.5 text-[12px] font-normal leading-5 text-muted-foreground"
         >
           {{ description }}
         </p>

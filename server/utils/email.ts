@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import prisma from '~/lib/prisma'
 import {
   emailCardHtml,
+  emailFooterText,
   escapeHtml,
   workspaceInviteHtml,
   customEmailHtml,
@@ -207,6 +208,8 @@ export const sendWorkspaceInviteEmail = async (input: {
     '',
     `Accept the invite: ${input.inviteUrl}`,
     `This link expires on ${expiresLabel}.`,
+    '',
+    emailFooterText({ workspaceName: input.workspaceName }),
   ].join('\n')
 
   return sendEmail({
@@ -247,6 +250,8 @@ export const sendWorkspaceWelcomeEmail = async (input: {
     '',
     `You are now a member of ${input.workspaceName}.`,
     `Open the workspace: ${input.dashboardUrl}`,
+    '',
+    emailFooterText({ workspaceName: input.workspaceName }),
   ].join('\n')
 
   return sendEmail({
@@ -258,6 +263,7 @@ export const sendWorkspaceWelcomeEmail = async (input: {
       body: 'Your invite was accepted. You can now open boards, tasks, and work with the rest of the team.',
       actionLabel: 'Open workspace',
       actionUrl: input.dashboardUrl,
+      workspaceName: input.workspaceName,
     }),
     text,
     idempotencyKey: `workspace-invite-accepted/${input.inviteId}/${input.to}`,
@@ -290,6 +296,8 @@ export const sendInviteAcceptedNoticeEmail = async (input: {
     '',
     `${input.memberName} (${input.memberEmail}) accepted your invite and joined ${input.workspaceName}.`,
     `Open the workspace: ${input.dashboardUrl}`,
+    '',
+    emailFooterText({ workspaceName: input.workspaceName }),
   ].join('\n')
 
   return sendEmail({
@@ -301,6 +309,7 @@ export const sendInviteAcceptedNoticeEmail = async (input: {
       body: `${escapeHtml(input.memberEmail)} accepted your workspace invite and can now see the boards in this workspace.`,
       actionLabel: 'View workspace',
       actionUrl: input.dashboardUrl,
+      workspaceName: input.workspaceName,
     }),
     text,
     idempotencyKey: `workspace-invite-notice/${input.inviteId}/${input.memberEmail}`,
@@ -333,6 +342,8 @@ export const sendProjectMemberAddedEmail = async (input: {
     '',
     `${input.addedByName} added you to ${input.projectName} in ${input.workspaceName}.`,
     `Open the project: ${input.dashboardUrl}`,
+    '',
+    emailFooterText({ workspaceName: input.workspaceName }),
   ].join('\n')
 
   return sendEmail({
@@ -344,6 +355,7 @@ export const sendProjectMemberAddedEmail = async (input: {
       body: `${escapeHtml(input.addedByName)} added you to ${escapeHtml(input.projectName)} in ${escapeHtml(input.workspaceName)}. You can now open the board and work on tasks.`,
       actionLabel: 'Open project',
       actionUrl: input.dashboardUrl,
+      workspaceName: input.workspaceName,
     }),
     text,
     idempotencyKey: `project-member/${input.projectId}/${input.to}`,
@@ -381,6 +393,17 @@ export const sendCustomEmail = async (input: {
     .filter(Boolean)
     .join('\n')
 
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: input.workspaceId },
+    select: { name: true },
+  })
+  const workspaceName = workspace?.name
+  const withFooter = [
+    text,
+    '',
+    emailFooterText({ workspaceName }),
+  ].join('\n')
+
   return sendEmail({
     to: [input.to],
     subject: input.subject,
@@ -390,8 +413,9 @@ export const sendCustomEmail = async (input: {
       body: input.body,
       actionLabel: input.actionLabel,
       actionUrl: input.actionUrl,
+      workspaceName,
     }),
-    text,
+    text: withFooter,
     idempotencyKey: `custom/${randomUUID()}`,
     tags: [
       { name: 'category', value: 'custom' },
@@ -495,6 +519,8 @@ export const sendReminderDigestEmail = async (input: {
     '',
     `Open: ${projectUrl(first)}`,
     `Turn off reminder emails: ${settingsUrl}`,
+    '',
+    emailFooterText({ workspaceName: first.workspaceName }),
   ].join('\n')
 
   return sendEmail({
@@ -508,6 +534,7 @@ export const sendReminderDigestEmail = async (input: {
       tasks,
       actionUrl: projectUrl(first),
       settingsUrl,
+      workspaceName: first.workspaceName,
     }),
     text,
     idempotencyKey: `reminder-digest/${input.userId}/${input.forDate}`,

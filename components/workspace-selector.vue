@@ -86,7 +86,10 @@ const handleWorkspaceSelect = async (workspace: Workspace) => {
             />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem class="p-0 focus:bg-transparent" @select.prevent>
+          <DropdownMenuItem
+            class="p-0 hover:border-transparent hover:bg-transparent focus:border-transparent focus:bg-transparent"
+            @select.prevent
+          >
             <CreateWorkspaceModal />
           </DropdownMenuItem>
         </DropdownMenuContent>

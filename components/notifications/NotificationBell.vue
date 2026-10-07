@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useMediaQuery } from "@vueuse/core";
 import { BellIcon } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { personInitials } from "@/utils/activity";
@@ -16,6 +17,7 @@ const open = ref(false);
 const workspaceId = computed(
   () => workspaceStore.activeWorkspaceId || "",
 );
+const isMobile = useMediaQuery("(max-width: 639px)");
 
 const when = whenDate;
 
@@ -83,9 +85,11 @@ const subject = (activity: WorkspaceActivity) =>
       </Button>
     </PopoverTrigger>
     <PopoverContent
-      align="end"
+      :align="isMobile ? 'center' : 'end'"
       :side-offset="8"
-      class="w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border-border/80 p-0 shadow-[0_12px_40px_rgba(15,23,42,0.12)]"
+      :collision-padding="8"
+      class="overflow-hidden rounded-xl border-border p-0 shadow-[0_12px_40px_rgba(15,23,42,0.12)]"
+      :class="isMobile ? 'w-[calc(100vw-1rem)] max-w-none' : 'w-[22rem]'"
     >
       <div class="flex items-center justify-between border-b border-border px-3 py-2">
         <p class="text-[13px] font-semibold tracking-tight text-foreground">Activity</p>
@@ -114,11 +118,11 @@ const subject = (activity: WorkspaceActivity) =>
         >
           No activity yet in this workspace.
         </p>
-        <ul v-else class="divide-y divide-border">
+        <ul v-else class="space-y-0.5 p-1">
           <li v-for="item in notifications.items" :key="item.id">
             <NuxtLink
               :to="activityHref(item)"
-              class="flex gap-2.5 px-3 py-2 transition-colors hover:bg-accent/50"
+              class="flex gap-2.5 rounded-lg border border-transparent px-2.5 py-2 transition-colors hover:border-border hover:bg-muted"
               @click="open = false"
             >
               <div

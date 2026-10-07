@@ -143,6 +143,7 @@ const previewHtml = (values: Record<string, unknown>) =>
     body: String(values.body || "Write your message…"),
     actionLabel: String(values.actionLabel || ""),
     actionUrl: String(values.actionUrl || ""),
+    workspaceName: workspaceStore.activeWorkspace?.name,
   });
 
 async function onSubmit(values: any) {

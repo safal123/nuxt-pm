@@ -11,7 +11,11 @@ export default defineNuxtConfig({
     // instance is gone and cookie forwarding / composables fail.
     asyncContext: true,
   },
-  css: ['~/assets/css/main.css'],
+  css: [
+    '@fontsource-variable/dm-sans',
+    '@fontsource-variable/dm-sans/wght-italic.css',
+    '~/assets/css/main.css',
+  ],
   modules: [
     'shadcn-nuxt',
     '@nuxtjs/tailwindcss',

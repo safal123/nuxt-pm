@@ -44,51 +44,104 @@ export const escapeHtml = (value: string) =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;')
 
+export type EmailChrome = {
+  workspaceName?: string
+  footerNoteHtml?: string
+  maxWidth?: number
+}
+
+const EMAIL_FONT =
+  '"DM Sans",ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif'
+const EMAIL_INK = '#18181b'
+
+export const emailFooterText = (chrome?: EmailChrome) => {
+  const year = new Date().getFullYear()
+  const sentFor = chrome?.workspaceName
+    ? `Sent for ${chrome.workspaceName}. `
+    : ''
+  return `${sentFor}© ${year} Northstar. All rights reserved.`
+}
+
+export const emailFooterHtml = (chrome?: EmailChrome) => {
+  const year = new Date().getFullYear()
+  const sentFor = chrome?.workspaceName
+    ? `Sent for ${escapeHtml(chrome.workspaceName)} · `
+    : ''
+  return `
+    <div style="padding:24px 8px 0;text-align:center;">
+      <p style="margin:0;font-size:13px;font-weight:600;color:${EMAIL_INK};">Northstar</p>
+      <p style="margin:4px 0 0;font-size:12px;color:#71717a;">Boards, activity, and email.</p>
+      <p style="margin:12px 0 0;font-size:11px;line-height:1.6;color:#a1a1aa;">
+        ${sentFor}© ${year} Northstar. All rights reserved.
+      </p>
+      ${
+        chrome?.footerNoteHtml
+          ? `<p style="margin:8px 0 0;font-size:11px;line-height:1.6;color:#a1a1aa;">${chrome.footerNoteHtml}</p>`
+          : ''
+      }
+    </div>
+  `
+}
+
+const emailFrame = (inner: string, chrome?: EmailChrome) => `
+  <div style="background:#f4f4f5;padding:32px 16px;font-family:${EMAIL_FONT};">
+    <div style="max-width:${chrome?.maxWidth ?? 520}px;margin:0 auto;">
+      <div style="background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e4e4e7;">
+        ${inner}
+      </div>
+      ${emailFooterHtml(chrome)}
+    </div>
+  </div>
+`
+
+const emailButton = (label: string, url: string) => `
+  <a href="${escapeHtml(url)}" style="display:inline-block;background:${EMAIL_INK};color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 18px;border-radius:10px;">
+    ${escapeHtml(label)}
+  </a>
+`
+
 export const emailCardHtml = (input: {
   kicker: string
   title: string
   body: string
   actionLabel: string
   actionUrl: string
-}) => `
-  <div style="background:#f4f4f5;padding:32px 16px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;">
-    <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e4e4e7;">
-      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#ea580c;font-weight:600;">${escapeHtml(input.kicker)}</p>
-      <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#18181b;">${input.title}</h1>
+  workspaceName?: string
+}) =>
+  emailFrame(
+    `
+      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:${EMAIL_INK};font-weight:600;">${escapeHtml(input.kicker)}</p>
+      <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:${EMAIL_INK};">${input.title}</h1>
       <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#3f3f46;">${input.body}</p>
-      <a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;background:#ea580c;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 18px;border-radius:10px;">
-        ${escapeHtml(input.actionLabel)}
-      </a>
-    </div>
-  </div>
-`
+      ${emailButton(input.actionLabel, input.actionUrl)}
+    `,
+    { workspaceName: input.workspaceName },
+  )
 
 export const workspaceInviteHtml = (input: {
   workspaceName: string
   inviterName: string
   inviteUrl: string
   expiresLabel: string
-}) => `
-  <div style="background:#f4f4f5;padding:32px 16px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;">
-    <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e4e4e7;">
-      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#ea580c;font-weight:600;">Workspace invite</p>
-      <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#18181b;">Join ${escapeHtml(input.workspaceName)}</h1>
+}) =>
+  emailFrame(
+    `
+      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:${EMAIL_INK};font-weight:600;">Workspace invite</p>
+      <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:${EMAIL_INK};">Join ${escapeHtml(input.workspaceName)}</h1>
       <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#3f3f46;">
         ${escapeHtml(input.inviterName)} invited you to collaborate on
         <strong>${escapeHtml(input.workspaceName)}</strong>.
       </p>
-      <a href="${escapeHtml(input.inviteUrl)}" style="display:inline-block;background:#ea580c;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 18px;border-radius:10px;">
-        Accept invite
-      </a>
+      ${emailButton('Accept invite', input.inviteUrl)}
       <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#71717a;">
         This link expires on ${escapeHtml(input.expiresLabel)}. If the button does not work, paste this URL into your browser:
       </p>
       <p style="margin:8px 0 0;font-size:12px;word-break:break-all;color:#52525b;">
         ${escapeHtml(input.inviteUrl)}
       </p>
-    </div>
-  </div>
-`
+    `,
+    { workspaceName: input.workspaceName },
+  )
 
 export const sampleEmailHtml = (id: EmailTemplateId) => {
   if (id === 'workspace-invite') {
@@ -106,6 +159,7 @@ export const sampleEmailHtml = (id: EmailTemplateId) => {
       body: 'Your invite was accepted. You can now open boards, tasks, and work with the rest of the team.',
       actionLabel: 'Open workspace',
       actionUrl: 'https://example.com/dashboard',
+      workspaceName: 'Northstar',
     })
   }
   if (id === 'invite-accepted-notice') {
@@ -115,6 +169,7 @@ export const sampleEmailHtml = (id: EmailTemplateId) => {
       body: 'jordan@example.com accepted your workspace invite and can now see the boards in this workspace.',
       actionLabel: 'View workspace',
       actionUrl: 'https://example.com/dashboard',
+      workspaceName: 'Northstar',
     })
   }
   if (id === 'reminder-digest') {
@@ -131,6 +186,7 @@ export const sampleEmailHtml = (id: EmailTemplateId) => {
       ],
       actionUrl: 'https://example.com/dashboard',
       settingsUrl: 'https://example.com/settings',
+      workspaceName: 'Northstar',
     })
   }
   if (id === 'custom') {
@@ -140,6 +196,7 @@ export const sampleEmailHtml = (id: EmailTemplateId) => {
       body: 'The board is up to date. Please review open cards before Friday.',
       actionLabel: 'Open workspace',
       actionUrl: 'https://example.com/dashboard',
+      workspaceName: 'Northstar',
     })
   }
   return emailCardHtml({
@@ -148,6 +205,7 @@ export const sampleEmailHtml = (id: EmailTemplateId) => {
     body: 'Alex Rivera added you to Website launch in Northstar. You can now open the board and work on tasks.',
     actionLabel: 'Open project',
     actionUrl: 'https://example.com/dashboard',
+    workspaceName: 'Northstar',
   })
 }
 
@@ -157,6 +215,7 @@ export const customEmailHtml = (input: {
   body: string
   actionLabel?: string
   actionUrl?: string
+  workspaceName?: string
 }) => {
   const body = escapeHtml(input.body).replaceAll('\n', '<br>')
   const title = escapeHtml(input.title)
@@ -164,25 +223,15 @@ export const customEmailHtml = (input: {
   const actionLabel = input.actionLabel?.trim()
   const actionUrl = input.actionUrl?.trim()
 
-  if (actionLabel && actionUrl) {
-    return emailCardHtml({
-      kicker,
-      title,
-      body,
-      actionLabel,
-      actionUrl,
-    })
-  }
-
-  return `
-  <div style="background:#f4f4f5;padding:32px 16px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;">
-    <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e4e4e7;">
-      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#ea580c;font-weight:600;">${escapeHtml(kicker)}</p>
-      <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#18181b;">${title}</h1>
-      <p style="margin:0;font-size:15px;line-height:1.6;color:#3f3f46;">${body}</p>
-    </div>
-  </div>
-`
+  return emailFrame(
+    `
+      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:${EMAIL_INK};font-weight:600;">${escapeHtml(kicker)}</p>
+      <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:${EMAIL_INK};">${title}</h1>
+      <p style="margin:0${actionLabel && actionUrl ? ' 0 24px' : ''};font-size:15px;line-height:1.6;color:#3f3f46;">${body}</p>
+      ${actionLabel && actionUrl ? emailButton(actionLabel, actionUrl) : ''}
+    `,
+    { workspaceName: input.workspaceName },
+  )
 }
 
 export const customEmailStarters = (input: {
@@ -263,19 +312,20 @@ export const reminderDigestHtml = (input: {
   tasks: ReminderDigestRow[]
   actionUrl: string
   settingsUrl: string
-}) => `
-  <div style="background:#f4f4f5;padding:32px 16px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;">
-    <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e4e4e7;">
-      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#ea580c;font-weight:600;">Reminder</p>
-      <h1 style="margin:0 0 8px;font-size:22px;line-height:1.3;color:#18181b;">${escapeHtml(input.title)}</h1>
+  workspaceName?: string
+}) =>
+  emailFrame(
+    `
+      <p style="margin:0 0 8px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:${EMAIL_INK};font-weight:600;">Reminder</p>
+      <h1 style="margin:0 0 8px;font-size:22px;line-height:1.3;color:${EMAIL_INK};">${escapeHtml(input.title)}</h1>
       <p style="margin:0;font-size:15px;line-height:1.6;color:#3f3f46;">${escapeHtml(input.greeting)} ${escapeHtml(input.summary)}</p>
       ${reminderSection('Events', input.events)}
       ${reminderSection('Cards due', input.tasks)}
-      <a href="${escapeHtml(input.actionUrl)}" style="display:inline-block;margin-top:20px;background:#ea580c;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 18px;border-radius:10px;">Open calendar</a>
-      <p style="margin:28px 0 0;font-size:12px;line-height:1.6;color:#a1a1aa;">
-        You get one reminder a day for events in your projects and cards assigned to you.
-        <a href="${escapeHtml(input.settingsUrl)}" style="color:#71717a;">Turn off reminder emails</a>
-      </p>
-    </div>
-  </div>
-`
+      <div style="margin-top:20px;">${emailButton('Open calendar', input.actionUrl)}</div>
+    `,
+    {
+      maxWidth: 560,
+      workspaceName: input.workspaceName,
+      footerNoteHtml: `You get one reminder a day for events in your projects and cards assigned to you. <a href="${escapeHtml(input.settingsUrl)}" style="color:#71717a;">Turn off reminder emails</a>`,
+    },
+  )

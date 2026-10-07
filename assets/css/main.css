@@ -172,24 +172,38 @@
   }
 
   html {
-    @apply bg-background;
+    @apply bg-background font-sans;
   }
 
   body {
-    @apply bg-background text-foreground min-h-screen antialiased;
+    @apply min-h-screen bg-background font-sans text-[13px] font-normal text-foreground antialiased;
+    line-height: 1.45;
+    letter-spacing: -0.011em;
+    font-optical-sizing: auto;
+  }
+
+  strong,
+  b {
+    @apply font-semibold;
   }
 }
 
 @layer components {
   .app-page h1 {
-    @apply text-[15px] font-semibold tracking-tight text-foreground;
+    @apply text-[15px] font-semibold text-foreground;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
   }
 
   .app-page h2 {
-    @apply text-[13px] font-semibold tracking-tight text-foreground;
+    @apply text-[13px] font-semibold text-foreground;
+    letter-spacing: -0.015em;
+    line-height: 1.3;
   }
 
   .app-page h3 {
     @apply text-[13px] font-medium text-foreground;
+    letter-spacing: -0.011em;
+    line-height: 1.35;
   }
 }
